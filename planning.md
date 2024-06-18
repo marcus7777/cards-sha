@@ -41,6 +41,3 @@
 6. **Cryptography and Privacy Implementation**:  
    Expenses for implementing robust cryptographic protocols, securing user data, and conducting regular security audits to maintain data privacy and compliance.
 
----
-
-By structuring the invoice this way, you clearly align each cost with specific phases and deliverables of the project, making it easier for Sky High Arts to understand and justify the expenses.
