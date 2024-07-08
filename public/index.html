@@ -1,148 +1,55 @@
+<script type="module">
+  import { createApp, reactive } from './petite-vue.es.js'
+
+  const store = reactive({
+    cards: [],
+    subCards: [],
+    newCard: {title: "title", body: "123 234 345 456 567"},
+    inc() {
+      this.cards.push({...this.newCard})
+    },
+    incSub() {
+      this.subCards.push({...this.newCard})
+    },
+  })
+
+
+  createApp({
+    // share it with app scopes
+    store
+  }).mount()
+</script>
+
+<div v-scope="{ localCount: 0 }">
+  <input v-model="store.newCard.title">
+  <input v-model="store.newCard.body">
+  <button @click="store.inc">+ Main</button>
+  <button @click="store.incSub">+ Sub</button>
+
+</div>
 <html>
   <head>
     <title>Sky Cards</title>
     <link rel="stylesheet" type="text/css" href="cards.css">
   </head>
   <body>
-    <div>
+    <div v-scope="{ localCount: 1 }">
       <div class="container">
-        <div class="card" tabindex="0">
+	<div class="card" tabindex="0" v-for="(s, i) in store.cards">
           <div class="inner">
-            <h1>Card 1</h1>
-            <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Praesentium id alias sunt odio iure minima
-                ullam tenetur quidem maiores nam voluptates qui debitis eligendi repudiandae eveniet, a neque ducimus
-                reiciendis!</p>
-          </div>
-        </div>
-        <div class="card" tabindex="0">
-          <div class="inner">
-            <h1>Card 2</h1>
-            <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Praesentium id alias sunt odio iure minima
-                ullam tenetur quidem maiores nam voluptates qui debitis eligendi repudiandae eveniet, a neque ducimus
-                reiciendis!</p>
-          </div>
-        </div>
-        <div class="card" tabindex="0">
-          <div class="inner">
-            <h1>Card 3</h1>
-            <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Praesentium id alias sunt odio iure minima
-                ullam tenetur quidem maiores nam voluptates qui debitis eligendi repudiandae eveniet, a neque ducimus
-                reiciendis!</p>
-          </div>
-        </div>
-        <div class="card" tabindex="0">
-          <div class="inner">
-            <h1>Card 4</h1>
-            <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Praesentium id alias sunt odio iure minima
-                ullam tenetur quidem maiores nam voluptates qui debitis eligendi repudiandae eveniet, a neque ducimus
-                reiciendis!</p>
-          </div>
-        </div>
-        <div class="card" tabindex="0">
-          <div class="inner">
-            <h1>Card 5</h1>
-            <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Praesentium id alias sunt odio iure minima
-                ullam tenetur quidem maiores nam voluptates qui debitis eligendi repudiandae eveniet, a neque ducimus
-                reiciendis!</p>
+            <h1>{{ s.title }} {{i}}</h1>
+            <p> {{ s.body }} </p>
           </div>
         </div>
       </div>
-      <div>
-       <div class="container">
-        <div class="card" tabindex="0">
+    </div>
+      
+    <div v-scope="{ localCount: 1 }">
+      <div class="container">
+	<div class="card" tabindex="0" v-for="(n, i) in store.subCards">
           <div class="inner">
-            <h1>Sub Card 1</h1>
-            <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Praesentium id alias sunt odio iure minima
-                ullam tenetur quidem maiores nam voluptates qui debitis eligendi repudiandae eveniet, a neque ducimus
-                reiciendis!</p>
-          </div>
-        </div>
-        <div class="card" tabindex="0">
-          <div class="inner">
-            <h1>Sub Card 2</h1>
-            <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Praesentium id alias sunt odio iure minima
-                ullam tenetur quidem maiores nam voluptates qui debitis eligendi repudiandae eveniet, a neque ducimus
-                reiciendis!</p>
-          </div>
-        </div>
-        <div class="card" tabindex="0">
-          <div class="inner">
-            <h1>Sub Card 3</h1>
-            <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Praesentium id alias sunt odio iure minima
-                ullam tenetur quidem maiores nam voluptates qui debitis eligendi repudiandae eveniet, a neque ducimus
-                reiciendis!</p>
-          </div>
-        </div>
-        <div class="card" tabindex="0">
-          <div class="inner">
-            <h1>Sub Card 4</h1>
-            <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Praesentium id alias sunt odio iure minima
-                ullam tenetur quidem maiores nam voluptates qui debitis eligendi repudiandae eveniet, a neque ducimus
-                reiciendis!</p>
-          </div>
-        </div>
-        <div class="card" tabindex="0">
-          <div class="inner">
-            <h1>Sub Card 5</h1>
-            <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Praesentium id alias sunt odio iure minima
-                ullam tenetur quidem maiores nam voluptates qui debitis eligendi repudiandae eveniet, a neque ducimus
-                reiciendis!</p>
-          </div>
-        </div>
-        <div class="card" tabindex="0">
-          <div class="inner">
-            <h1>Sub Card 6</h1>
-            <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Praesentium id alias sunt odio iure minima
-                ullam tenetur quidem maiores nam voluptates qui debitis eligendi repudiandae eveniet, a neque ducimus
-                reiciendis!</p>
-          </div>
-        </div>
-        <div class="card" tabindex="0">
-          <div class="inner">
-            <h1>Sub Card 7</h1>
-            <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Praesentium id alias sunt odio iure minima
-                ullam tenetur quidem maiores nam voluptates qui debitis eligendi repudiandae eveniet, a neque ducimus
-                reiciendis!</p>
-          </div>
-        </div>
-        <div class="card" tabindex="0">
-          <div class="inner">
-            <h1>Sub Card 8</h1>
-            <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Praesentium id alias sunt odio iure minima
-                ullam tenetur quidem maiores nam voluptates qui debitis eligendi repudiandae eveniet, a neque ducimus
-                reiciendis!</p>
-          </div>
-        </div>
-        <div class="card" tabindex="0">
-          <div class="inner">
-            <h1>Sub Card 9</h1>
-            <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Praesentium id alias sunt odio iure minima
-                ullam tenetur quidem maiores nam voluptates qui debitis eligendi repudiandae eveniet, a neque ducimus
-                reiciendis!</p>
-          </div>
-        </div>
-        <div class="card" tabindex="0">
-          <div class="inner">
-            <h1>Sub Card 10</h1>
-            <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Praesentium id alias sunt odio iure minima
-                ullam tenetur quidem maiores nam voluptates qui debitis eligendi repudiandae eveniet, a neque ducimus
-                reiciendis!</p>
-          </div>
-        </div>
-        <div class="card" tabindex="0">
-          <div class="inner">
-            <h1>Sub Card 11</h1>
-            <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Praesentium id alias sunt odio iure minima
-                ullam tenetur quidem maiores nam voluptates qui debitis eligendi repudiandae eveniet, a neque ducimus
-                reiciendis!</p>
-          </div>
-        </div>
-        <div class="card" tabindex="0">
-          <div class="inner">
-            <h1>Sub Card 12</h1>
-            <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Praesentium id alias sunt odio iure minima
-                ullam tenetur quidem maiores nam voluptates qui debitis eligendi repudiandae eveniet, a neque ducimus
-                reiciendis!</p>
+            <h1>{{ n.title }} {{i}}</h1>
+            <p> {{ n.body }} </p>
           </div>
         </div>
       </div>
