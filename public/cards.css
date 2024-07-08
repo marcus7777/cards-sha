@@ -1,5 +1,5 @@
 body {
-  background-color: blue;
+  background-color: #55c2c3;
 }
 .container {
   margin:60px 100px 0 0;
@@ -9,9 +9,9 @@ body {
 
 .card {
   display: inline-block;
-  transition: all 1s ease-in-out;
+  transition: all 0.5s ease-in-out;
   width: 20px;
-  margin: 0 0 0 -100px;
+  margin: 0 0 0 -10px;
 }
 .card:hover, .card:focus {
   display: inline-block;
