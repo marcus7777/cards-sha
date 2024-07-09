@@ -3,13 +3,19 @@
 
   const store = reactive({
     cards: [],
-    subCards: [],
-    newCard: {title: "title", body: "123 234 345 456 567"},
+    newCard: {
+      title: "title", 
+      body: "123 234 345 456 567",
+      subCards: [],
+    },
+    curser:0,
     inc() {
+      this.curser = this.cards.length
       this.cards.push({...this.newCard})
     },
     incSub() {
-      this.subCards.push({...this.newCard})
+      console.log(this)
+      this.cards[this.curser].subCards = this.cards[this.curser].subCards.concat([{...this.newCard}])
     },
   })
 
@@ -24,7 +30,7 @@
   <input v-model="store.newCard.title">
   <input v-model="store.newCard.body">
   <button @click="store.inc">+ Main</button>
-  <button @click="store.incSub">+ Sub</button>
+  <button v-if="store.cards[0]" @click="store.incSub">+ Sub</button>
 
 </div>
 <html>
@@ -35,20 +41,20 @@
   <body>
     <div v-scope="{ localCount: 1 }">
       <div class="container">
-	<div class="card" tabindex="0" v-for="(s, i) in store.cards">
+	<div class="card" tabindex="0" v-for="(s, i) in store.cards" @click="store.curser = i">
           <div class="inner">
-            <h1>{{ s.title }} {{i}}</h1>
+            <h1> {{ s.title }} </h1>
             <p> {{ s.body }} </p>
           </div>
         </div>
       </div>
     </div>
       
-    <div v-scope="{ localCount: 1 }">
-      <div class="container">
-	<div class="card" tabindex="0" v-for="(n, i) in store.subCards">
+    <div v-scope="{ localCount: 1 }" v-for="(card, ci) in store.cards">
+      <div class="container" v-if="store.curser === ci">
+	<div class="card" tabindex="0" :key="store.curser +' '+ i" v-for="(n, i) in card.subCards">
           <div class="inner">
-            <h1>{{ n.title }} {{i}}</h1>
+            <h1>{{ n.title }}</h1>
             <p> {{ n.body }} </p>
           </div>
         </div>
