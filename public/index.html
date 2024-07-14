@@ -1,60 +1,56 @@
-<script type="module">
-  import { createApp, reactive } from './petite-vue.es.js'
 
-  const store = reactive({
-    cards: [],
-    newCard: {
-      title: "title", 
-      body: "123 234 345 456 567",
-      subCards: [],
-    },
-    curser:0,
-    inc() {
-      this.curser = this.cards.length
-      this.cards.push({...this.newCard})
-    },
-    incSub() {
-      console.log(this)
-      this.cards[this.curser].subCards = this.cards[this.curser].subCards.concat([{...this.newCard}])
-    },
-  })
-
-
-  createApp({
-    // share it with app scopes
-    store
-  }).mount()
-</script>
-
-<div v-scope="{ localCount: 0 }">
-  <input v-model="store.newCard.title">
-  <input v-model="store.newCard.body">
-  <button @click="store.inc">+ Main</button>
-  <button v-if="store.cards[0]" @click="store.incSub">+ Sub</button>
-
-</div>
 <html>
   <head>
     <title>Sky Cards</title>
+    <link rel="preload" href="/assets/Zapfino.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" type="text/css" href="cards.css">
+    <script type="module" src="cards.js"></script>
   </head>
   <body>
-    <div v-scope="{ localCount: 1 }">
+<div v-scope="{ localCount: 0 }">
+  <input v-model="store.newCard.title" id="title">
+  <button @click="store.inc"> + Main </button>
+  <button v-if="store.cards[0]" @click="store.incSub"> + Sub </button>
+  <button @click="store.load()"> load </button>
+  <button v-if="store.cards[0]" @click="store.save()"> Save </button>
+  <button v-for="sb in store.trail" @click="store.save(sb)"> {{ sb }} </button>
+
+  <input type="checkbox" name="showDone" :checked="store.showDone" @click="store.showDone = !store.showDone" />
+  <label for="showDone">Show Done</label>
+  <input type="checkbox" name="showNext" :checked="store.showNext" @click="store.showNext = store.showNext ? 0 : 1" />
+  <label for="showNext">Show Next</label>
+  <input type="color" name="color" v-model="store.color" @click="store.setColor()" />
+
+</div>
+    <div v-scope="{}">
       <div class="container">
-	<div class="card" tabindex="0" v-for="(s, i) in store.cards" @click="store.curser = i">
-          <div class="inner">
-            <h1> {{ s.title }} </h1>
-            <p> {{ s.body }} </p>
+        <div v-for="(s, i) in store.cards">
+          <div class="card mainCard" tabindex="0" v-if="store.showMain(s, i)">
+            <div class="inner">
+              <input v-model="s.title" v-if="store.curser === i">
+              <h2 @click="store.curser = i"> {{ s.title }} </h2>
+              <input v-model="s.body" v-if="store.curser === i">
+              <p v-else> {{ s.body }} </p>
+              <div v-if="store.curser === i">
+                <input type="checkbox" name="done" :checked="s.done" @click="s.done = !s.done" />
+	        <label for="done">Done</label>
+	        <button @click="store.removeCard(i)">-</button>
+	        <button @click="store.duplicateCard(i)">+</button>
+		<button v-if="store.cards[1] && store.curser > 0" @click="store.makeSubCard(i, i-1)">&#x21D9;</button>
+		<button v-if="store.cards[1] && store.curser > 0" @click="store.swapCards(i, i-1)">&lt;</button>
+		<button v-if="store.cards[1] && store.curser !== store.cards.length - 1" @click="store.swapCards(i, i+1)">&gt;</button>
+	      </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
       
-    <div v-scope="{ localCount: 1 }" v-for="(card, ci) in store.cards">
+    <div v-scope="{ }" v-for="(card, ci) in store.cards">
       <div class="container" v-if="store.curser === ci">
-	<div class="card" tabindex="0" :key="store.curser +' '+ i" v-for="(n, i) in card.subCards">
-          <div class="inner">
-            <h1>{{ n.title }}</h1>
+        <div class="card" tabindex="0" :key="store.curser +' '+ i" v-for="(n, i) in card.subCards">
+          <div class="inner" @click="store.deeper(i)">
+            <h3>{{ n.title }}</h3>
             <p> {{ n.body }} </p>
           </div>
         </div>
