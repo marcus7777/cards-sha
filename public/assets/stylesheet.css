@@ -1,0 +1,9 @@
+@font-face {
+    font-family: 'Zapfino';
+    src: url('Zapfino.woff2') format('woff2'),
+        url('Zapfino.woff') format('woff');
+    font-weight: normal;
+    font-style: italic;
+    font-display: swap;
+}
+
