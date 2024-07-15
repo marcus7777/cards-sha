@@ -34,7 +34,7 @@ function savesToLocalStorage(file, cb) { //cb is a callback function that is cal
     cards.forEach(card => {
       localStorage.setItem(makeHash(card), JSON.stringify(card))
     })
-    cb(cards[0])
+    cb({ title: "title", body: "body", ...cards[0]})
   }
   reader.readAsText(file)          
 }
@@ -265,11 +265,20 @@ const store = reactive({ //updates the html immediately
   autoAdd() {
     // If the new card title end with add, then add it as a new card.
     // And select all within the text box, so you can start typing the new card title
-    const triggerArray = ['. add', 'full stop add', 'full stop at', "period add", "full stop next", "period next", ". Next", ". next"]
+    const triggerArray = ['. add', '. ad' , 'full stop add', 'full stop at', ". dad", "full stop next", ". Next", ". next"]
     triggerArray.forEach(trigger => {
       if (this.newCard.title.includes(trigger) && this.newCard.title.indexOf(trigger) === this.newCard.title.length - trigger.length){
         this.newCard.title = this.newCard.title.slice(0, -trigger.length)
         this.inc() 
+        this.newCard.title = ''
+        //document.getElementById('title').select() // this does not work on my Chromebook whilst dictating so not using it to Four now
+      }
+    })
+    const triggerArraySub = ['. sub', 'full stop sub']
+    triggerArray.forEach(trigger => {
+      if (this.newCard.title.includes(trigger) && this.newCard.title.indexOf(trigger) === this.newCard.title.length - trigger.length){
+        this.newCard.title = this.newCard.title.slice(0, -trigger.length)
+        this.incSub() 
         this.newCard.title = ''
         //document.getElementById('title').select() // this does not work on my Chromebook whilst dictating so not using it to Four now
       }
