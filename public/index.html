@@ -7,39 +7,41 @@
     <script type="module" src="cards.js"></script>
   </head>
   <body>
-<div v-scope="{ localCount: 0 }">
-  <input v-model="store.newCard.title" id="title">
-  <button @click="store.inc"> + Main </button>
-  <button v-if="store.cards[0]" @click="store.incSub"> + Sub </button>
-  <button @click="store.load()"> load </button>
-  <button v-if="store.cards[0]" @click="store.save()"> Save </button>
-  <button v-for="sb in store.trail" @click="store.save(sb)"> {{ sb }} </button>
+    <div v-scope="{ }">
+      <input v-model="store.newCard.title" id="title">
+      <button @click="store.inc"> + Main </button>
+      <button v-if="store.cards[0]" @click="store.incSub"> + Sub </button>
+      <button @click="store.load()"> load </button>
+      <button v-if="store.cards[0]" @click="store.save()"> Save </button>
+      <button v-for="sb in store.trail" @click="store.save(sb)"> {{ sb }} </button>
+    
+      <input type="checkbox" name="showDone" :checked="store.showDone" @click="store.showDone = !store.showDone" />
+      <label for="showDone">Show Done</label>
+      <input type="checkbox" name="showNext" :checked="store.showNext" @click="store.showNext = store.showNext ? 0 : 1" />
+      <label for="showNext">Show Next</label>
+      <input type="color" name="color" v-model="store.color" @click="store.setColor()" @change="store.setColor()" />
 
-  <input type="checkbox" name="showDone" :checked="store.showDone" @click="store.showDone = !store.showDone" />
-  <label for="showDone">Show Done</label>
-  <input type="checkbox" name="showNext" :checked="store.showNext" @click="store.showNext = store.showNext ? 0 : 1" />
-  <label for="showNext">Show Next</label>
-  <input type="color" name="color" v-model="store.color" @click="store.setColor()" />
-
-</div>
+    </div>
     <div v-scope="{}">
+      <h1> {{ store.title }} </h1>
       <div class="container">
         <div v-for="(s, i) in store.cards">
           <div class="card mainCard" tabindex="0" v-if="store.showMain(s, i)">
-            <div class="inner">
-              <input v-model="s.title" v-if="store.curser === i">
-              <h2 @click="store.curser = i"> {{ s.title }} </h2>
-              <input v-model="s.body" v-if="store.curser === i">
-              <p v-else> {{ s.body }} </p>
-              <div v-if="store.curser === i">
-                <input type="checkbox" name="done" :checked="s.done" @click="s.done = !s.done" />
-	        <label for="done">Done</label>
-	        <button @click="store.removeCard(i)">-</button>
-	        <button @click="store.duplicateCard(i)">+</button>
-		<button v-if="store.cards[1] && store.curser > 0" @click="store.makeSubCard(i, i-1)">&#x21D9;</button>
-		<button v-if="store.cards[1] && store.curser > 0" @click="store.swapCards(i, i-1)">&lt;</button>
-		<button v-if="store.cards[1] && store.curser !== store.cards.length - 1" @click="store.swapCards(i, i+1)">&gt;</button>
-	      </div>
+            <div class="inner" v-if="store.curser === i">
+              <input v-model="s.title">
+              <h2> {{ s.title }} </h2>
+              <input v-model="s.body">
+              <input type="checkbox" name="done" :checked="s.done" @click="s.done = !s.done" />
+              <label for="done">Done</label>
+              <button @click="store.removeCard(i)">-</button>
+              <button @click="store.duplicateCard(i)">+</button>
+              <button v-if="store.cards[1] && store.curser > 0" @click="store.makeSubCard(i, i-1)">&#x21D9;</button>
+              <button v-if="store.cards[1] && store.curser > 0" @click="store.swapCards(i, i-1)">&lt;</button>
+              <button v-if="store.cards[1] && store.curser !== store.cards.length - 1" @click="store.swapCards(i, i+1)">&gt;</button>
+            </div>
+            <div v-else class="inner" @click="store.curser = i" >
+              <h2> {{ s.title }} </h2>
+              <p> {{ s.body }} </p>
             </div>
           </div>
         </div>

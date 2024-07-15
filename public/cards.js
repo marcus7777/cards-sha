@@ -1,6 +1,7 @@
 import { createApp, reactive } from './petite-vue.es.js'
 
 function makeHash(card) {
+  if (!card) return
   if (typeof card === 'string') {
     return card
   }
@@ -40,6 +41,7 @@ const store = reactive({
   cards: [],
   trail: [],
   color: 'white',
+  title: '',
   hash(card){
     return makeHash(card)
   },
@@ -77,6 +79,7 @@ const store = reactive({
     }
     hashes.push(hash)
     card.subCards.forEach(subCard => {
+      if (!subCard) return
       if (typeof subCard === 'string') {
 	if (hashes.includes(subCard)) {
 	  return
@@ -115,6 +118,10 @@ const store = reactive({
     console.log(this.getAllHashesNeededFrom(root))
   },
   setColor() {
+    const root = [...this.trail].pop() || 'root'
+    const cardToSave = this.loadCard(root)
+    localStorage.setItem(root, JSON.stringify({...cardToSave, color: this.color}))
+
     if (!this.color) {
       this.color = 'white'
     }
@@ -130,6 +137,7 @@ const store = reactive({
     window.scrollTo(0, 0)
     window.history.pushState({}, '', `#${this.trail.join('/')}`)
     document.title = this.cards[this.curser].title
+    this.title = this.cards[this.curser].title
     this.color = this.cards[this.curser].color
     this.setColor()
 
@@ -165,6 +173,7 @@ const store = reactive({
       card.subCards = []
     }
     card.subCards = card.subCards.map(subHash => {
+      if (!subHash) return
       if (typeof subHash === 'string') {
         return JSON.parse(localStorage.getItem(subHash))
       }
@@ -191,6 +200,7 @@ const store = reactive({
     const subCards = rootCard.subCards.map(subHash => this.loadCard(subHash))
     // rootCard.subCards = subCards
     subCards.forEach(subCard => {
+      if (!subCard) return
       if (!subCard.subCards) {
         subCard.subCards = []
       }
