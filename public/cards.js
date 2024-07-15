@@ -74,7 +74,7 @@ const store = reactive({ //updates the html immediately
     cardAdittions: [], // array of card adittions (like rel, position, color, etc)
     done: false,
     color: '#55c2c3',
-    showDone: true, // show done cards in the list
+    hideDone: false,
     showNext: 0, // show next cards in the list (0 = all, 1 = next, 2 = next and next)
   },
   saveRoot() {
