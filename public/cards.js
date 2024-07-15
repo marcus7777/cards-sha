@@ -50,8 +50,10 @@ function saveFile(text, title) {
 const store = reactive({ //updates the html immediately
   cards: [],
   trail: [],
+  trailNames: [],
   color: 'white',
   title: '',
+  pageTitle: '',
   hash(card){
     return makeHash(card)
   },
@@ -79,6 +81,9 @@ const store = reactive({ //updates the html immediately
     const rootHash = [...this.trail].pop() || 'root'
     const rootCard = this.loadCard(rootHash)
     rootCard.subCards = this.cards.map(card => makeHash(card))
+    if (rootHash === 'root') {
+      rootCard.title = this.pageTitle
+    }
     localStorage.setItem(rootHash, JSON.stringify(rootCard))
   },
   getAllHashesNeededFrom(hash) {
@@ -172,6 +177,7 @@ const store = reactive({ //updates the html immediately
   deeper(newCurser) {
     this.save()
     this.trail.push(makeHash(this.cards[this.curser]))
+    this.trailNames.push(this.cards[this.curser].title)
 
     window.scrollTo(0, 0)
     window.history.pushState({}, '', `#${this.trail.join('/')}`)
@@ -221,12 +227,20 @@ const store = reactive({ //updates the html immediately
     return card
   },
   load(rootHash) {
+    console.log(rootHash)
     // load cards from local storage
     if (!rootHash) {
       rootHash = 'root'
       this.trail = []
     }
+    const fresh = this.trail.indexOf(rootHash)
+    console.log(fresh)
+    
+    this.trail = this.trail.slice(0, fresh)
+    this.trailNames = this.trailNames.slice(0, fresh)
+    
     let rootCard = JSON.parse(localStorage.getItem(rootHash))
+    console.log(rootCard, "a")
     if (!rootCard) {
       rootCard = {...this.newCard}
       localStorage.setItem(rootHash, JSON.stringify(rootCard))
@@ -235,6 +249,8 @@ const store = reactive({ //updates the html immediately
       rootCard.subCards = []
     }
     this.color = rootCard.color
+    this.pageTitle = rootCard.title
+    this.title = rootCard.title
     this.setColor()
     const subCards = rootCard.subCards.map(subHash => this.loadCard(subHash))
     // rootCard.subCards = subCards
