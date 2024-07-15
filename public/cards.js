@@ -1,6 +1,7 @@
 import { createApp, reactive } from './petite-vue.es.js'
 
 function makeHash(card) {
+  if (!card) return
   if (typeof card === 'string') {
     return card
   }
@@ -31,7 +32,7 @@ function saveFile(text, title) {
   const link = document.createElement("a");
   const file = new Blob([text], { type: 'text/plain' });
   link.href = URL.createObjectURL(file);
-  link.download = title+".json";
+  link.download = title+".jsonl";
   link.click();
   URL.revokeObjectURL(link.href);
 }
@@ -40,6 +41,7 @@ const store = reactive({ //updates the html immediately
   cards: [],
   trail: [],
   color: 'white',
+  title: '',
   hash(card){
     return makeHash(card)
   },
@@ -77,15 +79,41 @@ const store = reactive({ //updates the html immediately
     }
     hashes.push(hash) //push adds to
     card.subCards.forEach(subCard => {
+      if (!subCard) return
       if (typeof subCard === 'string') {
 	if (hashes.includes(subCard)) {
 	  return
 	}
 	hashes.push(subCard)
-	hashes = hashes.concat(this.getAllHashesNeededFrom(subCard))
       }
+      if (typeof subCard === "object") {
+	hashes.push( makeHash(subCard) )
+      }
+      return hashes = hashes.concat(this.getAllHashesNeededFrom(subCard))
     })
     return hashes
+  },
+  saveToFile(root) {
+    const hashes = this.getAllHashesNeededFrom(makeHash(root))
+    let cards = []
+    hashes.forEach(hash => {
+      if (!hash) return
+      cards.push(localStorage.getItem(hash))
+    })
+    saveFile(cards.filter(card => typeof card === "string" ).join("\n"), root.title)
+  },
+  uploadFileInToCard(index, file) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const cards = e.target.result.split("\n").map(card => JSON.parse(card))
+      cards.forEach(card => {
+	localStorage.setItem(makeHash(card), JSON.stringify(card))
+      })
+      cards[0]
+    }
+    reader.readAsText(file)
+	
+	  
   },
   save() {
     this.saveRoot()
@@ -115,6 +143,10 @@ const store = reactive({ //updates the html immediately
     console.log(this.getAllHashesNeededFrom(root))
   },
   setColor() {
+    const root = [...this.trail].pop() || 'root'
+    const cardToSave = this.loadCard(root)
+    localStorage.setItem(root, JSON.stringify({...cardToSave, color: this.color}))
+
     if (!this.color) {
       this.color = 'white'
     }
@@ -130,6 +162,7 @@ const store = reactive({ //updates the html immediately
     window.scrollTo(0, 0)
     window.history.pushState({}, '', `#${this.trail.join('/')}`)
     document.title = this.cards[this.curser].title
+    this.title = this.cards[this.curser].title
     this.color = this.cards[this.curser].color
     this.setColor()
 
@@ -165,6 +198,7 @@ const store = reactive({ //updates the html immediately
       card.subCards = []
     }
     card.subCards = card.subCards.map(subHash => {
+      if (!subHash) return
       if (typeof subHash === 'string') {
         return JSON.parse(localStorage.getItem(subHash))
       }
@@ -191,6 +225,7 @@ const store = reactive({ //updates the html immediately
     const subCards = rootCard.subCards.map(subHash => this.loadCard(subHash))
     // rootCard.subCards = subCards
     subCards.forEach(subCard => {
+      if (!subCard) return
       if (!subCard.subCards) {
         subCard.subCards = []
       }
