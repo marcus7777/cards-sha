@@ -27,7 +27,17 @@ function makeHash(card) {
   // return the hash as a string at 8 characters long
   return hashAsStr.slice(0, 8);
 }
-
+function savesToLocalStorage(file, cb) { //cb is a callback function that is called when the file is read with the first card
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    const cards = e.target.result.split("\n").map(card => JSON.parse(card))
+    cards.forEach(card => {
+      localStorage.setItem(makeHash(card), JSON.stringify(card))
+    })
+    cb(cards[0])
+  }
+  reader.readAsText(file)          
+}
 function saveFile(text, title) {
   const link = document.createElement("a");
   const file = new Blob([text], { type: 'text/plain' });
@@ -81,13 +91,13 @@ const store = reactive({ //updates the html immediately
     card.subCards.forEach(subCard => {
       if (!subCard) return
       if (typeof subCard === 'string') {
-	if (hashes.includes(subCard)) {
-	  return
-	}
-	hashes.push(subCard)
+        if (hashes.includes(subCard)) {
+          return
+        }
+        hashes.push(subCard)
       }
       if (typeof subCard === "object") {
-	hashes.push( makeHash(subCard) )
+        hashes.push( makeHash(subCard) )
       }
       return hashes = hashes.concat(this.getAllHashesNeededFrom(subCard))
     })
@@ -102,19 +112,18 @@ const store = reactive({ //updates the html immediately
     })
     saveFile(cards.filter(card => typeof card === "string" ).join("\n"), root.title)
   },
-  uploadFileInToCard(index, file) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const cards = e.target.result.split("\n").map(card => JSON.parse(card))
-      cards.forEach(card => {
-	localStorage.setItem(makeHash(card), JSON.stringify(card))
+  uploadFileInToCard(index) {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.jsonl'
+    input.onchange = (e) => {
+      savesToLocalStorage(e.target.files[0], (card) => {
+        this.cards[index].subCards = this.cards[index].subCards.concat([card])
       })
-      cards[0]
     }
-    reader.readAsText(file)
-	
-	  
+    input.click()
   },
+  
   save() {
     this.saveRoot()
     // save this.cards to local storage hash all cards and save under the hash with a list of hashs for sub cards
@@ -254,10 +263,10 @@ const store = reactive({ //updates the html immediately
     const triggerArray = ['. add', 'full stop add', 'full stop at', "period add", "full stop next", "period next", ". Next", ". next"]
     triggerArray.forEach(trigger => {
       if (this.newCard.title.includes(trigger) && this.newCard.title.indexOf(trigger) === this.newCard.title.length - trigger.length){
-	this.newCard.title = this.newCard.title.slice(0, -trigger.length)
-	this.inc() 
+        this.newCard.title = this.newCard.title.slice(0, -trigger.length)
+        this.inc() 
         this.newCard.title = ''
-	//document.getElementById('title').select() // this does not work on my Chromebook whilst dictating so not using it to Four now
+        //document.getElementById('title').select() // this does not work on my Chromebook whilst dictating so not using it to Four now
       }
     })
   },
