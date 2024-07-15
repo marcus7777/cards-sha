@@ -104,7 +104,12 @@ const store = reactive({ //updates the html immediately
     return hashes
   },
   saveToFile(root) {
-    const hashes = this.getAllHashesNeededFrom(makeHash(root))
+    let hashes = []
+    if (typeof root === 'object') {
+      hashes = this.getAllHashesNeededFrom(makeHash(root))
+    } else {
+      hashes = this.getAllHashesNeededFrom(root)
+    }
     let cards = []
     hashes.forEach(hash => {
       if (!hash) return

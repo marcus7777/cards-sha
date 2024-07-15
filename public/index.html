@@ -14,6 +14,7 @@
       <button @click="store.load()"> load </button>
       <button v-if="store.cards[0]" @click="store.save()"> Save </button>
       <button v-for="sb in store.trail" @click="store.save(sb)"> {{ sb }} </button>
+      <button @click="store.saveToFile('root')">▼</button>
     
       <input type="checkbox" name="showDone" :checked="store.showDone" @click="store.showDone = !store.showDone" />
       <label for="showDone">Show Done</label>
@@ -24,7 +25,7 @@
     <div v-scope="{}">
       <h1> {{ store.title }} </h1>
       <div class="container">
-        <div v-for="(card, i) in store.cards">
+        <div v-for="(card, i) in store.cards"> <!-- i is for index -->
           <div class="card mainCard" tabindex="0" v-if="store.showMain(card, i)">
             <div class="inner" v-if="store.curser === i">
               <input v-model="card.title">
@@ -35,7 +36,7 @@
               <button @click="store.removeCard(i)">-</button>
               <button @click="store.duplicateCard(i)">+</button>
               <button @click="store.saveToFile(card)">▼</button>
-              <button @click="store.uploadFileInToCard(card)">▲</button>
+              <button @click="store.uploadFileInToCard(i)">▲</button>
               <button v-if="store.cards[1] && store.curser > 0" @click="store.makeSubCard(i, i-1)">&#x21D9;</button>
               <button v-if="store.cards[1] && store.curser > 0" @click="store.swapCards(i, i-1)">&lt;</button>
               <button v-if="store.cards[1] && store.curser !== store.cards.length - 1" @click="store.swapCards(i, i+1)">&gt;</button>
