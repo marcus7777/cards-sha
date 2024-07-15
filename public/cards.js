@@ -4,21 +4,21 @@ function makeHash(card) {
   if (typeof card === 'string') {
     return card
   }
-  const obj = {...card};
-  delete obj.subCards;
+  let obj = {...card}; //clones cards so that it can be manipulated without effecting the original let is a local variable
+  delete obj.subCards; //
   const str = JSON.stringify(obj);
   let hash = 0;
-  if (str.length == 0) {
+  if (str.length == 0) { //returns 0 (maybe useless?)
     return hash;
   }
   for (let i = 0; i < str.length; i++) {
     let char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
+    hash = ((hash << 5) - hash) + char; // << is a bit shift
+    hash = hash & hash; //ANDing them bitwise
   }
   //make the hash positive
-  hash = Math.abs(hash);
-  let hashAsStr = hash.toString(32);
+  hash = Math.abs(hash); //makes positive by taking absolute value
+  let hashAsStr = hash.toString(32); //32 bit to be easliy compressable
   //make it at least 8 characters long
   while (hashAsStr.length < 8) {
     hashAsStr = '0' + hashAsStr;
@@ -36,7 +36,7 @@ function saveFile(text, title) {
   URL.revokeObjectURL(link.href);
 }
 // swop the order of the cards
-const store = reactive({
+const store = reactive({ //updates the html immediately
   cards: [],
   trail: [],
   color: 'white',
@@ -75,7 +75,7 @@ const store = reactive({
     if (!card) {
       return []
     }
-    hashes.push(hash)
+    hashes.push(hash) //push adds to
     card.subCards.forEach(subCard => {
       if (typeof subCard === 'string') {
 	if (hashes.includes(subCard)) {
