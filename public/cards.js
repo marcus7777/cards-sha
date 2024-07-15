@@ -5,8 +5,8 @@ function makeHash(card) {
   if (typeof card === 'string') {
     return card
   }
-  const obj = {...card};
-  delete obj.subCards;
+  let obj = {...card}; // clone cards
+  delete obj.subCards; 
   const str = JSON.stringify(obj);
   let hash = 0;
   if (str.length == 0) {
@@ -32,7 +32,7 @@ function saveFile(text, title) {
   const link = document.createElement("a");
   const file = new Blob([text], { type: 'text/plain' });
   link.href = URL.createObjectURL(file);
-  link.download = title+".json";
+  link.download = title+".jsonl";
   link.click();
   URL.revokeObjectURL(link.href);
 }
@@ -85,10 +85,35 @@ const store = reactive({
 	  return
 	}
 	hashes.push(subCard)
-	hashes = hashes.concat(this.getAllHashesNeededFrom(subCard))
       }
+      if (typeof subCard === "object") {
+	hashes.push( makeHash(subCard) )
+      }
+      return hashes = hashes.concat(this.getAllHashesNeededFrom(subCard))
     })
     return hashes
+  },
+  saveToFile(root) {
+    const hashes = this.getAllHashesNeededFrom(makeHash(root))
+    let cards = []
+    hashes.forEach(hash => {
+      if (!hash) return
+      cards.push(localStorage.getItem(hash))
+    })
+    saveFile(cards.filter(card => typeof card === "string" ).join("\n"), root.title)
+  },
+  uploadFileInToCard(index, file) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const cards = e.target.result.split("\n").map(card => JSON.parse(card))
+      cards.forEach(card => {
+	localStorage.setItem(makeHash(card), JSON.stringify(card))
+      })
+      cards[0]
+    }
+    reader.readAsText(file)
+	
+	  
   },
   save() {
     this.saveRoot()
