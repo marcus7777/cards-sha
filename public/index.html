@@ -11,9 +11,9 @@
       <input v-model="store.newCard.title" id="title">
       <button @click="store.inc()"> + Main </button>
       <button v-if="store.cards[0]" @click="store.incSub()"> + Sub </button>
-      <button @click="store.load()"> Load </button>
+      <button @click="store.load()"> Top </button>
       <button v-if="store.cards[0]" @click="store.save()"> Save </button>
-      <button v-for="sb in store.trail" @click="store.save(sb)"> {{ sb }} </button>
+      <button v-for="(breadcrumb, i) in store.trail" @click="store.load(breadcrumb)"> {{ store.trailNames[i] }} </button>
       <button @click="store.saveToFile('root')">▼</button>
     
       <input type="checkbox" name="showDone" :checked="store.showDone" @click="store.showDone = !store.showDone" />
@@ -21,6 +21,7 @@
       <input type="number" v-model="store.showNext" >
       <label for="showNext">Show Next</label>
       <input type="color" name="color" v-model="store.color" @click="store.setColor()" @change="store.setColor()" />
+      <input v-if="!store.trail[0]" v-model="store.pageTitle" id="pageTitle">
     </div>
     <div v-scope="{}">
       <h1> {{ store.title }} </h1>
