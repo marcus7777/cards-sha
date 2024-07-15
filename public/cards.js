@@ -60,11 +60,7 @@ const store = reactive({ //updates the html immediately
   showMain(card, index) {
     // look at the card and decide if it should be shown in the main list
     // trail is the path to the current card
-    console.log(card)
-    console.log(index)
-    console.log(this.trail)
     const topTrail = this.trail.slice(0, -1)[0]
-    console.log(localStorage.getItem( topTrail ))
     return true
   },
   newCard: {
@@ -154,12 +150,9 @@ const store = reactive({ //updates the html immediately
       
       localStorage.setItem(cardHash, JSON.stringify({...card, subCards: subHashes}))
     })
-    console.log('saved')
   },
   saveTofile() {
     const root = [...this.trail].pop() || 'root'
-    console.log(root)
-    console.log(this.getAllHashesNeededFrom(root))
   },
   setColor() {
     const root = [...this.trail].pop() || 'root'
@@ -227,20 +220,17 @@ const store = reactive({ //updates the html immediately
     return card
   },
   load(rootHash) {
-    console.log(rootHash)
     // load cards from local storage
     if (!rootHash) {
       rootHash = 'root'
       this.trail = []
     }
     const fresh = this.trail.indexOf(rootHash)
-    console.log(fresh)
     
     this.trail = this.trail.slice(0, fresh)
     this.trailNames = this.trailNames.slice(0, fresh)
     
     let rootCard = JSON.parse(localStorage.getItem(rootHash))
-    console.log(rootCard, "a")
     if (!rootCard) {
       rootCard = {...this.newCard}
       localStorage.setItem(rootHash, JSON.stringify(rootCard))
@@ -270,8 +260,6 @@ const store = reactive({ //updates the html immediately
     this.cards.push({...this.newCard})
   },
   incSub() {
-    console.log(this)
-    console.log(this.cards[this.curser])
     let card = this.cards[this.curser]
     if (!card.subCards) {
       card.subCards = []

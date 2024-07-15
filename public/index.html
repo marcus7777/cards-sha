@@ -7,11 +7,11 @@
     <script type="module" src="cards.js"></script>
   </head>
   <body>
-    <div v-scope="{ }">
+    <div v-scope="{}">
       <input v-model="store.newCard.title" id="title">
-      <button @click="store.inc()"> + Main </button>
-      <button v-if="store.cards[0]" @click="store.incSub()"> + Sub </button>
-      <button @click="store.load()"> load </button>
+      <button v-if="store.newCard.title" @click="store.inc()"> + Main </button>
+      <button v-if="store.cards[0] && store.newCard.title" @click="store.incSub()"> + Sub </button>
+      <button @click="store.load()"> Top </button>
       <button v-if="store.cards[0]" @click="store.save()"> Save </button>
       <button v-for="sb in store.trail" @click="store.save(sb)"> {{ sb }} </button>
       <button @click="store.saveToFile('root')">▼</button>
@@ -50,7 +50,7 @@
       </div>
     </div>
       
-    <div v-scope="{ }" v-for="(card, ci) in store.cards">
+    <div v-scope="{}" v-for="(card, ci) in store.cards">
       <div class="container" v-if="store.curser === ci">
         <div class="card" tabindex="0" :key="store.curser +' '+ i" v-for="(n, i) in card.subCards">
           <div class="inner" @click="store.deeper(i)">
