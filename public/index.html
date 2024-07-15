@@ -11,7 +11,7 @@
       <input v-model="store.newCard.title" id="title">
       <button @click="store.inc()"> + Main </button>
       <button v-if="store.cards[0]" @click="store.incSub()"> + Sub </button>
-      <button @click="store.load()"> load </button>
+      <button @click="store.load()"> Load </button>
       <button v-if="store.cards[0]" @click="store.save()"> Save </button>
       <button v-for="sb in store.trail" @click="store.save(sb)"> {{ sb }} </button>
       <button @click="store.saveToFile('root')">▼</button>
