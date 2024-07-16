@@ -7,10 +7,10 @@
     <script type="module" src="cards.js"></script>
   </head>
   <body>
-    <div v-scope="{ }">
+    <div v-scope="{}">
       <input v-model="store.newCard.title" id="title">
-      <button @click="store.inc()"> + Main </button>
-      <button v-if="store.cards[0]" @click="store.incSub()"> + Sub </button>
+      <button v-if="store.newCard.title" @click="store.inc()"> + Main </button>
+      <button v-if="store.cards[0] && store.newCard.title" @click="store.incSub()"> + Sub </button>
       <button @click="store.load()"> Top </button>
       <button v-if="store.cards[0]" @click="store.save()"> Save </button>
       <button v-for="(breadcrumb, i) in store.trail" @click="store.load(breadcrumb)"> {{ store.trailNames[i] }} </button>
