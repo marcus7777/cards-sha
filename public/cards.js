@@ -116,7 +116,7 @@ const store = reactive({ //updates the html immediately
       if (!hash) return
       cards.push(localStorage.getItem(hash))
     })
-    saveFile(cards.filter(card => typeof card === "string" ).join("\n"), root.title)
+    saveFile(cards.filter(card => typeof card === "string" ).join("\n"), root.title || this.  pageTitle || this.title || "Sky Cards")
   },
   uploadFileInToCard(index) {
     const input = document.createElement('input')
