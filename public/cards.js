@@ -291,7 +291,7 @@ const store = reactive({ //updates the html immediately
       }
     })
     const triggerArraySub = ['. sub', 'full stop sub']
-    triggerArray.forEach(trigger => {
+    triggerArraySub.forEach(trigger => {
       if (this.newCard.title.includes(trigger) && this.newCard.title.indexOf(trigger) === this.newCard.title.length - trigger.length){
         this.newCard.title = this.newCard.title.slice(0, -trigger.length)
         this.incSub() 
