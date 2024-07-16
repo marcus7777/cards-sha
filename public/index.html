@@ -11,8 +11,8 @@
       <input v-model="store.newCard.title" id="title">
       <button v-if="store.newCard.title" @click="store.inc()"> + Main </button>
       <button v-if="store.cards[0] && store.newCard.title" @click="store.incSub()"> + Sub </button>
-      <button @click="store.load()"> Top </button>
       <button v-if="store.cards[0]" @click="store.save()"> Save </button>
+      <button @click="store.load()"> Top </button>
       <button v-for="(breadcrumb, i) in store.trail" @click="store.load(breadcrumb)"> {{ store.trailNames[i] }} </button>
       <button @click="store.saveToFile('root')">▼</button>
     
