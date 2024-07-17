@@ -8,11 +8,10 @@
   </head>
   <body>
     <div v-scope="{}">
-      <input v-model="store.newCard.title" id="title">
+      <input v-model="store.newCard.title" id="title" @keyup.enter="store.onEnterTitle">
       <button v-if="store.newCard.title" @click="store.inc()"> + Main </button>
       <button v-if="store.cards[0] && store.newCard.title" @click="store.incSub()"> + Sub </button>
       <button @click="store.load()"> Top </button>
-      <button v-if="store.cards[0]" @click="store.save()"> Save </button>
       <button v-for="(breadcrumb, i) in store.trail" @click="store.load(breadcrumb)"> {{ store.trailNames[i] }} </button>
       <button @click="store.saveToFile('root')">▼</button>
     
@@ -29,9 +28,9 @@
         <div v-for="(card, i) in store.cards"> <!-- i is for index -->
           <div class="card mainCard" tabindex="0" v-if="!(store.hideDone && card.done)">
             <div class="inner" v-if="store.curser === i">
-              <input v-model="card.title">
+              <input v-model="card.title" @blur="store.save">
               <h2> {{ card.title }} </h2>
-              <input v-model="card.body">
+              <input v-model="card.body" @blur="store.save">
               <input type="checkbox" name="done" :checked="card.done" @click="card.done = !card.done" />
               <label for="done">Done</label>
               <button @click="store.removeCard(i)">-</button>
@@ -61,5 +60,14 @@
         </div>
       </div>
     </div>
+    
+    <div v-scope="{}">
+      <dialog id="mainOrSunDialog">
+        <p>Would you like this card to be a subcard or main card</p>
+        <button autofocus @click="store.inc()">Main</button>
+        <button v-if="store.cards[0]" @click="store.incSub()">Sub</button>
+      </dialog>
+    </div>
+    
   </body>
 </html>

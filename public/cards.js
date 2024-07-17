@@ -255,9 +255,17 @@ const store = reactive({ //updates the html immediately
     this.cards = subCards
   },
   curser:0,
+  onEnterTitle(){
+    if (!this.newCard.title) return
+    if (!this.cards[0]) return this.inc()
+    document.getElementById("mainOrSunDialog").showModal()
+  },
   inc() {
     this.curser = this.cards.length
     this.cards.push({...this.newCard})
+    this.newCard.title = ""
+    document.getElementById("mainOrSunDialog").close()
+    this.save()
   },
   incSub() {
     let card = this.cards[this.curser]
@@ -265,6 +273,9 @@ const store = reactive({ //updates the html immediately
       card.subCards = []
     }
     card.subCards = card.subCards.concat([{...this.newCard}])
+    this.newCard.title = ""
+    document.getElementById("mainOrSunDialog").close()
+    this.save()
   },
   autoAdd() {
     // If the new card title end with add, then add it as a new card.
