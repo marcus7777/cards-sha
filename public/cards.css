@@ -1,6 +1,19 @@
 body {
   background-color: #55c2c3;
 }
+::backdrop {
+  background-image: linear-gradient(
+    45deg,
+    magenta,
+    rebeccapurple,
+    dodgerblue,
+    green
+  );
+  opacity: 0.50;
+}
+input {
+  margin: .5em;
+}
 .container {
   margin:60px 100px 0 0;
   display: flex;

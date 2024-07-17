@@ -72,6 +72,7 @@ const store = reactive({ //updates the html immediately
     done: false,
     color: '#55c2c3',
     hideDone: false,
+    image: "",
     showNext: 0, // show next cards in the list (0 = all, 1 = next, 2 = next and next)
   },
   saveRoot() {

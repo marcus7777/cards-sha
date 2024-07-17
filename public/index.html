@@ -30,7 +30,9 @@
             <div class="inner" v-if="store.curser === i">
               <input v-model="card.title" @blur="store.save">
               <h2> {{ card.title }} </h2>
-              <input v-model="card.body" @blur="store.save">
+              <input v-model="card.body" @blur="store.save" placeholder="text">
+              <img v-if="card.image" :src="card.image" />
+              <input v-model="card.image" @blur="store.save" placeholder="https://image.jpg">
               <input type="checkbox" name="done" :checked="card.done" @click="card.done = !card.done" />
               <label for="done">Done</label>
               <button @click="store.removeCard(i)">-</button>
@@ -46,6 +48,7 @@
             <div v-else class="inner" @click="store.curser = i" >
               <h2> {{ card.title }} </h2>
               <p> {{ card.body }} </p>
+              <img v-if="card.image" :src="card.image" />
             </div>
           </div>
         </div>
@@ -70,6 +73,5 @@
         <button v-if="store.cards[0]" @click="store.incSub()">Sub</button>
       </dialog>
     </div>
-    
   </body>
 </html>
