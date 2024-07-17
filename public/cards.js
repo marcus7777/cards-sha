@@ -270,9 +270,25 @@ const store = reactive({ //updates the html immediately
   incSub() {
     let card = this.cards[this.curser]
     if (!card.subCards) {
-      card.subCards = []
+      // check for an already existing card and load its subcards
+      const cardCheck = loadCard(makeHash(this.newCard))
+      if (cardCheck && cardCheck.subCards) {
+        card.subCards = cardCheck.subCards
+      } else {
+        card.subCards = []
+      }
     }
-    card.subCards = card.subCards.concat([{...this.newCard}])
+    if (makeHash(card) === makeHash(this.newCard)) {
+      document.getElementById("mainOrSunDialog").close()
+      return alert("Don't add sub cards that are the same as the main card")
+    }
+    this.cards.forEach(cardCheck => {
+      if (makeHash(card) === makeHash(cardCheck)) {
+        cardCheck.subCards = cardCheck.subCards.concat([{...this.newCard}])
+      }
+    })
+
+    // card.subCards = card.subCards.concat([{...this.newCard}])
     this.newCard.title = ""
     document.getElementById("mainOrSunDialog").close()
     this.save()
