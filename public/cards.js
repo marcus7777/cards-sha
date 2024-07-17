@@ -48,6 +48,7 @@ function saveFile(text, title) {
 }
 // swop the order of the cards
 const store = reactive({ //updates the html immediately
+  curser:0,
   cards: [],
   trail: [],
   trailNames: [],
@@ -129,71 +130,6 @@ const store = reactive({ //updates the html immediately
     }
     input.click()
   },
-  
-  save() {
-    this.saveRoot()
-    // save this.cards to local storage hash all cards and save under the hash with a list of hashs for sub cards
-    this.cards.forEach(card => {
-      if (typeof card === 'string') {
-        card = JSON.parse(localStorage.getItem(card))
-      }
-      if (!card.subCards) {
-        card.subCards = []
-      }
-      const subHashes = card.subCards.map(subCard => makeHash(subCard))
-      card.subCards.forEach(subCard => {
-        if (typeof subCard !== 'string') {
-          localStorage.setItem( makeHash(subCard), JSON.stringify(subCard))
-        }
-      })
-      const cardHash = makeHash(card)
-      
-      localStorage.setItem(cardHash, JSON.stringify({...card, subCards: subHashes}))
-    })
-  },
-  saveTofile() {
-    const root = [...this.trail].pop() || 'root'
-  },
-  setColor() {
-    const root = [...this.trail].pop() || 'root'
-    const cardToSave = this.loadCard(root)
-    localStorage.setItem(root, JSON.stringify({...cardToSave, color: this.color}))
-
-    if (!this.color) {
-      this.color = 'white'
-    }
-    if (this.cards[this.curser]) {
-      this.cards[this.curser].color = this.color
-    }
-    document.body.style.backgroundColor = this.color || 'white'
-  },
-  deeper(newCurser) {
-    this.save()
-    this.trail.push(makeHash(this.cards[this.curser]))
-    this.trailNames.push(this.cards[this.curser].title)
-
-    window.scrollTo(0, 0)
-    window.history.pushState({}, '', `#${this.trail.join('/')}`)
-    document.title = this.cards[this.curser].title
-    this.title = this.cards[this.curser].title
-    this.color = this.cards[this.curser].color
-    this.setColor()
-
-    this.cards = this.cards[this.curser].subCards.map(card => {
-      card = this.loadCard(card)
-      if (!card.subCards) {
-        card.subCards = []
-      }
-      card.subCards = card.subCards.map(subCard => {
-        if (typeof subCard === 'string') {
-          return this.loadCard(subCard)
-        }
-        return subCard
-      })
-      return card
-    })
-    this.curser = newCurser
-  },
   loadCard(hash) {
     if (typeof hash === 'object') {
       hash = makeHash(hash)
@@ -254,7 +190,57 @@ const store = reactive({ //updates the html immediately
     })
     this.cards = subCards
   },
-  curser:0,
+  save() {
+    this.saveRoot()
+    // save this.cards to local storage hash all cards and save under the hash with a list of hashs for sub cards
+    this.cards.forEach(card => {
+      if (typeof card === 'string') {
+        card = JSON.parse(localStorage.getItem(card))
+      }
+      if (!card.subCards) {
+        card.subCards = []
+      }
+      const subHashes = card.subCards.map(subCard => makeHash(subCard))
+      card.subCards.forEach(subCard => {
+        if (typeof subCard !== 'string') {
+          localStorage.setItem( makeHash(subCard), JSON.stringify(subCard))
+        }
+      })
+      const cardHash = makeHash(card)
+      
+      localStorage.setItem(cardHash, JSON.stringify({...card, subCards: subHashes}))
+    })
+  },
+  saveTofile() {
+    const root = [...this.trail].pop() || 'root'
+  },
+  deeper(newCurser) {
+    this.save()
+    this.trail.push(makeHash(this.cards[this.curser]))
+    this.trailNames.push(this.cards[this.curser].title)
+
+    window.scrollTo(0, 0)
+    window.history.pushState({}, '', `#${this.trail.join('/')}`)
+    document.title = this.cards[this.curser].title
+    this.title = this.cards[this.curser].title
+    this.color = this.cards[this.curser].color
+    this.setColor()
+
+    this.cards = this.cards[this.curser].subCards.map(card => {
+      card = this.loadCard(card)
+      if (!card.subCards) {
+        card.subCards = []
+      }
+      card.subCards = card.subCards.map(subCard => {
+        if (typeof subCard === 'string') {
+          return this.loadCard(subCard)
+        }
+        return subCard
+      })
+      return card
+    })
+    this.curser = newCurser
+  },
   onEnterTitle(){
     if (!this.newCard.title) return
     if (!this.cards[0]) return this.inc()
@@ -293,6 +279,19 @@ const store = reactive({ //updates the html immediately
     this.newCard.title = ""
     document.getElementById("mainOrSunDialog").close()
     this.save()
+  },
+  setColor() {
+    const root = [...this.trail].pop() || 'root'
+    const cardToSave = this.loadCard(root)
+    localStorage.setItem(root, JSON.stringify({...cardToSave, color: this.color}))
+
+    if (!this.color) {
+      this.color = 'white'
+    }
+    if (this.cards[this.curser]) {
+      this.cards[this.curser].color = this.color
+    }
+    document.body.style.backgroundColor = this.color || 'white'
   },
   autoAdd() {
     // If the new card title end with add, then add it as a new card.
