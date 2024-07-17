@@ -38,6 +38,7 @@
               <button @click="store.saveToFile(card)">▼</button>
               <button @click="store.uploadFileInToCard(i)">▲</button>
               <button v-if="store.cards[1] && store.curser > 0" @click="store.makeSubCard(i, i-1)"> ↓ </button>
+              <button v-if="store.cards[1] && !store.curser > 0" @click="store.makeSubCard(i, i+1)"> ↓ </button>
               <button v-if="store.trail[0]" @click="store.makeMainCard(i)"> ↑ </button>
               <button v-if="store.cards[1] && store.curser > 0" @click="store.swapCards(i, i-1)">&lt;</button>
               <button v-if="store.cards[1] && store.curser !== store.cards.length - 1" @click="store.swapCards(i, i+1)">&gt;</button>

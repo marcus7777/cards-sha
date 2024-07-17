@@ -261,8 +261,9 @@ const store = reactive({ //updates the html immediately
     document.getElementById("mainOrSunDialog").showModal()
   },
   inc() {
-    this.curser = this.cards.length
-    this.cards.push({...this.newCard})
+    //this.curser = this.cards.length
+    //this.cards.push({...this.newCard})
+    this.cards = [...this.cards.slice(0, this.curser+1), {...this.newCard}, ...this.cards.slice(this.curser+1)]
     this.newCard.title = ""
     document.getElementById("mainOrSunDialog").close()
     this.save()
@@ -346,9 +347,12 @@ const store = reactive({ //updates the html immediately
   },
   removeCard(index) {
     this.cards.splice(index, 1)
+    this.curser = Math.max(0, this.curser -1)
   },
   duplicateCard(index) {
-    this.cards = this.cards.concat([{...this.cards[index]}])
+    //this.cards = this.cards.concat([{...this.cards[index]}])
+    this.curser++
+    this.cards = [...this.cards.slice(0, this.curser), {...this.cards[index]}, ...this.cards.slice(this.curser)]
   },
 })
 
