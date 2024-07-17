@@ -321,9 +321,9 @@ const store = reactive({ //updates the html immediately
     } else if (this.curser === index2) {
       this.curser = index1
     }
-    const temp = store.cards[index1]
-    store.cards[index1] = store.cards[index2]
-    store.cards[index2] = temp
+    const temp = this.cards[index1]
+    this.cards[index1] = this.cards[index2]
+    this.cards[index2] = temp
   },
   makeSubCard(index1, index2) {
     if (this.curser === index1) {
@@ -331,15 +331,24 @@ const store = reactive({ //updates the html immediately
     } else if (this.curser === index2) {
       this.curser = index1
     }
-    const temp = store.cards[index1]
-    store.cards[index2].subCards = store.cards[index2].subCards.concat([temp])
+    const temp = this.cards[index1]
+    this.cards[index2].subCards = this.cards[index2].subCards.concat([temp])
     this.removeCard(index1)
   },
+  makeMainCard(index) {
+    if (!this.trail[0]) return
+    // if (makeHash(...) === )// sub mail not the some)
+    const temp = {...this.cards[index]}
+    this.removeCard(index)
+    this.save()
+    this.load(["root", ...this.trail].slice(-2)[0]) //tidy me
+    this.cards = this.cards.concat([{...temp}])
+  },
   removeCard(index) {
-    store.cards.splice(index, 1)
+    this.cards.splice(index, 1)
   },
   duplicateCard(index) {
-    store.cards = store.cards.concat([{...store.cards[index]}])
+    this.cards = this.cards.concat([{...this.cards[index]}])
   },
 })
 

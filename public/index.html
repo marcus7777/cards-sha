@@ -17,8 +17,8 @@
     
       <input type="checkbox" name="hideDone" :checked="store.hideDone" @click="store.hideDone = !store.hideDone" />
       <label for="hideDone">Hide Done</label>
-      <input type="number" v-model="store.showNext" >
-      <label for="showNext">Show Next</label>
+      <!-- <input type="number" v-model="store.showNext" >
+      <label for="showNext">Show Next</label> -->
       <input type="color" name="color" v-model="store.color" @click="store.setColor()" @change="store.setColor()" />
       <input v-if="!store.trail[0]" v-model="store.pageTitle" id="pageTitle">
     </div>
@@ -37,7 +37,8 @@
               <button @click="store.duplicateCard(i)">+</button>
               <button @click="store.saveToFile(card)">▼</button>
               <button @click="store.uploadFileInToCard(i)">▲</button>
-              <button v-if="store.cards[1] && store.curser > 0" @click="store.makeSubCard(i, i-1)">&#x21D9;</button>
+              <button v-if="store.cards[1] && store.curser > 0" @click="store.makeSubCard(i, i-1)"> ↓ </button>
+              <button v-if="store.trail[0]" @click="store.makeMainCard(i)"> ↑ </button>
               <button v-if="store.cards[1] && store.curser > 0" @click="store.swapCards(i, i-1)">&lt;</button>
               <button v-if="store.cards[1] && store.curser !== store.cards.length - 1" @click="store.swapCards(i, i+1)">&gt;</button>
             </div>
