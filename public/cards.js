@@ -1,4 +1,5 @@
 import { createApp, reactive } from './petite-vue.es.js'
+import QrCreator from './qr-creator.es6.min.js';
 
 function makeHash(card) {
   if (!card) return
@@ -353,6 +354,25 @@ const store = reactive({ //updates the html immediately
     //this.cards = this.cards.concat([{...this.cards[index]}])
     this.curser++
     this.cards = [...this.cards.slice(0, this.curser), {...this.cards[index]}, ...this.cards.slice(this.curser)]
+  },
+  log(e) {
+    console.log(e)
+    const div = document.createElement("div");
+    const path = location.protocol + "//" + location.host + location.pathname
+    const text = e.target.src.replace(path, "")
+    console.log(text)
+    console.log(location.toString())
+    QrCreator.render({
+      text,
+      radius: 0.5, // 0.0 to 0.5
+      ecLevel: 'L', // L, M, Q, H
+      fill: '#000', // color
+      background: null, // color or null for transparent
+      size: 150 // in pixels
+    }, div)
+
+    e.target.replaceWith(div)
+    
   },
 })
 

@@ -31,7 +31,7 @@
               <input v-model="card.title" @blur="store.save">
               <h2> {{ card.title }} </h2>
               <input v-model="card.body" @blur="store.save" placeholder="text">
-              <img v-if="card.image" :src="card.image" />
+              <img v-if="card.image" :src="card.image" @error="store.log"/>
               <input v-model="card.image" @blur="store.save" placeholder="https://image.jpg">
               <input type="checkbox" name="done" :checked="card.done" @click="card.done = !card.done" />
               <label for="done">Done</label>
@@ -48,7 +48,7 @@
             <div v-else class="inner" @click="store.curser = i" >
               <h2> {{ card.title }} </h2>
               <p> {{ card.body }} </p>
-              <img v-if="card.image" :src="card.image" />
+              <img v-if="card.image" :src="card.image" @error="store.log" />
             </div>
           </div>
         </div>

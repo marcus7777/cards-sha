@@ -33,6 +33,7 @@ h1 {
 }
 .mainCard {
   height: -webkit-fill-available;
+  text-align: center;
 }
 .card {
   display: inline-block;
