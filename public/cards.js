@@ -360,18 +360,20 @@ const store = reactive({ //updates the html immediately
     const div = document.createElement("div");
     const path = location.protocol + "//" + location.host + location.pathname
     const text = e.target.src.replace(path, "")
-    console.log(text)
-    console.log(location.toString())
-    QrCreator.render({
-      text,
-      radius: 0.5, // 0.0 to 0.5
-      ecLevel: 'L', // L, M, Q, H
-      fill: '#000', // color
-      background: null, // color or null for transparent
-      size: 150 // in pixels
-    }, div)
+    if (text.length < 2000 && text.length > 5) {
+      QrCreator.render({
+        text,
+        radius: 0.5, // 0.0 to 0.5
+        ecLevel: 'L', // L, M, Q, H
+        fill: '#000',
+        background: null, // color or null for transparent
+        size: 150,
+      }, div)
+      e.target.src = div.children[0].toDataURL()
+    }
 
-    e.target.replaceWith(div)
+
+    // e.target.replaceWith(div)
     
   },
 })
