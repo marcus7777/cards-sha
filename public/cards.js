@@ -249,9 +249,8 @@ const store = reactive({ //updates the html immediately
     document.getElementById("mainOrSunDialog").showModal()
   },
   inc() {
-    //this.curser = this.cards.length
-    //this.cards.push({...this.newCard})
-    this.cards = [...this.cards.slice(0, this.curser+1), {...this.newCard}, ...this.cards.slice(this.curser+1)]
+    this.curser++
+    this.cards = [...this.cards.slice(0, this.curser), {...this.newCard}, ...this.cards.slice(this.curser)]
     this.newCard.title = ""
     document.getElementById("mainOrSunDialog").close()
     this.save()
@@ -326,6 +325,7 @@ const store = reactive({ //updates the html immediately
     const temp = this.cards[index1]
     this.cards[index1] = this.cards[index2]
     this.cards[index2] = temp
+    this.save()
   },
   makeSubCard(index1, index2) {
     if (this.curser === index1) {
@@ -349,11 +349,12 @@ const store = reactive({ //updates the html immediately
   removeCard(index) {
     this.cards.splice(index, 1)
     this.curser = Math.max(0, this.curser -1)
+    this.save()
   },
   duplicateCard(index) {
-    //this.cards = this.cards.concat([{...this.cards[index]}])
     this.curser++
     this.cards = [...this.cards.slice(0, this.curser), {...this.cards[index]}, ...this.cards.slice(this.curser)]
+    this.save()
   },
   log(e) {
     console.log(e)
@@ -372,8 +373,7 @@ const store = reactive({ //updates the html immediately
       e.target.src = div.children[0].toDataURL()
     }
 
-
-    // e.target.replaceWith(div)
+    // e.target.replaceWith(div) // this does not work with petite-vue
     
   },
 })

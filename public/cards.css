@@ -9,7 +9,7 @@ body {
     dodgerblue,
     green
   );
-  opacity: 0.50;
+  opacity: 0.70;
 }
 input {
   margin: .5em;
@@ -38,6 +38,13 @@ h1 {
 .card {
   display: inline-block;
   transition: all 0.5s ease-in-out;
+  animation: fadeIn 1s ease-in-out;
+}
+.card.hidden {
+  animation: fadeOut 1s ease-in-out;
+}
+.visible {
+  animation: fadeIn 1s ease-in-out;
 }
 .card:hover,
 .card:focus, 
@@ -92,7 +99,7 @@ form:focus-within input {
 }
 .card > a {
   text-decoration: none;
-  background-color: #FFB534;
+  background-color: #ffb534;
   color: white;
   padding: 10px 20px;
   border-radius: 8px;
@@ -100,5 +107,111 @@ form:focus-within input {
 }
 .card:hover.card > a {
   background-color: white;
-  color: #FFB534;
+  color: #ffb534;
 }
+/* animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes slideIn {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes slideOut {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100%);
+  }
+}
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes slideOutLeft {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+@keyframes slideInBottom {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes slideOutBottom {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+@keyframes slideInTop {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes slideOutTop {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100%);
+  }
+}
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
