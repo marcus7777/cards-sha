@@ -15,7 +15,7 @@ input {
   margin: .5em;
 }
 .container {
-  margin:60px 100px 0 0;
+  margin-top: 60px;
   display: flex;
   justify-content: space-around;
 }
@@ -38,13 +38,27 @@ h1 {
 .card {
   display: inline-block;
   transition: all 0.5s ease-in-out;
-  width: 20px;
-  margin: 0 0 0 -10px;
 }
-.card:hover, .card:focus, .card.picked {
+.card:hover,
+.card:focus, 
+.card:has(:focus-within),
+.card:has(.curser) {
   display: inline-block;
   transition: all 0.5s ease-in-out; 
-  width: 220px;
+  margin: 0 0 0 0;
+}
+
+form button {
+  display: none
+}
+form:focus-within button {
+  display: inline-block
+}
+form input {
+  display: none
+}
+form:focus-within input {
+  display: block
 }
 .card .inner {
   display: inline-block;
@@ -54,15 +68,14 @@ h1 {
   padding: 30px 20px;
   border-radius: 10px;
   border: solid 2px;
-  width: 200px;
   box-shadow: 4px 4px 20px;
   height: -webkit-fill-available;
 }
 
 .card:hover .inner,
+.card .curser,
 .card:focus .inner {
-  background-color: #FFB534;
-  color: white;
+  background-color: #fff555;
   transition: all 0.2s ease-in-out;
   margin-left:0%;   
   box-shadow: 10px 10px 20px 

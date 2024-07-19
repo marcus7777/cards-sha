@@ -26,24 +26,25 @@
       <h1> {{ store.title }} </h1>
       <div class="container">
         <div v-for="(card, i) in store.cards"> <!-- i is for index -->
-          <div class="card mainCard" tabindex="0" v-if="!(store.hideDone && card.done)">
-            <div class="inner" v-if="store.curser === i">
-              <input v-model="card.title" @blur="store.save">
-              <h2> {{ card.title }} </h2>
-              <input v-model="card.body" @blur="store.save" placeholder="text">
-              <img v-if="card.image" :src="card.image" @error="store.log"/>
-              <input v-model="card.image" @blur="store.save" placeholder="https://image.jpg">
-              <input type="checkbox" name="done" :checked="card.done" @click="card.done = !card.done" />
-              <label for="done">Done</label>
-              <button @click="store.removeCard(i)">-</button>
-              <button @click="store.duplicateCard(i)">+</button>
-              <button @click="store.saveToFile(card)">▼</button>
-              <button @click="store.uploadFileInToCard(i)">▲</button>
-              <button v-if="store.cards[1] && store.curser > 0" @click="store.makeSubCard(i, i-1)"> ↓ </button>
-              <button v-if="store.cards[1] && !store.curser > 0" @click="store.makeSubCard(i, i+1)"> ↓ </button>
-              <button v-if="store.trail[0]" @click="store.makeMainCard(i)"> ↑ </button>
-              <button v-if="store.cards[1] && store.curser > 0" @click="store.swapCards(i, i-1)">&lt;</button>
-              <button v-if="store.cards[1] && store.curser !== store.cards.length - 1" @click="store.swapCards(i, i+1)">&gt;</button>
+          <div class="card mainCard" v-if="!(store.hideDone && card.done)">
+            <div class="inner curser" v-if="store.curser === i">
+	      <form tabindex="0" >
+                <input v-model="card.title" @blur="store.save">
+                <h2> {{ card.title }} </h2>
+                <input v-model="card.body" @blur="store.save" placeholder="text">
+                <img v-if="card.image" :src="card.image" @error="store.log"/>
+                <input v-model="card.image" @blur="store.save" placeholder="https://image.jpg">
+                <input type="checkbox" name="done" :checked="card.done" @click="card.done = !card.done" />
+                <button @click="store.removeCard(i)">-</button>
+                <button @click="store.duplicateCard(i)">+</button>
+                <button @click="store.saveToFile(card)">▼</button>
+                <button @click="store.uploadFileInToCard(i)">▲</button>
+                <button v-if="store.cards[1] && store.curser > 0" @click="store.makeSubCard(i, i-1)"> ↓ </button>
+                <button v-if="store.cards[1] && !store.curser > 0" @click="store.makeSubCard(i, i+1)"> ↓ </button>
+                <button v-if="store.trail[0]" @click="store.makeMainCard(i)"> ↑ </button>
+                <button v-if="store.cards[1] && store.curser > 0" @click="store.swapCards(i, i-1)">&lt;</button>
+                <button v-if="store.cards[1] && store.curser !== store.cards.length - 1" @click="store.swapCards(i, i+1)">&gt;</button>
+	      </form>
             </div>
             <div v-else class="inner" @click="store.curser = i" >
               <h2> {{ card.title }} </h2>
