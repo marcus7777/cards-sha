@@ -25,7 +25,7 @@
     <div v-scope="{}">
       <h1> {{ store.title }} </h1>
       <div class="container">
-        <div v-for="(card, i) in store.cards"> <!-- i is for index -->
+        <div v-for="(card, i) in store.cards" class="outerMainCard"> <!-- i is for index -->
           <div class="card mainCard" v-if="!(store.hideDone && card.done)">
             <div class="inner curser form" v-if="store.curser === i" tabindex="0">
               <input v-model="card.title" @blur="store.save" @keyup.enter="store.save">
@@ -43,6 +43,7 @@
               <button v-if="store.trail[0]" @click="store.makeMainCard(i)"> ↑ </button>
               <button v-if="store.cards[1] && store.curser > 0" @click="store.swapCards(i, i-1)">&lt;</button>
               <button v-if="store.cards[1] && store.curser !== store.cards.length - 1" @click="store.swapCards(i, i+1)">&gt;</button>
+              <button @click="store.addStyleToMe(i)">++++++</button>
             </div>
             <div v-else class="inner" @click="store.curser = i" >
               <h2> {{ card.title }} </h2>

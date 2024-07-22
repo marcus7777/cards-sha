@@ -56,6 +56,13 @@ const store = reactive({ //updates the html immediately
   color: 'white',
   title: '',
   pageTitle: '',
+
+  addStyleToMe(i){ // work in progress
+    console.log(i)
+    const elements = document.getElementsByClassName("outerMainCard")
+    console.log(elements[i])
+    elements[i].style.order = 9
+  },
   hash(card){
     return makeHash(card)
   },
