@@ -31,14 +31,15 @@ h1 {
   font-weight: normal;
   font-style: italic;
 }
-.mainCard {
-  height: -webkit-fill-available;
-  text-align: center;
-}
 .card {
   display: inline-block;
   transition: all 0.5s ease-in-out;
-  animation: fadeIn 1s ease-in-out;
+  animation: slideInBottom .7s ease-in-out;
+}
+.mainCard {
+  height: -webkit-fill-available;
+  text-align: center;
+  animation: slideInTop .5s ease-in-out;
 }
 .card.hidden {
   animation: fadeOut 1s ease-in-out;
@@ -55,16 +56,16 @@ h1 {
   margin: 0 0 0 0;
 }
 
-form button {
+.form button {
   display: none
 }
-form:focus-within button {
+.form:focus-within button {
   display: inline-block
 }
-form input {
+.form input {
   display: none
 }
-form:focus-within input {
+.form:focus-within input {
   display: block
 }
 .card .inner {
@@ -82,7 +83,7 @@ form:focus-within input {
 .card:hover .inner,
 .card .curser,
 .card:focus .inner {
-  background-color: #fff555;
+  background-color: #fff777;
   transition: all 0.2s ease-in-out;
   margin-left:0%;   
   box-shadow: 10px 10px 20px 
@@ -176,7 +177,7 @@ form:focus-within input {
 }
 @keyframes slideInBottom {
   from {
-    transform: translateY(100%);
+    transform: translateY(100vh);
   }
   to {
     transform: translateY(0);
@@ -187,12 +188,12 @@ form:focus-within input {
     transform: translateY(0);
   }
   to {
-    transform: translateY(100%);
+    transform: translateY(100vh);
   }
 }
 @keyframes slideInTop {
   from {
-    transform: translateY(-100%);
+    transform: translateY(-100vh);
   }
   to {
     transform: translateY(0);
@@ -203,7 +204,7 @@ form:focus-within input {
     transform: translateY(0);
   }
   to {
-    transform: translateY(-100%);
+    transform: translateY(-100vh);
   }
 }
 @keyframes rotate {
