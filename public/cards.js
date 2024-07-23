@@ -331,6 +331,14 @@ const store = reactive({ //updates the html immediately
     this.cards[index1] = this.cards[index2]
     this.cards[index2] = temp
     this.save()
+    
+    window.requestAnimationFrame(() => {
+      const elements = document.getElementsByClassName("outerMainCard")[this.curser].getElementsByClassName("inner");
+      elements[0].focus()
+    })
+  
+    
+
   },
   makeSubCard(index1, index2) {
     if (this.curser === index1) {
