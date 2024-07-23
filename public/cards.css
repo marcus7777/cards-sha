@@ -19,6 +19,11 @@ input {
   display: flex;
   justify-content: space-around;
 }
+.container.ellipse {
+  margin-top: 0px;
+  display: block;
+  justify-content: none;
+}
 @font-face {
   font-family: 'Zapfino';
   src: url('/assets/Zapfino.woff2') format('woff2'), url('/assets/Zapfino.woff') format('woff');
@@ -35,6 +40,9 @@ h1 {
   display: inline-block;
   transition: all 0.5s ease-in-out;
   animation: slideInBottom .7s ease-in-out;
+}
+.ellipse .outerMainCard {
+  position: absolute;
 }
 .mainCard {
   height: -webkit-fill-available;

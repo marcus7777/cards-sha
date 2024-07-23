@@ -14,6 +14,7 @@
       <button @click="store.load()"> Top </button>
       <button v-for="(breadcrumb, i) in store.trail" @click="store.load(breadcrumb)"> {{ store.trailNames[i] }} </button>
       <button @click="store.saveToFile('root')">▼</button>
+      <button @click="store.distributeCards()">O</button>
     
       <input type="checkbox" name="hideDone" :checked="store.hideDone" @click="store.hideDone = !store.hideDone" />
       <label for="hideDone">Hide Done</label>
