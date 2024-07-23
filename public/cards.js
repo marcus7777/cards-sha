@@ -254,8 +254,10 @@ const store = reactive({ //updates the html immediately
     document.getElementById("mainOrSunDialog").showModal()
   },
   inc() {
-    this.curser++
-    this.cards = [...this.cards.slice(0, this.curser), ...this.cards.slice(this.curser), {...this.newCard}]
+    //this.curser++
+    //this.cards = [...this.cards.slice(0, this.curser), {...this.newCard}, ...this.cards.slice(this.curser)]
+    this.curser = this.cards.length
+    this.cards = [...this.cards, {...this.newCard}]
     this.newCard.title = ""
     document.getElementById("mainOrSunDialog").close()
     this.save()
