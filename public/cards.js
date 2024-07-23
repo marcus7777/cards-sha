@@ -254,10 +254,19 @@ const store = reactive({ //updates the html immediately
     document.getElementById("mainOrSunDialog").showModal()
   },
   inc() {
+    const newPostion = this.curser + 1
     //this.curser++
     //this.cards = [...this.cards.slice(0, this.curser), {...this.newCard}, ...this.cards.slice(this.curser)]
     this.curser = this.cards.length
     this.cards = [...this.cards, {...this.newCard}]
+    let timer = setInterval(() => {
+      this.swapCards(this.curser, this.curser -1, false)
+      if (this.curser === newPostion) {
+	clearInterval(timer)
+	const elements = document.getElementsByClassName("outerMainCard")[this.curser].getElementsByClassName("inner");
+	elements[0].focus()
+      }
+    }, 500)
     this.newCard.title = ""
     document.getElementById("mainOrSunDialog").close()
     this.save()
@@ -323,21 +332,50 @@ const store = reactive({ //updates the html immediately
       }
     })
   },
-  swapCards(index1, index2) {
+  swapCards(index1, index2, withFocus = true) {
     if (this.curser === index1) {
       this.curser = index2
     } else if (this.curser === index2) {
       this.curser = index1
     }
-    const temp = this.cards[index1]
-    this.cards[index1] = this.cards[index2]
-    this.cards[index2] = temp
-    this.save()
+    const swap = () => {
+      const temp = this.cards[index1]
+      this.cards[index1] = this.cards[index2]
+      this.cards[index2] = temp
+      this.save()
+    }
+    if (withFocus) {
+      const elements3 = document.getElementsByClassName("outerMainCard")[this.curser].getElementsByClassName("inner");
+      elements3[0].focus()
+    }
     
+    //give focus to the card that was moved
+    //swop the cards with a timeout so that the cards are swopped before the focus is given
     window.requestAnimationFrame(() => {
-      const elements = document.getElementsByClassName("outerMainCard")[this.curser].getElementsByClassName("inner");
-      elements[0].focus()
-    })
+      const elements1 = document.getElementsByClassName("outerMainCard")[index1].getElementsByClassName("inner");
+      const card1 = elements1[0]
+      const elements2 = document.getElementsByClassName("outerMainCard")[index2].getElementsByClassName("inner");
+      const card2 = elements2[0]
+      // move cards towards each other
+      const card1Left = card1.getBoundingClientRect().left
+      const card2Left = card2.getBoundingClientRect().left
+      card1.style.transition = "all 0.5s"
+      card2.style.transition = "all 0.5s"
+      card1.style.transform = `translate(${card2Left - card1Left + "px"})`
+      card2.style.transform = `translate(${card1Left - card2Left + "px"})`
+      setTimeout(() => {
+        card1.style.transition = "none"
+	card2.style.transition = "none"
+        card1.style.transform = ``
+        card2.style.transform = ``
+	swap()
+        if (withFocus) {
+          const elements3 = document.getElementsByClassName("outerMainCard")[this.curser].getElementsByClassName("inner");
+          elements3[0].focus()
+	}
+      }, 600)
+    }, 0)
+
   
     
 
