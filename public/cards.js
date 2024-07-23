@@ -57,11 +57,9 @@ const store = reactive({ //updates the html immediately
   title: '',
   pageTitle: '',
 
-  addStyleToMe(i){ // work in progress
-    console.log(i)
+  addStyleToMe(i,setTo){ // work in progress
     const elements = document.getElementsByClassName("outerMainCard")
-    console.log(elements[i])
-    elements[i].style.order = 9
+    elements[i].style.order = setTo
   },
   hash(card){
     return makeHash(card)
@@ -257,7 +255,7 @@ const store = reactive({ //updates the html immediately
   },
   inc() {
     this.curser++
-    this.cards = [...this.cards.slice(0, this.curser), {...this.newCard}, ...this.cards.slice(this.curser)]
+    this.cards = [...this.cards.slice(0, this.curser), ...this.cards.slice(this.curser), {...this.newCard}]
     this.newCard.title = ""
     document.getElementById("mainOrSunDialog").close()
     this.save()
