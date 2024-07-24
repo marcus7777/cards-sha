@@ -289,6 +289,34 @@ const store = reactive({ //updates the html immediately
     document.getElementById("mainOrSunDialog").close()
     this.save()
   },
+  distributeCards() {
+    var radius = 35;
+    let cardElements = [... document.getElementsByClassName("outerMainCard")]
+    console.log(cardElements)
+    let containers = document.getElementsByClassName("container")
+    const container = containers[0]
+    container.classList.add("ellipse")
+    let angle = 0;
+    let step = (2 * Math.PI) / cardElements.length;
+
+    cardElements.forEach(function (card) {
+      const x = Math.round(radius * Math.cos(angle))+50
+      
+      const y = Math.round(radius * Math.sin(angle))+40
+      console.log(x,y)
+      // var size = (Math.round(radius * Math.sin(step))) -9
+
+      card.style.left = x + 'vw'; //use vh to have a circle
+      card.style.top = y + 'vh';
+    
+      //card.style.height = size + 'px';
+      //card.style.width = size + 'px';
+      //card.style.borderRadius = size / 2 + 'px';
+
+      angle += step
+    })
+  },
+
   setColor() {
     const root = [...this.trail].pop() || 'root'
     const cardToSave = this.loadCard(root)
@@ -357,15 +385,15 @@ const store = reactive({ //updates the html immediately
       card2.style.transform = `translate(${card1Left - card2Left + "px"})`
       setTimeout(() => {
         card1.style.transition = "none"
-	card2.style.transition = "none"
+	      card2.style.transition = "none"
         card1.style.transform = ``
         card2.style.transform = ``
-	swap()
+	      swap()
         if (withFocus) {
           const elements3 = document.getElementsByClassName("outerMainCard")[this.curser].getElementsByClassName("inner");
           elements3[0].focus()
-	}
-      }, 600)
+	      }
+      }, 500)
     }, 0)
 
   
