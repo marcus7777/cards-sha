@@ -74,7 +74,7 @@ const store = reactive({ //updates the html immediately
     title: "", 
     body: "",
     subCards: [], // array of cards
-    cardAdittions: [], // array of card adittions (like rel, position, color, etc)
+    cardAdittions: [], // array of card adittions (like rel, weight, color, etc)
     done: false,
     color: '#55c2c3',
     hideDone: false,
@@ -297,25 +297,24 @@ const store = reactive({ //updates the html immediately
     document.getElementById("mainOrSunDialog").close()
     this.save()
   },
-  distributeCards() {
+  distributeCardsCircle() {
     var radius = 35;
     let cardElements = [... document.getElementsByClassName("outerMainCard")]
     console.log(cardElements)
     let containers = document.getElementsByClassName("container")
     const container = containers[0]
     container.classList.add("ellipse")
-    let angle = 0;
+    let angle = -Math.PI/2;
     let step = (2 * Math.PI) / cardElements.length;
 
     cardElements.forEach(function (card) {
       const x = Math.round(radius * Math.cos(angle))+50
       
-      const y = Math.round(radius * Math.sin(angle))+40
-      console.log(x,y)
+      const y = Math.round(radius * Math.sin(angle)) +50
       // var size = (Math.round(radius * Math.sin(step))) -9
 
-      card.style.left = x + 'vw'; //use vh to have a circle
-      card.style.top = y + 'vh';
+      card.style.left = `calc(${x}vw - ${card.offsetWidth/2}px)`; //use vh to have a circle
+      card.style.top = `calc(${y}vh - ${card.offsetHeight/2}px)`;
     
       //card.style.height = size + 'px';
       //card.style.width = size + 'px';
@@ -324,7 +323,42 @@ const store = reactive({ //updates the html immediately
       angle += step
     })
   },
+  distributeCardsLine() {
+    let cardElements = [... document.getElementsByClassName("outerMainCard")]
+    console.log(cardElements)
+    let containers = document.getElementsByClassName("container")
+    const container = containers[0]
+    container.classList.remove("ellipse")
 
+    cardElements.forEach(function (card) {
+      card.style.left = ""
+      card.style.top = ""
+    })
+  },
+  sortByTitle() {
+    this.cards.sort((a,b) => {
+      if (a.title == b.title) return 0
+      if ((""+a.title == +a.title) && (""+b.title == +b.title)) {
+        if (+a.title > +b.title) {
+          return 1
+        }
+        return -1
+      }
+      if (a.title > b.title) {
+        return 1
+      }
+      return -1
+    })
+  },
+  shuffle() {
+    for (let i = this.cards.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
+    }
+  },
+  addWeight() {
+
+  },
   setColor() {
     const root = [...this.trail].pop() || 'root'
     const cardToSave = this.loadCard(root)
@@ -401,6 +435,7 @@ const store = reactive({ //updates the html immediately
           const elements3 = document.getElementsByClassName("outerMainCard")[this.curser].getElementsByClassName("inner");
           elements3[0].focus()
 	      }
+        //update card additions to include this card's weight
       }, 500)
     }, 0)
 
