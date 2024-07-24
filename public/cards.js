@@ -50,13 +50,14 @@ function saveFile(text, title) {
 // swop the order of the cards
 const store = reactive({ //updates the html immediately
   curser:0,
-  cards: [],
   trail: [],
-  trailNames: [],
-  color: 'white',
-  title: '',
   pageTitle: '',
-
+  root: {
+    title: '',
+    color: 'white',
+    cardAddtions: [],
+  },
+  cards: [],
   addStyleToMe(i,setTo){ // work in progress
     const elements = document.getElementsByClassName("outerMainCard")
     elements[i].style.order = setTo
@@ -74,20 +75,16 @@ const store = reactive({ //updates the html immediately
     title: "", 
     body: "",
     subCards: [], // array of cards
-    cardAdittions: [], // array of card adittions (like rel, position, color, etc)
+    cardAditions: [], // array of card adittions (like rel, weight, color, etc)
     done: false,
     color: '#55c2c3',
     hideDone: false,
     image: "",
     showNext: 0, // show next cards in the list (0 = all, 1 = next, 2 = next and next)
   },
-  saveRoot() {
-    const rootHash = [...this.trail].pop() || 'root'
-    const rootCard = this.loadCard(rootHash)
+  saveRoot(rootHash = "root") {
+    const rootCard = this.loadCard(rootHash) || this.newCard
     rootCard.subCards = this.cards.map(card => makeHash(card))
-    if (rootHash === 'root') {
-      rootCard.title = this.pageTitle
-    }
     localStorage.setItem(rootHash, JSON.stringify(rootCard))
   },
   getAllHashesNeededFrom(hash) {
@@ -171,7 +168,6 @@ const store = reactive({ //updates the html immediately
     const fresh = this.trail.indexOf(rootHash)
     
     this.trail = this.trail.slice(0, fresh)
-    this.trailNames = this.trailNames.slice(0, fresh)
     
     let rootCard = JSON.parse(localStorage.getItem(rootHash))
     if (!rootCard) {
@@ -182,8 +178,8 @@ const store = reactive({ //updates the html immediately
       rootCard.subCards = []
     }
     this.color = rootCard.color
-    this.pageTitle = rootCard.title
     this.title = rootCard.title
+    this.root = rootCard
     this.setColor()
     const subCards = rootCard.subCards.map(subHash => this.loadCard(subHash))
     // rootCard.subCards = subCards
@@ -198,7 +194,7 @@ const store = reactive({ //updates the html immediately
     this.cards = subCards
   },
   save() {
-    this.saveRoot()
+    this.saveRoot([...this.trail].pop() || "root")
     // save this.cards to local storage hash all cards and save under the hash with a list of hashs for sub cards
     this.cards.forEach(card => {
       if (typeof card === 'string') {
@@ -224,7 +220,6 @@ const store = reactive({ //updates the html immediately
   deeper(newCurser) {
     this.save()
     this.trail.push(makeHash(this.cards[this.curser]))
-    this.trailNames.push(this.cards[this.curser].title)
 
     window.scrollTo(0, 0)
     window.history.pushState({}, '', `#${this.trail.join('/')}`)
@@ -254,7 +249,6 @@ const store = reactive({ //updates the html immediately
     document.getElementById("mainOrSunDialog").showModal()
   },
   inc() {
-    //const newPostion = this.curser + 1
     //this.curser++
     //this.cards = [...this.cards.slice(0, this.curser), {...this.newCard}, ...this.cards.slice(this.curser)]
     this.curser = this.cards.length
@@ -289,25 +283,24 @@ const store = reactive({ //updates the html immediately
     document.getElementById("mainOrSunDialog").close()
     this.save()
   },
-  distributeCards() {
+  distributeCardsCircle() {
     var radius = 35;
     let cardElements = [... document.getElementsByClassName("outerMainCard")]
     console.log(cardElements)
     let containers = document.getElementsByClassName("container")
     const container = containers[0]
     container.classList.add("ellipse")
-    let angle = 0;
+    let angle = -Math.PI/2;
     let step = (2 * Math.PI) / cardElements.length;
 
     cardElements.forEach(function (card) {
       const x = Math.round(radius * Math.cos(angle))+50
       
-      const y = Math.round(radius * Math.sin(angle))+40
-      console.log(x,y)
+      const y = Math.round(radius * Math.sin(angle)) +50
       // var size = (Math.round(radius * Math.sin(step))) -9
 
-      card.style.left = x + 'vw'; //use vh to have a circle
-      card.style.top = y + 'vh';
+      card.style.left = `calc(${x}vw - ${card.offsetWidth/2}px)`; //use vh to have a circle
+      card.style.top = `calc(${y}vh - ${card.offsetHeight/2}px)`;
     
       //card.style.height = size + 'px';
       //card.style.width = size + 'px';
@@ -316,7 +309,42 @@ const store = reactive({ //updates the html immediately
       angle += step
     })
   },
+  distributeCardsLine() {
+    let cardElements = [... document.getElementsByClassName("outerMainCard")]
+    console.log(cardElements)
+    let containers = document.getElementsByClassName("container")
+    const container = containers[0]
+    container.classList.remove("ellipse")
 
+    cardElements.forEach(function (card) {
+      card.style.left = ""
+      card.style.top = ""
+    })
+  },
+  sortByTitle() {
+    this.cards.sort((a,b) => {
+      if (a.title == b.title) return 0
+      if ((""+a.title == +a.title) && (""+b.title == +b.title)) {
+        if (+a.title > +b.title) {
+          return 1
+        }
+        return -1
+      }
+      if (a.title > b.title) {
+        return 1
+      }
+      return -1
+    })
+  },
+  shuffle() {
+    for (let i = this.cards.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
+    }
+  },
+  addWeight() {
+
+  },
   setColor() {
     const root = [...this.trail].pop() || 'root'
     const cardToSave = this.loadCard(root)
@@ -353,6 +381,7 @@ const store = reactive({ //updates the html immediately
     })
   },
   swapCards(index1, index2, withFocus = true) {
+    console.log(this.curser)
     if (this.curser === index1) {
       this.curser = index2
     } else if (this.curser === index2) {
@@ -393,6 +422,25 @@ const store = reactive({ //updates the html immediately
           const elements3 = document.getElementsByClassName("outerMainCard")[this.curser].getElementsByClassName("inner");
           elements3[0].focus()
 	      }
+        //update card additions to include this card's weight
+        const rootHash = [...this.trail].pop() || 'root'
+        let rootCard = this.loadCard(rootHash) //was a const but I changed it because it caused errors (maybe change back?)
+
+        
+        const cardAddtions = this.cards.map((card,i) => {
+          return {
+            weight: i, 
+            cardIndex:i,
+            hash: makeHash(card),
+          }
+        })
+
+        //rootCard.cardAditions = this.mergeDown(rootCard.cardAddtions.concat(cardAddtions))
+        // remove duplicate settings of the same properties in the same care
+        rootCard = {...rootCard, cardAddtions}
+        localStorage.setItem(rootHash, JSON.stringify(rootCard))
+        this.save() 
+
       }, 500)
     }, 0)
 
@@ -430,7 +478,6 @@ const store = reactive({ //updates the html immediately
     this.save()
   },
   log(e) {
-    console.log(e)
     const div = document.createElement("div");
     const path = location.protocol + "//" + location.host + location.pathname
     const text = e.target.src.replace(path, "")

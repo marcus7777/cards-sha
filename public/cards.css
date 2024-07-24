@@ -11,6 +11,13 @@ body {
   );
   opacity: 0.70;
 }
+.rootCard {
+  text-align: center;
+}
+.rootContainer {
+  display: flex;
+  justify-content: center;
+}
 input {
   margin: .5em;
 }
