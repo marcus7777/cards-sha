@@ -83,7 +83,7 @@ const store = reactive({ //updates the html immediately
     showNext: 0, // show next cards in the list (0 = all, 1 = next, 2 = next and next)
   },
   saveRoot(rootHash = "root") {
-    const rootCard = this.loadCard(rootHash) || this.newCard
+    let rootCard = {...(this.loadCard(rootHash) || this.newCard), ...this.root}
     rootCard.subCards = this.cards.map(card => makeHash(card))
     localStorage.setItem(rootHash, JSON.stringify(rootCard))
   },
@@ -179,7 +179,7 @@ const store = reactive({ //updates the html immediately
     }
     this.color = rootCard.color
     this.title = rootCard.title
-    this.root = rootCard
+    this.root = {...rootCard}
     this.setColor()
     const subCards = rootCard.subCards.map(subHash => this.loadCard(subHash))
     // rootCard.subCards = subCards
@@ -226,6 +226,8 @@ const store = reactive({ //updates the html immediately
     document.title = this.cards[this.curser].title
     this.title = this.cards[this.curser].title
     this.color = this.cards[this.curser].color
+    this.root = {...this.cards[this.curser]}
+
     this.setColor()
 
     this.cards = this.cards[this.curser].subCards.map(card => {

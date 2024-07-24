@@ -26,7 +26,7 @@
     </div>
     <!--Display rootcard here-->
     <div class="rootContainer">
-      <div class="card rootCard" v-if="!(store.hideDone && store.root.done)" @click="store.load(store.trail[store.trail.length - 1])">
+      <div class="card rootCard" v-if="!(store.hideDone && store.root.done)">
         <div class="inner curser form" tabindex="0">
           <input v-model="store.root.title" @blur="store.save" @keyup.enter="store.save">
           <h2> {{ store.root.title }}</h2>
@@ -36,6 +36,7 @@
           <input type="checkbox" name="done" :checked="store.root.done" @click="store.root.done = !store.root.done" />
           <button @click="store.saveToFile(store.root)">▼</button>
           <button @click="store.uploadFileInToCard(i)">▲</button>
+	  <button @click="store.load(store.trail[store.trail.length - 1])">↑</button>
           <input type="color" name="color" v-model="store.root.color" @change="store.setColor()" />
         </div>
       </div>
