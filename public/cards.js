@@ -82,13 +82,9 @@ const store = reactive({ //updates the html immediately
     image: "",
     showNext: 0, // show next cards in the list (0 = all, 1 = next, 2 = next and next)
   },
-  saveRoot() {
-    const rootHash = [...this.trail].pop() || 'root'
-    const rootCard = this.loadCard(rootHash)
+  saveRoot(rootHash = "root") {
+    const rootCard = this.loadCard(rootHash) || this.newCard
     rootCard.subCards = this.cards.map(card => makeHash(card))
-    if (rootHash === 'root') {
-      rootCard.title = this.pageTitle
-    }
     localStorage.setItem(rootHash, JSON.stringify(rootCard))
   },
   getAllHashesNeededFrom(hash) {
@@ -198,7 +194,7 @@ const store = reactive({ //updates the html immediately
     this.cards = subCards
   },
   save() {
-    this.saveRoot()
+    this.saveRoot([...this.trail].pop() || "root")
     // save this.cards to local storage hash all cards and save under the hash with a list of hashs for sub cards
     this.cards.forEach(card => {
       if (typeof card === 'string') {
@@ -258,14 +254,6 @@ const store = reactive({ //updates the html immediately
     //this.cards = [...this.cards.slice(0, this.curser), {...this.newCard}, ...this.cards.slice(this.curser)]
     this.curser = this.cards.length
     this.cards = [...this.cards, {...this.newCard}]
-    let timer = setInterval(() => {
-      this.swapCards(this.curser, this.curser -1, false)
-      if (this.curser === newPosition) {
-	clearInterval(timer)
-	const elements = document.getElementsByClassName("outerMainCard")[this.curser].getElementsByClassName("inner");
-	elements[0].focus()
-      }
-    }, 500)
     this.newCard.title = ""
     document.getElementById("mainOrSunDialog").close()
     this.save()
@@ -394,6 +382,7 @@ const store = reactive({ //updates the html immediately
     })
   },
   swapCards(index1, index2, withFocus = true) {
+    console.log(this.curser)
     if (this.curser === index1) {
       this.curser = index2
     } else if (this.curser === index2) {
@@ -436,7 +425,7 @@ const store = reactive({ //updates the html immediately
 	      }
         //update card additions to include this card's weight
         const rootHash = [...this.trail].pop() || 'root'
-        const rootCard = this.loadCard(rootHash)
+        let rootCard = this.loadCard(rootHash) //was a const but I changed it because it caused errors (maybe change back?)
 
         
         const cardAddtions = this.cards.map((card,i) => {
@@ -450,7 +439,7 @@ const store = reactive({ //updates the html immediately
         //rootCard.cardAditions = this.mergeDown(rootCard.cardAddtions.concat(cardAddtions))
         // remove duplicate settings of the same properties in the same care
         rootCard = {...rootCard, cardAddtions}
-        localStorage.setItem(rootHash, rootCard)
+        localStorage.setItem(rootHash, JSON.stringify(rootCard))
         this.save() 
 
       }, 500)

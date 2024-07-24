@@ -36,7 +36,7 @@
           <input type="checkbox" name="done" :checked="store.root.done" @click="store.root.done = !store.root.done" />
           <button @click="store.saveToFile(store.root)">▼</button>
           <button @click="store.uploadFileInToCard(i)">▲</button>
-          <input type="color" name="color" v-model="store.color" @click="store.setColor()" @change="store.setColor()" />
+          <input type="color" name="color" v-model="store.root.color" @change="store.setColor()" />
         </div>
       </div>
     </div>
