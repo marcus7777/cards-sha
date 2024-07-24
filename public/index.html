@@ -12,7 +12,7 @@
       <button v-if="store.newCard.title" @click="store.inc()"> + Main </button>
       <button v-if="store.cards[0] && store.newCard.title" @click="store.incSub()"> + Sub </button>
       <button @click="store.load()"> Top </button>
-      <button v-for="(breadcrumb, i) in store.trail" @click="store.load(breadcrumb)"> {{ store.trailNames[i] }} </button>
+      <!--<button v-for="(breadcrumb, i) in store.trail" @click="store.load(breadcrumb)"> {{ store.trailNames[i] }} </button>-->
       <button @click="store.saveToFile('root')">▼</button>
       <button @click="store.distributeCardsCircle()">O</button>
       <button @click="store.distributeCardsLine()">_</button>
@@ -28,7 +28,7 @@
     <div class="rootContainer">
       <div class="card rootCard" v-if="!(store.hideDone && store.root.done)" @click="store.load(store.trail[store.trail.length - 1])">
         <div class="inner curser form" tabindex="0">
-          <input v-model="store.store.root.title" @blur="store.save" @keyup.enter="store.save">
+          <input v-model="store.root.title" @blur="store.save" @keyup.enter="store.save">
           <h2> {{ store.root.title }}</h2>
           <input v-model="store.root.body" @blur="store.save" placeholder="text">
           <img v-if="store.root.image" :src="store.root.image" @error="store.log"/>
@@ -86,7 +86,7 @@
     <div>
       <dialog id="mainOrSunDialog">
         <p>Would you like this card to be a subcard or main card</p>
-        <button autofocus @click="store.inc()">Main</button>
+        <button autofocus @click="store.inc()">Main</button> <!--this causes the swapping error if you click on another card before it is finished-->
         <button v-if="store.cards[0]" @click="store.incSub()">Sub</button>
       </dialog>
     </div>
