@@ -254,19 +254,11 @@ const store = reactive({ //updates the html immediately
     document.getElementById("mainOrSunDialog").showModal()
   },
   inc() {
-    const newPostion = this.curser + 1
+    //const newPostion = this.curser + 1
     //this.curser++
     //this.cards = [...this.cards.slice(0, this.curser), {...this.newCard}, ...this.cards.slice(this.curser)]
     this.curser = this.cards.length
     this.cards = [...this.cards, {...this.newCard}]
-    let timer = setInterval(() => {
-      this.swapCards(this.curser, this.curser -1, false)
-      if (this.curser === newPostion) {
-	clearInterval(timer)
-	const elements = document.getElementsByClassName("outerMainCard")[this.curser].getElementsByClassName("inner");
-	elements[0].focus()
-      }
-    }, 500)
     this.newCard.title = ""
     document.getElementById("mainOrSunDialog").close()
     this.save()
