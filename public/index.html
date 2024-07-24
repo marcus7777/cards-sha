@@ -6,8 +6,8 @@
     <link rel="stylesheet" type="text/css" href="cards.css">
     <script type="module" src="cards.js"></script>
   </head>
-  <body>
-    <div v-scope="{}">
+  <body v-scope="{}">
+    <div>
       <input v-model="store.newCard.title" id="title" @keyup.enter="store.onEnterTitle">
       <button v-if="store.newCard.title" @click="store.inc()"> + Main </button>
       <button v-if="store.cards[0] && store.newCard.title" @click="store.incSub()"> + Sub </button>
@@ -23,11 +23,25 @@
       <label for="hideDone">Hide Done</label>
       <!-- <input type="number" v-model="store.showNext" >
       <label for="showNext">Show Next</label> -->
-      <input type="color" name="color" v-model="store.color" @click="store.setColor()" @change="store.setColor()" />
-      <input v-if="!store.trail[0]" v-model="store.pageTitle" id="pageTitle">
     </div>
-    <div v-scope="{}">
-      <h1> {{ store.title }} </h1>
+    <!--Display rootcard here-->
+    <div class="rootContainer">
+      <div class="card rootCard" v-if="!(store.hideDone && store.root.done)" @click="store.load(store.trail[store.trail.length - 1])">
+        <div class="inner curser form" tabindex="0">
+          <input v-model="store.store.root.title" @blur="store.save" @keyup.enter="store.save">
+          <h2> {{ store.root.title }}</h2>
+          <input v-model="store.root.body" @blur="store.save" placeholder="text">
+          <img v-if="store.root.image" :src="store.root.image" @error="store.log"/>
+          <input v-model="store.root.image" @blur="store.save" placeholder="https://image.jpg">
+          <input type="checkbox" name="done" :checked="store.root.done" @click="store.root.done = !store.root.done" />
+          <button @click="store.saveToFile(store.root)">▼</button>
+          <button @click="store.uploadFileInToCard(i)">▲</button>
+          <input type="color" name="color" v-model="store.color" @click="store.setColor()" @change="store.setColor()" />
+        </div>
+      </div>
+    </div>
+    <!--Display main cards-->
+    <div>
       <div class="container">
         <div v-for="(card, i) in store.cards" class="outerMainCard"> <!-- i is for index -->
           <div class="card mainCard" v-if="!(store.hideDone && card.done)">
@@ -57,8 +71,8 @@
         </div>
       </div>
     </div>
-      
-    <div v-scope="{}" v-for="(card, ci) in store.cards">
+      <!--Display subcards-->
+    <div v-for="(card, ci) in store.cards">
       <div class="container" v-if="store.curser === ci">
         <div class="card" tabindex="0" :key="store.curser +' '+ i" v-for="(n, i) in card.subCards">
           <div class="inner" @click="store.deeper(i)">
@@ -69,7 +83,7 @@
       </div>
     </div>
     
-    <div v-scope="{}">
+    <div>
       <dialog id="mainOrSunDialog">
         <p>Would you like this card to be a subcard or main card</p>
         <button autofocus @click="store.inc()">Main</button>

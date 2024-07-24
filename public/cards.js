@@ -50,13 +50,14 @@ function saveFile(text, title) {
 // swop the order of the cards
 const store = reactive({ //updates the html immediately
   curser:0,
-  cards: [],
   trail: [],
-  trailNames: [],
-  color: 'white',
-  title: '',
   pageTitle: '',
-
+  root: {
+    title: '',
+    color: 'white',
+    cardAddtions: [],
+  },
+  cards: [],
   addStyleToMe(i,setTo){ // work in progress
     const elements = document.getElementsByClassName("outerMainCard")
     elements[i].style.order = setTo
@@ -74,7 +75,7 @@ const store = reactive({ //updates the html immediately
     title: "", 
     body: "",
     subCards: [], // array of cards
-    cardAdittions: [], // array of card adittions (like rel, weight, color, etc)
+    cardAditions: [], // array of card adittions (like rel, weight, color, etc)
     done: false,
     color: '#55c2c3',
     hideDone: false,
@@ -171,7 +172,6 @@ const store = reactive({ //updates the html immediately
     const fresh = this.trail.indexOf(rootHash)
     
     this.trail = this.trail.slice(0, fresh)
-    this.trailNames = this.trailNames.slice(0, fresh)
     
     let rootCard = JSON.parse(localStorage.getItem(rootHash))
     if (!rootCard) {
@@ -182,8 +182,8 @@ const store = reactive({ //updates the html immediately
       rootCard.subCards = []
     }
     this.color = rootCard.color
-    this.pageTitle = rootCard.title
     this.title = rootCard.title
+    this.root = rootCard
     this.setColor()
     const subCards = rootCard.subCards.map(subHash => this.loadCard(subHash))
     // rootCard.subCards = subCards
@@ -224,7 +224,6 @@ const store = reactive({ //updates the html immediately
   deeper(newCurser) {
     this.save()
     this.trail.push(makeHash(this.cards[this.curser]))
-    this.trailNames.push(this.cards[this.curser].title)
 
     window.scrollTo(0, 0)
     window.history.pushState({}, '', `#${this.trail.join('/')}`)
@@ -436,6 +435,24 @@ const store = reactive({ //updates the html immediately
           elements3[0].focus()
 	      }
         //update card additions to include this card's weight
+        const rootHash = [...this.trail].pop() || 'root'
+        const rootCard = this.loadCard(rootHash)
+
+        
+        const cardAddtions = this.cards.map((card,i) => {
+          return {
+            weight: i, 
+            cardIndex:i,
+            hash: makeHash(card),
+          }
+        })
+
+        //rootCard.cardAditions = this.mergeDown(rootCard.cardAddtions.concat(cardAddtions))
+        // remove duplicate settings of the same properties in the same care
+        rootCard = {...rootCard, cardAddtions}
+        localStorage.setItem(rootHash, rootCard)
+        this.save() 
+
       }, 500)
     }, 0)
 
@@ -473,7 +490,6 @@ const store = reactive({ //updates the html immediately
     this.save()
   },
   log(e) {
-    console.log(e)
     const div = document.createElement("div");
     const path = location.protocol + "//" + location.host + location.pathname
     const text = e.target.src.replace(path, "")
