@@ -44,7 +44,7 @@
     <!--Display main cards-->
     <div>
       <div class="container">
-        <div v-for="(card, i) in store.cards" class="outerMainCard"> <!-- i is for index -->
+	      <div v-for="(card, i) in store.cards" class="outerMainCard" @dragover="store.dragOver(i)" :draggable="store.curser == i"> <!-- i is for index -->
           <div class="card mainCard" v-if="!(store.hideDone && card.done)">
             <div class="inner curser form" v-if="store.curser === i" tabindex="0">
               <input v-model="card.title" @blur="store.save" @keyup.enter="store.save">

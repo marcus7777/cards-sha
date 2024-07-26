@@ -11,6 +11,9 @@ body {
   );
   opacity: 0.70;
 }
+[draggable=true] {
+  cursor: move;
+}
 .rootCard {
   text-align: center;
 }

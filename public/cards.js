@@ -214,9 +214,6 @@ const store = reactive({ //updates the html immediately
       localStorage.setItem(cardHash, JSON.stringify({...card, subCards: subHashes}))
     })
   },
-  saveTofile() {
-    const root = [...this.trail].pop() || 'root'
-  },
   deeper(newCurser) {
     this.save()
     this.trail.push(makeHash(this.cards[this.curser]))
@@ -249,6 +246,14 @@ const store = reactive({ //updates the html immediately
     if (!this.newCard.title) return
     if (!this.cards[0]) return this.inc()
     document.getElementById("mainOrSunDialog").showModal()
+  },
+  lastSwap: 0,
+  dragOver(i) {
+    if (this.curser === i) return
+    if (this.lastSwap >= (Date.now() - 500)) return;
+    this.lastSwap = Date.now();
+    this.swapCards(this.curser, i, false)
+    //this.distributeCardsCircle
   },
   inc() {
     //this.curser++
@@ -410,10 +415,12 @@ const store = reactive({ //updates the html immediately
       // move cards towards each other
       const card1Left = card1.getBoundingClientRect().left
       const card2Left = card2.getBoundingClientRect().left
+      const card1Top = card1.getBoundingClientRect().top
+      const card2Top = card2.getBoundingClientRect().top
       card1.style.transition = "all 0.5s"
       card2.style.transition = "all 0.5s"
-      card1.style.transform = `translate(${card2Left - card1Left + "px"})`
-      card2.style.transform = `translate(${card1Left - card2Left + "px"})`
+      card1.style.transform = `translate(${card2Left - card1Left + "px"} ${card2Top - card1Top + "px"})`
+      card2.style.transform = `translate(${card1Left - card2Left + "px"} ${card1Top - card2Top + "px"})`
       setTimeout(() => {
         card1.style.transition = "none"
 	      card2.style.transition = "none"
