@@ -194,6 +194,7 @@ const store = reactive({ //updates the html immediately
     this.cards = subCards
   },
   save() {
+    // save the root card to local storage
     this.saveRoot([...this.trail].pop() || "root")
     // save this.cards to local storage hash all cards and save under the hash with a list of hashs for sub cards
     this.cards.forEach(card => {
@@ -248,11 +249,21 @@ const store = reactive({ //updates the html immediately
     document.getElementById("mainOrSunDialog").showModal()
   },
   lastSwap: 0,
-  dragOver(i) {
-    if (this.curser === i) return
+  dragOver(e) {
+    e.preventDefault()
+    if (this.lastSwap >= (Date.now() - 500)) return;
+    //find the card that is being dragged over and the card that is being dragged
+    const from = this.curser
+    const to = +e.target.getAttribute("data-index")
+    if (this.curser == to) return
+    this.lastSwap = Date.now();
+    this.swapCards(this.curser, to, false)
+  },
+  drop(to) {
+    if (this.curser === to) return
     if (this.lastSwap >= (Date.now() - 500)) return;
     this.lastSwap = Date.now();
-    this.swapCards(this.curser, i, false)
+    this.swapCards(this.curser, to, false)
     //this.distributeCardsCircle
   },
   inc() {
@@ -408,10 +419,8 @@ const store = reactive({ //updates the html immediately
     //give focus to the card that was moved
     //swop the cards with a timeout so that the cards are swopped before the focus is given
     window.requestAnimationFrame(() => {
-      const elements1 = document.getElementsByClassName("outerMainCard")[index1].getElementsByClassName("inner");
-      const card1 = elements1[0]
-      const elements2 = document.getElementsByClassName("outerMainCard")[index2].getElementsByClassName("inner");
-      const card2 = elements2[0]
+      const card1 = document.getElementsByClassName("outerMainCard")[index1];
+      const card2 = document.getElementsByClassName("outerMainCard")[index2];
       // move cards towards each other
       const card1Left = card1.getBoundingClientRect().left
       const card2Left = card2.getBoundingClientRect().left
@@ -419,11 +428,11 @@ const store = reactive({ //updates the html immediately
       const card2Top = card2.getBoundingClientRect().top
       card1.style.transition = "all 0.5s"
       card2.style.transition = "all 0.5s"
-      card1.style.transform = `translate(${card2Left - card1Left + "px"} ${card2Top - card1Top + "px"})`
-      card2.style.transform = `translate(${card1Left - card2Left + "px"} ${card1Top - card2Top + "px"})`
+      card1.style.transform = `translate(${card2Left - card1Left + "px"}, ${card2Top - card1Top + "px"})`
+      card2.style.transform = `translate(${card1Left - card2Left + "px"}, ${card1Top - card2Top + "px"})`
       setTimeout(() => {
         card1.style.transition = "none"
-	      card2.style.transition = "none"
+	card2.style.transition = "none"
         card1.style.transform = ``
         card2.style.transform = ``
 	      swap()

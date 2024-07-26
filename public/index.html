@@ -44,7 +44,14 @@
     <!--Display main cards-->
     <div>
       <div class="container">
-	      <div v-for="(card, i) in store.cards" class="outerMainCard" @dragover="store.dragOver(i)" :draggable="store.curser == i"> <!-- i is for index -->
+	<div v-for="(card, i) in store.cards" 
+	  class="outerMainCard"
+	  @dragover="store.dragOver"
+	  :draggable="store.curser == i"
+	  @drop="store.drop(i)"
+	  :data-index="i"
+	  :title="card.title"
+	> <!-- i is for index -->
           <div class="card mainCard" v-if="!(store.hideDone && card.done)">
             <div class="inner curser form" v-if="store.curser === i" tabindex="0">
               <input v-model="card.title" @blur="store.save" @keyup.enter="store.save">
@@ -63,10 +70,10 @@
               <button v-if="store.cards[1] && store.curser > 0" @click="store.swapCards(i, i-1)">&lt;</button> <!-- move cards -->
               <button v-if="store.cards[1] && store.curser !== store.cards.length - 1" @click="store.swapCards(i, i+1)">&gt;</button>
             </div>
-            <div v-else class="inner" @click="store.curser = i" >
-              <h2> {{ card.title }} </h2>
-              <p> {{ card.body }} </p>
-              <img v-if="card.image" :src="card.image" @error="store.log" />
+            <div :data-index="i" v-else class="inner" @click="store.curser = i" >
+              <h2 :data-index="i" > {{ card.title }} </h2>
+              <p :data-index="i" > {{ card.body }} </p>
+              <img :data-index="i" v-if="card.image" :src="card.image" @error="store.log" />
             </div>
           </div>
         </div>
