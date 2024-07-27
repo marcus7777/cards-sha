@@ -21,23 +21,25 @@
       <label for="showNext">Show Next</label> -->
     </div>
     <!--Display rootcard here-->
-    <div class="rootContainer">
-      <div class="card rootCard" v-if="!(store.hideDone && store.root.done)">
-        <div class="inner curser form" tabindex="0">
-          <input v-model="store.root.title" @blur="store.save" @keyup.enter="store.save">
-          <h2> {{ store.root.title }}</h2>
-          <input v-model="store.root.body" @blur="store.save" placeholder="text">
-          <img v-if="store.root.image" :src="store.root.image" @error="store.log"/>
-          <input v-model="store.root.image" @blur="store.save" placeholder="https://image.jpg">
-          <input type="checkbox" name="done" :checked="store.root.done" @click="store.root.done = !store.root.done" />
-          <button @click="store.saveToFile(store.root)">▼</button>
-          <button @click="store.uploadFileInToCard(i)">▲</button>
-	  <button @click="store.load(store.trail[store.trail.length - 1])">↑</button>
-          <button v-if="store.root.layout !== 'circle'" @click="store.distributeCardsCircle()">O</button>
-          <button v-if="store.root.layout !== 'line'" @click="store.distributeCardsLine()">-</button>
-          <button @click="store.sortByTitle">So</button>
-          <button @click="store.shuffle">Sh</button>
-          <input type="color" name="color" v-model="store.root.color" @change="store.setColor()" />
+    <div id="root">
+      <div class="rootContainer">
+        <div class="card rootCard" v-if="!(store.hideDone && store.root.done)">
+          <div class="inner curser form" tabindex="0">
+            <input v-model="store.root.title" @blur="store.save" @keyup.enter="store.save">
+            <h2> {{ store.root.title }}</h2>
+            <input v-model="store.root.body" @blur="store.save" placeholder="text">
+            <img v-if="store.root.image" :src="store.root.image" @error="store.log"/>
+            <input v-model="store.root.image" @blur="store.save" placeholder="https://image.jpg">
+            <input type="checkbox" name="done" :checked="store.root.done" @click="store.root.done = !store.root.done" />
+            <button @click="store.saveToFile(store.root)">▼</button>
+            <button @click="store.uploadFileInToCard(i)">▲</button>
+	    <button @click="store.load(store.trail[store.trail.length - 1])">↑</button>
+            <button v-if="store.root.layout !== 'circle'" @click="store.distributeCardsCircle()">O</button>
+            <button v-if="store.root.layout !== 'line'" @click="store.distributeCardsLine()">-</button>
+            <button @click="store.sortByTitle">So</button>
+            <button @click="store.shuffle">Sh</button>
+            <input type="color" name="color" v-model="store.root.color" @change="store.setColor()" />
+          </div>
         </div>
       </div>
     </div>

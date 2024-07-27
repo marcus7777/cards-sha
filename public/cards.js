@@ -284,6 +284,9 @@ const store = reactive({ //updates the html immediately
     this.newCard.title = ""
     document.getElementById("mainOrSunDialog").close()
     this.save()
+    setTimeout(() => {
+      this.layout()
+    }, 100)
   },
   incSub() {
     let card = this.cards[this.curser]
@@ -355,10 +358,14 @@ const store = reactive({ //updates the html immediately
     this.save()
   },
   layout() {
+    let rootElement = document.getElementById("root")
+    if (!rootElement) return
     window.requestAnimationFrame(() => {
       if (this.root.layout === "circle") {
+        rootElement.classList.add("ellipse")
         this.distributeCardsCircle()
       } else {
+        rootElement.classList.remove("ellipse")
         this.distributeCardsLine()
       }
     })

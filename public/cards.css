@@ -21,6 +21,12 @@ body {
   display: flex;
   justify-content: center;
 }
+#root.ellipse {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
 input {
   margin: .5em;
 }
