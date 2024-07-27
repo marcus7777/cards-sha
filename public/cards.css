@@ -59,6 +59,10 @@ h1 {
   text-align: center;
   animation: slideInTop .5s ease-in-out;
 }
+.outerMainCard {
+  transition: all 0.5s ease-in-out;
+  max-width: 20vw;
+}
 .card.hidden {
   animation: fadeOut 1s ease-in-out;
 }

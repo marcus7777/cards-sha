@@ -14,10 +14,6 @@
       <button @click="store.load()"> Top </button>
       <!--<button v-for="(breadcrumb, i) in store.trail" @click="store.load(breadcrumb)"> {{ store.trailNames[i] }} </button>-->
       <button @click="store.saveToFile('root')">▼</button>
-      <button @click="store.distributeCardsCircle()">O</button>
-      <button @click="store.distributeCardsLine()">_</button>
-      <button @click="store.sortByTitle">So</button>
-      <button @click="store.shuffle">Sh</button>
     
       <input type="checkbox" name="hideDone" :checked="store.hideDone" @click="store.hideDone = !store.hideDone" />
       <label for="hideDone">Hide Done</label>
@@ -37,6 +33,10 @@
           <button @click="store.saveToFile(store.root)">▼</button>
           <button @click="store.uploadFileInToCard(i)">▲</button>
 	  <button @click="store.load(store.trail[store.trail.length - 1])">↑</button>
+          <button v-if="store.root.layout !== 'circle'" @click="store.distributeCardsCircle()">O</button>
+          <button v-if="store.root.layout !== 'line'" @click="store.distributeCardsLine()">-</button>
+          <button @click="store.sortByTitle">So</button>
+          <button @click="store.shuffle">Sh</button>
           <input type="color" name="color" v-model="store.root.color" @change="store.setColor()" />
         </div>
       </div>
