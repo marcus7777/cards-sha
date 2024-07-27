@@ -58,7 +58,7 @@ const store = reactive({ //updates the html immediately
     cardAddtions: [],
   },
   cards: [],
-  addStyleToMe(i,setTo){ // work in progress
+  addStyleToMe(i, setTo){ // work in progress
     const elements = document.getElementsByClassName("outerMainCard")
     elements[i].style.order = setTo
   },
@@ -80,6 +80,7 @@ const store = reactive({ //updates the html immediately
     color: '#55c2c3',
     hideDone: false,
     image: "",
+    layout: "line",
     showNext: 0, // show next cards in the list (0 = all, 1 = next, 2 = next and next)
   },
   saveRoot(rootHash = "root") {
@@ -229,7 +230,7 @@ const store = reactive({ //updates the html immediately
     this.setColor()
 
     this.cards = this.cards[this.curser].subCards.map(card => {
-      card = this.loadCard(card)
+      card = this.load/Card(card)
       if (!card.subCards) {
         card.subCards = []
       }
@@ -249,21 +250,29 @@ const store = reactive({ //updates the html immediately
     document.getElementById("mainOrSunDialog").showModal()
   },
   lastSwap: 0,
+  draggingHash: "",
   dragOver(e) {
     e.preventDefault()
     if (this.lastSwap >= (Date.now() - 500)) return;
     //find the card that is being dragged over and the card that is being dragged
-    const from = this.curser
-    const to = +e.target.getAttribute("data-index")
-    if (this.curser == to) return
+    const to = e.target.getAttribute("data-index")
+    if (to === null) return
+    const from = this.cards.reduce((index, card, currentIndex) => {
+      if (makeHash(card) == this.draggingHash) {
+	return currentIndex
+      }
+      return index
+    }, -1)
+    if (from === -1) return
+    console.log(from, to)
+    // TODO make sure that the swap is intened.
+    if (to == from) return
     this.lastSwap = Date.now();
-    this.swapCards(this.curser, to, false)
+    this.curser = -1
+    this.swapCards(from, to, false)
   },
   drop(to) {
-    if (this.curser === to) return
-    if (this.lastSwap >= (Date.now() - 500)) return;
-    this.lastSwap = Date.now();
-    this.swapCards(this.curser, to, false)
+    this.curser = to
     //this.distributeCardsCircle
   },
   inc() {
@@ -326,6 +335,7 @@ const store = reactive({ //updates the html immediately
 
       angle += step
     })
+    this.root.layout = "circle"
   },
   distributeCardsLine() {
     let cardElements = [... document.getElementsByClassName("outerMainCard")]
@@ -338,6 +348,14 @@ const store = reactive({ //updates the html immediately
       card.style.left = ""
       card.style.top = ""
     })
+    this.root.layout = "line"
+  },
+  layout() {
+    if (this.root.layout === "circle") {
+      this.distributeCardsCircle()
+    } else {
+      this.distributeCardsLine()
+    }
   },
   sortByTitle() {
     this.cards.sort((a,b) => {
@@ -399,7 +417,6 @@ const store = reactive({ //updates the html immediately
     })
   },
   swapCards(index1, index2, withFocus = true) {
-    console.log(this.curser)
     if (this.curser === index1) {
       this.curser = index2
     } else if (this.curser === index2) {
@@ -430,12 +447,13 @@ const store = reactive({ //updates the html immediately
       card2.style.transition = "all 0.5s"
       card1.style.transform = `translate(${card2Left - card1Left + "px"}, ${card2Top - card1Top + "px"})`
       card2.style.transform = `translate(${card1Left - card2Left + "px"}, ${card1Top - card2Top + "px"})`
+      this.layout()
       setTimeout(() => {
         card1.style.transition = "none"
 	card2.style.transition = "none"
         card1.style.transform = ``
         card2.style.transform = ``
-	      swap()
+	swap()
         if (withFocus) {
           const elements3 = document.getElementsByClassName("outerMainCard")[this.curser].getElementsByClassName("inner");
           elements3[0].focus()
@@ -496,6 +514,7 @@ const store = reactive({ //updates the html immediately
     this.save()
   },
   log(e) {
+    e.preventDefault()
     const div = document.createElement("div");
     const path = location.protocol + "//" + location.host + location.pathname
     const text = e.target.src.replace(path, "")

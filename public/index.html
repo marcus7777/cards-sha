@@ -48,6 +48,7 @@
 	  class="outerMainCard"
 	  @dragover="store.dragOver"
 	  :draggable="store.curser == i"
+	  @dragstart="store.draggingHash = store.hash(card)"
 	  @drop="store.drop(i)"
 	  :data-index="i"
 	  :title="card.title"
