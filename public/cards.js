@@ -328,8 +328,10 @@ const store = reactive({ //updates the html immediately
       const y = Math.round(radius * Math.sin(angle)) + 50
       // var size = (Math.round(radius * Math.sin(step))) -9
 
-      card.style.left = `calc(${x}vw - ${card.offsetWidth/2}px)`; //use vh (vi) to have a circle
-      card.style.top = `calc(${y}vh - ${card.offsetHeight/2}px)`;
+      card.style.left = `calc(${x}vw - ${card.offsetWidth/2}px)` //use vh (vi) to have a circle
+      card.style.top = `calc(${y}vh - ${card.offsetHeight/2}px)`
+      card.style.transform = `rotateX(45deg) translate3d(0, 0, calc(-${y}vh) )))`
+      console.log(card.style.left, card.style.top, card.style.transform)
     
       //card.style.height = size + 'px';
       //card.style.width = size + 'px';

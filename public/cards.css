@@ -35,6 +35,8 @@ body {
   justify-content: center;
   align-items: center;
   height: 100vh;
+  position: absolute;
+  width: 100vw;
 }
 input {
   margin: .5em;
