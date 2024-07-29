@@ -1,5 +1,10 @@
 import { createApp, reactive } from './petite-vue.es.js'
 import QrCreator from './qr-creator.es6.min.js';
+function saveCard(hash, card) {
+  if (!hash) return window.alert("no hash")
+  if (!card) return window.alert("no card")
+  localStorage.setItem(hash, JSON.stringify(card))
+}
 
 function makeHash(card) {
   if (!card) return
@@ -33,7 +38,7 @@ function savesToLocalStorage(file, cb) { //cb is a callback function that is cal
   reader.onload = (e) => {
     const cards = e.target.result.split("\n").map(card => JSON.parse(card))
     cards.forEach(card => {
-      localStorage.setItem(makeHash(card), JSON.stringify(card))
+      saveCard(makeHash(card), card)
     })
     cb({ title: "title", body: "body", ...cards[0]})
   }
@@ -86,7 +91,7 @@ const store = reactive({ //updates the html immediately
   saveRoot(rootHash = "root") {
     let rootCard = {...(this.loadCard(rootHash) || this.newCard), ...this.root}
     rootCard.subCards = this.cards.map(card => makeHash(card))
-    localStorage.setItem(rootHash, JSON.stringify(rootCard))
+    saveCard(rootHash, rootCard)
   },
   getAllHashesNeededFrom(hash) {
     let hashes = []
@@ -160,20 +165,21 @@ const store = reactive({ //updates the html immediately
     })  
     return card
   },
-  load(rootHash) {
+  load(cardHash) {
+    console.log("load", localStorage.root)
     // load cards from local storage
-    if (!rootHash) {
-      rootHash = 'root'
-      this.trail = []
-    }
-    const fresh = this.trail.indexOf(rootHash)
+    if (!cardHash) {
+      this.trail = window.location.hash.slice(1).split("/") //this is causing the problem
+      cardHash = [...this.trail].pop() || "root"
+    } 
+    const fresh = this.trail.indexOf(cardHash)
     
-    this.trail = this.trail.slice(0, fresh)
+    //this.trail = this.trail.slice(0, fresh)
     
-    let rootCard = JSON.parse(localStorage.getItem(rootHash))
+    let rootCard = JSON.parse(localStorage.getItem(cardHash))
     if (!rootCard) {
       rootCard = {...this.newCard}
-      localStorage.setItem(rootHash, JSON.stringify(rootCard))
+      saveCard(cardHash, rootCard)
     }
     if (!rootCard.subCards) {
       rootCard.subCards = []
@@ -196,7 +202,9 @@ const store = reactive({ //updates the html immediately
     this.cards = subCards
   },
   save() {
+    console.log("Save:", localStorage.root)
     // save the root card to local storage
+    //this.trail = window.location.hash.slice(1).split("/") //this is causing the problem!!
     this.saveRoot([...this.trail].pop() || "root")
     // save this.cards to local storage hash all cards and save under the hash with a list of hashs for sub cards
     this.cards.forEach(card => {
@@ -209,13 +217,15 @@ const store = reactive({ //updates the html immediately
       const subHashes = card.subCards.map(subCard => makeHash(subCard))
       card.subCards.forEach(subCard => {
         if (typeof subCard !== 'string') {
-          localStorage.setItem( makeHash(subCard), JSON.stringify(subCard))
+          saveCard( makeHash(subCard), subCard)
+
         }
       })
       const cardHash = makeHash(card)
       
-      localStorage.setItem(cardHash, JSON.stringify({...card, subCards: subHashes}))
+      saveCard(cardHash, {...card, subCards: subHashes})
     })
+    console.log("SaveAfter:", localStorage.root)
   },
   deeper(newCurser) {
     this.save()
@@ -265,7 +275,6 @@ const store = reactive({ //updates the html immediately
       return index
     }, -1)
     if (from === -1) return
-    console.log(from, to)
     // TODO make sure that the swap is intened.
     if (to == from) return
     this.lastSwap = Date.now();
@@ -404,7 +413,7 @@ const store = reactive({ //updates the html immediately
   setColor() {
     const root = [...this.trail].pop() || 'root'
     const cardToSave = this.loadCard(root)
-    localStorage.setItem(root, JSON.stringify({...cardToSave, color: this.color}))
+    saveCard(root, {...cardToSave, color: this.color})
 
     if (!this.root.color) {
       this.root.color = 'white'
@@ -487,7 +496,7 @@ const store = reactive({ //updates the html immediately
         //rootCard.cardAditions = this.mergeDown(rootCard.cardAddtions.concat(cardAddtions))
         // remove duplicate settings of the same properties in the same care
         rootCard = {...rootCard, cardAddtions}
-        localStorage.setItem(rootHash, JSON.stringify(rootCard))
+        saveCard(rootHash, rootCard)
         this.save() 
 
       }, 250)
