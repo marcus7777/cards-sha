@@ -35,11 +35,11 @@
               <button @click="store.saveToFile(store.root)">▼</button>
               <button @click="store.uploadFileInToCard(i)">▲</button>
               <button @click="store.load(store.trail[store.trail.length - 1])">↑</button>
-              <button v-if="store.root.layout !== 'circle'" @click="store.distributeCardsCircle()">O</button>
-              <button v-if="store.root.layout !== 'line'" @click="store.distributeCardsLine()">-</button>
+              <button v-if="store.root.layout !== 'circle'" @click="store.layout('circle')">O</button>
+              <button v-if="store.root.layout !== 'line'" @click="store.layout('line')">-</button>
               <button @click="store.sortByTitle">So</button>
               <button @click="store.shuffle">Sh</button>
-              <input type="color" name="color" v-model="store.root.color" @change="store.setColor()" />
+              <input type="color" name="color" v-model="store.root.color" @change="store.setColor()"/>
             </div>
           </div>
         </div>
@@ -50,7 +50,7 @@
           <div v-for="(card, i) in store.cards" 
             class="outerMainCard outerCard"
             @dragover="store.dragOver"
-            :draggable="store.curser == i"
+            draggable="true"
             @dragstart="store.draggingHash = store.hash(card)"
             @drop="store.drop(i)"
             :data-index="i"

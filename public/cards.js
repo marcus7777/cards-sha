@@ -330,8 +330,7 @@ const store = reactive({ //updates the html immediately
 
       card.style.left = `calc(${x}vw - ${card.offsetWidth/2}px)` //use vh (vi) to have a circle
       card.style.top = `calc(${y}vh - ${card.offsetHeight/2}px)`
-      card.style.transform = `rotateX(45deg) translate3d(0, 0, calc(-${y}vh) )))`
-      console.log(card.style.left, card.style.top, card.style.transform)
+      // card.style.transform = `rotateX(45deg) translateZ(calc(${y}vh - ${card.offsetHeight/2}px))
     
       //card.style.height = size + 'px';
       //card.style.width = size + 'px';
@@ -340,35 +339,39 @@ const store = reactive({ //updates the html immediately
       angle += step
     })
     
-    if (this.root.layout === "circle") return
-    this.root.layout = "circle"
     this.save()
+    let rootElement = document.getElementById("root")
+    rootElement.classList.add("ellipse")
+    return () => {  //clean Up
+      let cardElements = [... document.getElementsByClassName("outerMainCard")]
+      cardElements.forEach(function (card) {
+        card.style.left = ""
+        card.style.top = ""
+        // card.style.transform = ""
+      })
+      const containers = document.getElementsByClassName("container")
+      let container = containers[0]
+      rootElement.classList.remove("ellipse")
+      container.classList.remove("ellipse")
+    }
   },
   distributeCardsLine() {
-    let cardElements = [... document.getElementsByClassName("outerMainCard")]
-    console.log(cardElements)
-    let containers = document.getElementsByClassName("container")
-    const container = containers[0]
-    container.classList.remove("ellipse")
-
-    cardElements.forEach(function (card) {
-      card.style.left = ""
-      card.style.top = ""
-    })
-    if (this.root.layout === "line") return
-    this.root.layout = "line"
     this.save()
+    return () => {
+      console.log("Clean up (does nothing) line")
+    }
   },
-  layout() {
-    let rootElement = document.getElementById("root")
-    if (!rootElement) return
+  cleanUp() {
+    console.log("Clean up (does nothing)")
+  },
+  layout(layout = "line") {
+    this.cleanUp()
+    this.root.layout = layout
     window.requestAnimationFrame(() => {
       if (this.root.layout === "circle") {
-        rootElement.classList.add("ellipse")
-        this.distributeCardsCircle()
+        this.cleanUp = this.distributeCardsCircle()
       } else {
-        rootElement.classList.remove("ellipse")
-        this.distributeCardsLine()
+        this.cleanUp = this.distributeCardsLine()
       }
     })
   },
@@ -386,14 +389,14 @@ const store = reactive({ //updates the html immediately
       }
       return -1
     })
-    this.layout()
+    this.layout(this.root.layout)
   },
   shuffle() {
     for (let i = this.cards.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
     }
-    this.layout()
+    this.layout(this.root.layout)
   },
   addWeight() {
 
@@ -403,13 +406,10 @@ const store = reactive({ //updates the html immediately
     const cardToSave = this.loadCard(root)
     localStorage.setItem(root, JSON.stringify({...cardToSave, color: this.color}))
 
-    if (!this.color) {
-      this.color = 'white'
+    if (!this.root.color) {
+      this.root.color = 'white'
     }
-    if (this.cards[this.curser]) {
-      this.cards[this.curser].color = this.color
-    }
-    document.body.style.backgroundColor = this.color || 'white'
+    document.body.style.backgroundColor = this.root.color
   },
   autoAdd() {
     // If the new card title end with add, then add it as a new card.
@@ -462,7 +462,7 @@ const store = reactive({ //updates the html immediately
       const card2Top = card2.getBoundingClientRect().top
       card1.style.transform = `translate(${card2Left - card1Left + "px"}, ${card2Top - card1Top + "px"})`
       card2.style.transform = `translate(${card1Left - card2Left + "px"}, ${card1Top - card2Top + "px"})`
-      this.layout()
+      this.layout(this.root.layout)
       setTimeout(() => {
         card1.style.transform = ""
         card2.style.transform = ""
@@ -483,7 +483,7 @@ const store = reactive({ //updates the html immediately
             hash: makeHash(card),
           }
         })
-        this.layout()
+        this.layout(this.root.layout)
         //rootCard.cardAditions = this.mergeDown(rootCard.cardAddtions.concat(cardAddtions))
         // remove duplicate settings of the same properties in the same care
         rootCard = {...rootCard, cardAddtions}
@@ -522,6 +522,7 @@ const store = reactive({ //updates the html immediately
     this.curser++
     this.cards = [...this.cards.slice(0, this.curser), {...this.cards[index]}, ...this.cards.slice(this.curser)]
     this.save()
+    this.layout()
   },
   log(e) {
     e.preventDefault()
