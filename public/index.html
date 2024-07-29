@@ -6,100 +6,102 @@
     <link rel="stylesheet" type="text/css" href="cards.css">
     <script type="module" src="cards.js"></script>
   </head>
-  <body v-scope="{}">
-    <div>
-      <input v-model="store.newCard.title" id="title" @keyup.enter="store.onEnterTitle">
-      <button v-if="store.newCard.title" @click="store.inc()"> + Main </button>
-      <button v-if="store.cards[0] && store.newCard.title" @click="store.incSub()"> + Sub </button>
-      <button @click="store.load()"> Top </button>
-      <!--<button v-for="(breadcrumb, i) in store.trail" @click="store.load(breadcrumb)"> {{ store.trailNames[i] }} </button>-->
-      <button @click="store.saveToFile('root')">▼</button>
-    
-      <input type="checkbox" name="hideDone" :checked="store.hideDone" @click="store.hideDone = !store.hideDone" />
-      <label for="hideDone">Hide Done</label>
-      <!-- <input type="number" v-model="store.showNext" >
-      <label for="showNext">Show Next</label> -->
-    </div>
-    <!--Display rootcard here-->
-    <div id="root">
-      <div class="rootContainer">
-        <div class="card rootCard" v-if="!(store.hideDone && store.root.done)">
-          <div class="inner curser form" tabindex="0">
-            <input v-model="store.root.title" @blur="store.save" @keyup.enter="store.save">
-            <h2> {{ store.root.title }}</h2>
-            <input v-model="store.root.body" @blur="store.save" placeholder="text">
-            <img v-if="store.root.image" :src="store.root.image" @error="store.log"/>
-            <input v-model="store.root.image" @blur="store.save" placeholder="https://image.jpg">
-            <input type="checkbox" name="done" :checked="store.root.done" @click="store.root.done = !store.root.done" />
-            <button @click="store.saveToFile(store.root)">▼</button>
-            <button @click="store.uploadFileInToCard(i)">▲</button>
-	    <button @click="store.load(store.trail[store.trail.length - 1])">↑</button>
-            <button v-if="store.root.layout !== 'circle'" @click="store.distributeCardsCircle()">O</button>
-            <button v-if="store.root.layout !== 'line'" @click="store.distributeCardsLine()">-</button>
-            <button @click="store.sortByTitle">So</button>
-            <button @click="store.shuffle">Sh</button>
-            <input type="color" name="color" v-model="store.root.color" @change="store.setColor()" />
-          </div>
-        </div>
+  <body>
+    <div id="table" v-scope="{}" >
+      <div>
+        <input v-model="store.newCard.title" id="title" @keyup.enter="store.onEnterTitle">
+        <button v-if="store.newCard.title" @click="store.inc()"> + Main </button>
+        <button v-if="store.cards[0] && store.newCard.title" @click="store.incSub()"> + Sub </button>
+        <button @click="store.load()"> Top </button>
+        <!--<button v-for="(breadcrumb, i) in store.trail" @click="store.load(breadcrumb)"> {{ store.trailNames[i] }} </button>-->
+        <button @click="store.saveToFile('root')">▼</button>
+      
+        <input type="checkbox" name="hideDone" :checked="store.hideDone" @click="store.hideDone = !store.hideDone" />
+        <label for="hideDone">Hide Done</label>
+        <!-- <input type="number" v-model="store.showNext" >
+        <label for="showNext">Show Next</label> -->
       </div>
-    </div>
-    <!--Display main cards-->
-    <div>
-      <div class="container">
-	<div v-for="(card, i) in store.cards" 
-	  class="outerMainCard"
-	  @dragover="store.dragOver"
-	  :draggable="store.curser == i"
-	  @dragstart="store.draggingHash = store.hash(card)"
-	  @drop="store.drop(i)"
-	  :data-index="i"
-	  :title="card.title"
-	> <!-- i is for index -->
-          <div class="card mainCard" v-if="!(store.hideDone && card.done)">
-            <div class="inner curser form" v-if="store.curser === i" tabindex="0">
-              <input v-model="card.title" @blur="store.save" @keyup.enter="store.save">
-              <h2> {{ card.title }} </h2>
-              <input v-model="card.body" @blur="store.save" placeholder="text">
-              <img v-if="card.image" :src="card.image" @error="store.log"/>
-              <input v-model="card.image" @blur="store.save" placeholder="https://image.jpg">
-              <input type="checkbox" name="done" :checked="card.done" @click="card.done = !card.done" />
-              <button @click="store.removeCard(i)">-</button>
-              <button @click="store.duplicateCard(i)">+</button>
-              <button @click="store.saveToFile(card)">▼</button>
+      <!--Display rootcard here-->
+      <div id="root">
+        <div class="rootContainer">
+          <div class="card rootCard" v-if="!(store.hideDone && store.root.done)">
+            <div class="inner curser form" tabindex="0">
+              <input v-model="store.root.title" @blur="store.save" @keyup.enter="store.save">
+              <h2> {{ store.root.title }}</h2>
+              <input v-model="store.root.body" @blur="store.save" placeholder="text">
+              <img v-if="store.root.image" :src="store.root.image" @error="store.log"/>
+              <input v-model="store.root.image" @blur="store.save" placeholder="https://image.jpg">
+              <input type="checkbox" name="done" :checked="store.root.done" @click="store.root.done = !store.root.done" />
+              <button @click="store.saveToFile(store.root)">▼</button>
               <button @click="store.uploadFileInToCard(i)">▲</button>
-              <button v-if="store.cards[1] && store.curser > 0" @click="store.makeSubCard(i, i-1)"> ↓ </button>
-              <button v-if="store.cards[1] && !store.curser > 0" @click="store.makeSubCard(i, i+1)"> ↓ </button>
-              <button v-if="store.trail[0]" @click="store.makeMainCard(i)"> ↑ </button>
-              <button v-if="store.cards[1] && store.curser > 0" @click="store.swapCards(i, i-1)">&lt;</button> <!-- move cards -->
-              <button v-if="store.cards[1] && store.curser !== store.cards.length - 1" @click="store.swapCards(i, i+1)">&gt;</button>
-            </div>
-            <div :data-index="i" v-else class="inner" @click="store.curser = i" >
-              <h2 :data-index="i" > {{ card.title }} </h2>
-              <p :data-index="i" > {{ card.body }} </p>
-              <img :data-index="i" v-if="card.image" :src="card.image" @error="store.log" />
+              <button @click="store.load(store.trail[store.trail.length - 1])">↑</button>
+              <button v-if="store.root.layout !== 'circle'" @click="store.distributeCardsCircle()">O</button>
+              <button v-if="store.root.layout !== 'line'" @click="store.distributeCardsLine()">-</button>
+              <button @click="store.sortByTitle">So</button>
+              <button @click="store.shuffle">Sh</button>
+              <input type="color" name="color" v-model="store.root.color" @change="store.setColor()" />
             </div>
           </div>
         </div>
       </div>
-    </div>
-      <!--Display subcards-->
-    <div v-for="(card, ci) in store.cards">
-      <div class="container" v-if="store.curser === ci">
-        <div class="card" tabindex="0" :key="store.curser +' '+ i" v-for="(n, i) in card.subCards">
-          <div class="inner" @click="store.deeper(i)">
-            <h3>{{ n.title }}</h3>
-            <p> {{ n.body }} </p>
+      <!--Display main cards-->
+      <div>
+        <div class="container">
+          <div v-for="(card, i) in store.cards" 
+            class="outerMainCard outerCard"
+            @dragover="store.dragOver"
+            :draggable="store.curser == i"
+            @dragstart="store.draggingHash = store.hash(card)"
+            @drop="store.drop(i)"
+            :data-index="i"
+            :title="card.title"
+          > <!-- i is for index -->
+            <div class="card mainCard" v-if="!(store.hideDone && card.done)">
+              <div class="inner curser form" v-if="store.curser === i" tabindex="0">
+                <input v-model="card.title" @blur="store.save" @keyup.enter="store.save">
+                <h2> {{ card.title }} </h2>
+                <input v-model="card.body" @blur="store.save" placeholder="text">
+                <img v-if="card.image" :src="card.image" @error="store.log"/>
+                <input v-model="card.image" @blur="store.save" placeholder="https://image.jpg">
+                <input type="checkbox" name="done" :checked="card.done" @click="card.done = !card.done" />
+                <button @click="store.removeCard(i)">-</button>
+                <button @click="store.duplicateCard(i)">+</button>
+                <button @click="store.saveToFile(card)">▼</button>
+                <button @click="store.uploadFileInToCard(i)">▲</button>
+                <button v-if="store.cards[1] && store.curser > 0" @click="store.makeSubCard(i, i-1)"> ↓ </button>
+                <button v-if="store.cards[1] && !store.curser > 0" @click="store.makeSubCard(i, i+1)"> ↓ </button>
+                <button v-if="store.trail[0]" @click="store.makeMainCard(i)"> ↑ </button>
+                <button v-if="store.cards[1] && store.curser > 0" @click="store.swapCards(i, i-1)">&lt;</button> <!-- move cards -->
+                <button v-if="store.cards[1] && store.curser !== store.cards.length - 1" @click="store.swapCards(i, i+1)">&gt;</button>
+              </div>
+              <div :data-index="i" v-else class="inner" @click="store.curser = i" >
+                <h2 :data-index="i" > {{ card.title }} </h2>
+                <p :data-index="i" > {{ card.body }} </p>
+                <img :data-index="i" v-if="card.image" :src="card.image" @error="store.log" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    
-    <div>
-      <dialog id="mainOrSunDialog">
-        <p>Would you like this card to be a subcard or main card</p>
-        <button autofocus @click="store.inc()">Main</button> <!--this causes the swapping error if you click on another card before it is finished-->
-        <button v-if="store.cards[0]" @click="store.incSub()">Sub</button>
-      </dialog>
+        <!--Display subcards-->
+      <div v-for="(card, ci) in store.cards">
+        <div class="container" v-if="store.curser === ci">
+          <div class="card" tabindex="0" :key="store.curser +' '+ i" v-for="(n, i) in card.subCards">
+            <div class="inner" @click="store.deeper(i)">
+              <h3>{{ n.title }}</h3>
+              <p> {{ n.body }} </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div>
+        <dialog id="mainOrSunDialog">
+          <p>Would you like this card to be a subcard or main card</p>
+          <button autofocus @click="store.inc()">Main</button> <!--this causes the swapping error if you click on another card before it is finished-->
+          <button v-if="store.cards[0]" @click="store.incSub()">Sub</button>
+        </dialog>
+      </div>
     </div>
   </body>
 </html>

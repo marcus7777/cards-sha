@@ -14,8 +14,17 @@ body {
 [draggable=true] {
   cursor: move;
 }
+#table {
+  height: 100vh;
+  perspective: 600px;
+}
 .rootCard {
   text-align: center;
+}
+.outerCard {
+  transform: rotateX(45deg);
+  transform-style: preserve-3d;
+  transition: transform 0.5s;
 }
 .rootContainer {
   display: flex;
@@ -34,6 +43,7 @@ input {
   margin-top: 60px;
   display: flex;
   justify-content: space-around;
+  perspective: 600px;
 }
 .container.ellipse {
   margin-top: 0px;
