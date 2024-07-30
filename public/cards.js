@@ -13,7 +13,7 @@ function makeHash(card) {
     return card
   }
   let obj = {...card}; //clones cards so that it can be manipulated without effecting the original let is a local variable
-  delete obj.subCards; //
+  delete obj.subCards; //removes a property from an object: removing the subcards from each card so that the hash won't change when adding subcards
   const str = JSON.stringify(obj);
   let hash = 0;
   if (str.length == 0) { //returns 0 (maybe useless?)
@@ -557,7 +557,6 @@ const store = reactive({ //updates the html immediately
   },
 })
 
-
 createApp({
   // share it with app scopes
   store
@@ -566,4 +565,3 @@ store.load()
 setInterval(() => {
   store.autoAdd()
 }, 1000)
-
