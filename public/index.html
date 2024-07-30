@@ -7,25 +7,21 @@
     <script type="module" src="cards.js"></script>
   </head>
   <body>
-    <div class="dropDown">
+    <!--<div class="dropDown">
       <div class="dropDownContent">
         <button @click="store.load()"> Top </button>
-        <!--<button v-for="(breadcrumb, i) in store.trail" @click="store.load(breadcrumb)"> {{ store.trailNames[i] }} </button>-->
         <button @click="store.saveToFile('root')">▼</button>
       
         <input type="checkbox" name="hideDone" :checked="store.hideDone" @click="store.hideDone = !store.hideDone" />
 
         <label for="hideDone">Hide Done</label>
-        <!-- <input type="number" v-model="store.showNext" >
-        <label for="showNext">Show Next</label> -->
       </div>
-      <button class="fab" @click="">⋮</button> 
-    </div>
+      <button class="fab" @click="store.menuClick()">⋮</button>
+    </div>-->
     
-
     <div id="table" v-scope="{}" >
       <div>
-        <input v-model="store.newCard.title" id="title" @keyup.enter="store.onEnterTitle">
+        <input v-model="store.newCard.title" id="title" @keyup.enter="store.onEnterTitle()">
         <button v-if="store.newCard.title" @click="store.inc()"> + Main </button>
         <button v-if="store.cards[0] && store.newCard.title" @click="store.incSub()"> + Sub </button>
         <button @click="store.load()"> Top </button>
@@ -35,6 +31,8 @@
         <input type="checkbox" name="hideDone" :checked="store.hideDone" @click="store.hideDone = !store.hideDone" />
 
         <label for="hideDone">Hide Done</label>
+
+        <button class="fab" @click="store.menuClick()">⋮</button> 
         <!-- <input type="number" v-model="store.showNext" >
         <label for="showNext">Show Next</label> -->
       </div>
@@ -51,7 +49,7 @@
               <input type="checkbox" name="done" :checked="store.root.done" @click="store.root.done = !store.root.done" />
               <button @click="store.saveToFile(store.root)">▼</button>
               <button @click="store.uploadFileInToCard(i)">▲</button>
-              <button @click="store.load(store.trail[store.trail.length - 1])">↑</button>
+              <button @click="store.load(store.tr)">↑</button> <!--finish fixing-->
               <button v-if="store.root.layout !== 'circle'" @click="store.layout('circle')">O</button>
               <button v-if="store.root.layout !== 'line'" @click="store.layout('line')">-</button>
               <button @click="store.sortByTitle">So</button>
@@ -87,7 +85,7 @@
                 <button @click="store.uploadFileInToCard(i)">▲</button>
                 <button v-if="store.cards[1] && store.curser > 0" @click="store.makeSubCard(i, i-1)"> ↓ </button>
                 <button v-if="store.cards[1] && !store.curser > 0" @click="store.makeSubCard(i, i+1)"> ↓ </button>
-                <button v-if="store.trail[0]" @click="store.makeMainCard(i)"> ↑ </button>
+                <button v-if="window.location.hash.slice(1)" @click="store.makeMainCard(i)"> ↑ </button>
                 <button v-if="store.cards[1] && store.curser > 0" @click="store.swapCards(i, i-1)">&lt;</button> <!-- move cards -->
                 <button v-if="store.cards[1] && store.curser !== store.cards.length - 1" @click="store.swapCards(i, i+1)">&gt;</button>
               </div>
@@ -117,6 +115,22 @@
           <p>Would you like this card to be a subcard or main card</p>
           <button autofocus @click="store.inc()">Main</button> <!--this causes the swapping error if you click on another card before it is finished-->
           <button v-if="store.cards[0]" @click="store.incSub()">Sub</button>
+        </dialog>
+        <dialog id="menuDialog">
+          <div>
+            <input v-model="store.newCard.title" id="title" @keyup.enter="store.onEnterTitle()">
+            <button v-if="store.newCard.title" @click="store.inc()"> + Main </button>
+            <button v-if="store.cards[0] && store.newCard.title" @click="store.incSub()"> + Sub </button>
+            <button @click="store.load()"> Top </button>
+            <!--<button v-for="(breadcrumb, i) in store.trail" @click="store.load(breadcrumb)"> {{ store.trailNames[i] }} </button>-->
+            <button @click="store.saveToFile('root')">▼</button>
+          
+            <input type="checkbox" name="hideDone" :checked="store.hideDone" @click="store.hideDone = !store.hideDone" />
+    
+            <label for="hideDone">Hide Done</label>
+            <!-- <input type="number" v-model="store.showNext" >
+            <label for="showNext">Show Next</label> -->
+          </div>
         </dialog>
       </div>
     </div>

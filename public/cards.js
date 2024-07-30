@@ -166,7 +166,6 @@ const store = reactive({ //updates the html immediately
     return card
   },
   load(cardHash) {
-    console.log("load", localStorage.root)
     // load cards from local storage
     if (!cardHash) {
       //this.trail = window.location.hash.slice(1).split("/") //this is causing the problem //useless now?
@@ -202,7 +201,6 @@ const store = reactive({ //updates the html immediately
     this.cards = subCards
   },
   save() {
-    console.log("Save:", localStorage.root)
     // save the root card to local storage
     //this.trail = window.location.hash.slice(1).split("/") //this is causing the problem!!
     this.saveRoot(window.location.hash.slice(1).split("/").pop() || "root")
@@ -225,7 +223,6 @@ const store = reactive({ //updates the html immediately
       
       saveCard(cardHash, {...card, subCards: subHashes})
     })
-    console.log("SaveAfter:", localStorage.root)
   },
   deeper(newCurser) {
     this.save()
@@ -534,6 +531,10 @@ const store = reactive({ //updates the html immediately
     this.save()
     this.layout()
   },
+  menuClick() {
+    document.getElementById("menuDialog").showModal()
+    console.log("Works!?")
+},
   log(e) {
     e.preventDefault()
     const div = document.createElement("div");
