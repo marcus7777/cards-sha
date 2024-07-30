@@ -1,5 +1,6 @@
 import { createApp, reactive } from './petite-vue.es.js'
-import QrCreator from './qr-creator.es6.min.js';
+import QrCreator from './qr-creator.es6.min.js'
+
 function saveCard(hash, card) {
   if (!hash) return window.alert("no hash")
   if (!card) return window.alert("no card")

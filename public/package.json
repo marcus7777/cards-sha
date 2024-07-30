@@ -4,7 +4,7 @@
   "description": "Notes",
   "main": "public/html",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1", 
+    "test": "echo \"Error: no test specified\" && exit 1",
     "deploy": "firebase deploy",
     "serve": "firebase serve"
   },
@@ -22,5 +22,8 @@
   "bugs": {
     "url": "https://github.com/marcus7777/cards-sha/issues"
   },
-  "homepage": "https://github.com/marcus7777/cards-sha#readme"
+  "homepage": "https://github.com/marcus7777/cards-sha#readme",
+  "dependencies": {
+    "@material/web": "^2.0.0"
+  }
 }
