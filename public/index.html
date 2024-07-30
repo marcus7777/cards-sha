@@ -22,15 +22,16 @@
     <div id="table" v-scope="{}" >
       <div>
         <input v-model="store.newCard.title" id="title" @keyup.enter="store.onEnterTitle()">
-        <button v-if="store.newCard.title" @click="store.inc()"> + Main </button>
+
+        <!--<button v-if="store.newCard.title" @click="store.inc()"> + Main </button>
         <button v-if="store.cards[0] && store.newCard.title" @click="store.incSub()"> + Sub </button>
-        <button @click="store.load()"> Top </button>
+        <button @click="store.load()"> Top </button>-->
         <!--<button v-for="(breadcrumb, i) in store.trail" @click="store.load(breadcrumb)"> {{ store.trailNames[i] }} </button>-->
-        <button @click="store.saveToFile('root')">▼</button>
+        <!--<button @click="store.saveToFile('root')">▼</button>
       
         <input type="checkbox" name="hideDone" :checked="store.hideDone" @click="store.hideDone = !store.hideDone" />
 
-        <label for="hideDone">Hide Done</label>
+        <label for="hideDone">Hide Done</label>-->
 
         <button class="fab" @click="store.menuClick()">⋮</button> 
         <!-- <input type="number" v-model="store.showNext" >
@@ -118,16 +119,16 @@
         </dialog>
         <dialog id="menuDialog">
           <div>
-            <input v-model="store.newCard.title" id="title" @keyup.enter="store.onEnterTitle()">
+            <!--<input v-model="store.newCard.title" id="title" @keyup.enter="store.onEnterTitle()">
             <button v-if="store.newCard.title" @click="store.inc()"> + Main </button>
-            <button v-if="store.cards[0] && store.newCard.title" @click="store.incSub()"> + Sub </button>
-            <button @click="store.load()"> Top </button>
+            <button v-if="store.cards[0] && store.newCard.title" @click="store.incSub()"> + Sub </button>-->
+            <button @click="store.load()"> Top </button> <!--Brocken-->
             <!--<button v-for="(breadcrumb, i) in store.trail" @click="store.load(breadcrumb)"> {{ store.trailNames[i] }} </button>-->
             <button @click="store.saveToFile('root')">▼</button>
           
             <input type="checkbox" name="hideDone" :checked="store.hideDone" @click="store.hideDone = !store.hideDone" />
-    
             <label for="hideDone">Hide Done</label>
+            
             <!-- <input type="number" v-model="store.showNext" >
             <label for="showNext">Show Next</label> -->
           </div>
