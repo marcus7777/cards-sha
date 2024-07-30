@@ -7,6 +7,22 @@
     <script type="module" src="cards.js"></script>
   </head>
   <body>
+    <div class="dropDown">
+      <div class="dropDownContent">
+        <button @click="store.load()"> Top </button>
+        <!--<button v-for="(breadcrumb, i) in store.trail" @click="store.load(breadcrumb)"> {{ store.trailNames[i] }} </button>-->
+        <button @click="store.saveToFile('root')">▼</button>
+      
+        <input type="checkbox" name="hideDone" :checked="store.hideDone" @click="store.hideDone = !store.hideDone" />
+
+        <label for="hideDone">Hide Done</label>
+        <!-- <input type="number" v-model="store.showNext" >
+        <label for="showNext">Show Next</label> -->
+      </div>
+      <button class="fab" @click="">⋮</button> 
+    </div>
+    
+
     <div id="table" v-scope="{}" >
       <div>
         <input v-model="store.newCard.title" id="title" @keyup.enter="store.onEnterTitle">
@@ -17,10 +33,7 @@
         <button @click="store.saveToFile('root')">▼</button>
       
         <input type="checkbox" name="hideDone" :checked="store.hideDone" @click="store.hideDone = !store.hideDone" />
-        <label>
-          Material 3
-          <md-checkbox checked></md-checkbox>
-        </label>
+
         <label for="hideDone">Hide Done</label>
         <!-- <input type="number" v-model="store.showNext" >
         <label for="showNext">Show Next</label> -->

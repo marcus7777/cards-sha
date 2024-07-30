@@ -148,6 +148,27 @@ h1 {
   background-color: white;
   color: #ffb534;
 }
+.fab {
+  position: fixed;
+  bottom: 3vh;
+  right: 3vh;
+  font-size: 2vh;
+  padding: 1%;
+  font-weight: 900;
+  font-size: 200%;
+  border-radius: 50%;
+  background-color: #ddd;
+}
+.dropDown {
+  position:fixed;
+  right: 3vh;
+  bottom: 0;
+}
+.dropDownElements {
+  position: relative;
+  bottom: 10vh;
+  display: block;
+}
 /* animation */
 @keyframes fadeIn {
   from {
