@@ -55,7 +55,6 @@ function saveFile(text, title) {
 // swop the order of the cards
 const store = reactive({ //updates the html immediately
   curser:0,
-  trail: [],
   pageTitle: '',
   root: {
     title: '',
@@ -73,7 +72,7 @@ const store = reactive({ //updates the html immediately
   showMain(card, index) {
     // look at the card and decide if it should be shown in the main list
     // trail is the path to the current card
-    const topTrail = this.trail.slice(0, -1)[0]
+    const topTrail = window.location.hash.slice(1).split("/").slice(0, -1)[0]
     return true
   },
   newCard: {
@@ -169,10 +168,10 @@ const store = reactive({ //updates the html immediately
     console.log("load", localStorage.root)
     // load cards from local storage
     if (!cardHash) {
-      this.trail = window.location.hash.slice(1).split("/") //this is causing the problem
-      cardHash = [...this.trail].pop() || "root"
+      //this.trail = window.location.hash.slice(1).split("/") //this is causing the problem //useless now?
+      cardHash = window.location.hash.slice(1).split("/").pop() || "root"
     } 
-    const fresh = this.trail.indexOf(cardHash)
+    const fresh = window.location.hash.slice(1).split("/").pop().indexOf(cardHash)
     
     //this.trail = this.trail.slice(0, fresh)
     
@@ -205,7 +204,7 @@ const store = reactive({ //updates the html immediately
     console.log("Save:", localStorage.root)
     // save the root card to local storage
     //this.trail = window.location.hash.slice(1).split("/") //this is causing the problem!!
-    this.saveRoot([...this.trail].pop() || "root")
+    this.saveRoot(window.location.hash.slice(1).split("/").pop() || "root")
     // save this.cards to local storage hash all cards and save under the hash with a list of hashs for sub cards
     this.cards.forEach(card => {
       if (typeof card === 'string') {
@@ -229,10 +228,11 @@ const store = reactive({ //updates the html immediately
   },
   deeper(newCurser) {
     this.save()
-    this.trail.push(makeHash(this.cards[this.curser]))
+    let trail = window.location.hash.slice(1).split("/")
+    trail.push(makeHash(this.cards[this.curser]))
 
     window.scrollTo(0, 0)
-    window.history.pushState({}, '', `#${this.trail.join('/')}`)
+    window.history.pushState({}, "", "#" + trail.join("/"))
     document.title = this.cards[this.curser].title
     this.title = this.cards[this.curser].title
     this.color = this.cards[this.curser].color
@@ -411,7 +411,7 @@ const store = reactive({ //updates the html immediately
 
   },
   setColor() {
-    const root = [...this.trail].pop() || 'root'
+    window.location.hash = window.location.hash.slice(1).split("/").pop() || ""
     const cardToSave = this.loadCard(root)
     saveCard(root, {...cardToSave, color: this.color})
 
@@ -481,7 +481,7 @@ const store = reactive({ //updates the html immediately
           elements3[0].focus()
         }
         //update card additions to include this card's weight
-        const rootHash = [...this.trail].pop() || 'root'
+        const rootHash = window.location.hash.slice(1).split("/").pop() || 'root'
         let rootCard = this.loadCard(rootHash) //was a const but I changed it because it caused errors (maybe change back?)
 
         
@@ -513,12 +513,12 @@ const store = reactive({ //updates the html immediately
     this.removeCard(index1)
   },
   makeMainCard(index) {
-    if (!this.trail[0]) return
+    if (!window.location.hash.slice(1).split("/")[0]) return
     // if (makeHash(...) === )// sub mail not the some)
     const temp = {...this.cards[index]}
     this.removeCard(index)
     this.save()
-    this.load(["root", ...this.trail].slice(-2)[0]) //tidy me
+    this.load(["root", window.location.hash.slice(1).split("/")].slice(-2)[0]) //tidy me
     this.cards = this.cards.concat([{...temp}])
   },
   removeCard(index) {

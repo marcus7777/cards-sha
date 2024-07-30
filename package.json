@@ -1,0 +1,26 @@
+{
+  "name": "sky-cards",
+  "version": "1.0.0",
+  "description": "Notes",
+  "main": "public/html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1", 
+    "deploy": "firebase deploy",
+    "serve": "firebase serve"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marcus7777/cards-sha.git"
+  },
+  "keywords": [
+    "card",
+    "organisation",
+    "notes"
+  ],
+  "author": "Luke Leibing-Robinson, Marcus Hitchins",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/marcus7777/cards-sha/issues"
+  },
+  "homepage": "https://github.com/marcus7777/cards-sha#readme"
+}
