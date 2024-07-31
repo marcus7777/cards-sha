@@ -3,7 +3,11 @@ import QrCreator from './qr-creator.es6.min.js'
 
 function saveCard(hash, card) {
   if (!hash) return window.alert("no hash")
+  if (typeof hash !== 'string') return window.alert("hash is not a string")
   if (!card) return window.alert("no card")
+  if (typeof card !== 'object') return window.alert("card is not an object")
+  if (!card.title) return window.alert("no title")
+
   localStorage.setItem(hash, JSON.stringify(card))
 }
 
