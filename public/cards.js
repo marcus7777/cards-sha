@@ -141,6 +141,7 @@ const store = reactive({ //updates the html immediately
     input.click()
   },
   loadCard(hash) {
+    if (hash.toString() === "[object HTMLDivElement]") return console.error("hash is an element")
     if (typeof hash === 'object') {
       hash = makeHash(hash)
     }
@@ -226,11 +227,11 @@ const store = reactive({ //updates the html immediately
   },
   deeper(newCurser) {
     this.save()
-    let trail = window.location.hash.slice(1).split("/")
+    let trail = window.location.hash.slice(1).split("/").filter(card => !!card)
     trail.push(makeHash(this.cards[this.curser]))
 
     window.scrollTo(0, 0)
-    window.history.pushState({}, "", "#" + trail.filter(card => !!card).join("/"))
+    window.history.pushState({}, "", "#" + trail.join("/"))
     document.title = this.cards[this.curser].title
     this.title = this.cards[this.curser].title
     this.color = this.cards[this.curser].color
@@ -362,7 +363,7 @@ const store = reactive({ //updates the html immediately
       container.classList.remove("ellipse")
     }
   },
-  distributeCardsLine() {
+  distributeCardsLine() { 
     this.save()
     return () => {
       console.log("Clean up (does nothing) line")
@@ -382,7 +383,7 @@ const store = reactive({ //updates the html immediately
       }
     })
   },
-  sortByTitle() {
+  sortByTitle() { // sort the cards by title
     this.cards.sort((a,b) => {
       if (a.title == b.title) return 0
       if ((""+a.title == +a.title) && (""+b.title == +b.title)) {
@@ -398,7 +399,7 @@ const store = reactive({ //updates the html immediately
     })
     this.layout(this.root.layout)
   },
-  shuffle() {
+  shuffle() { // shuffle the cards
     for (let i = this.cards.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
@@ -409,7 +410,6 @@ const store = reactive({ //updates the html immediately
 
   },
   setColor() {
-    //window.location.hash = window.location.hash.slice(1).split("/").pop() || "" // breaks deeper may be used for other reasons
     const cardToSave = this.loadCard(root)
     saveCard(root, {...cardToSave, color: this.color})
 
@@ -418,7 +418,7 @@ const store = reactive({ //updates the html immediately
     }
     document.body.style.backgroundColor = this.root.color
   },
-  autoAdd() {
+  autoAdd() { // add a new card if the title ends with add
     // If the new card title end with add, then add it as a new card.
     // And select all within the text box, so you can start typing the new card title
     const triggerArray = ['. add', '. ad' , 'full stop add', 'full stop at', ". dad", "full stop next", ". Next", ". next"]
@@ -440,7 +440,7 @@ const store = reactive({ //updates the html immediately
       }
     })
   },
-  swapCards(index1, index2, withFocus = true) {
+  swapCards(index1, index2, withFocus = true) { // swop the order of the cards
     if (this.curser === index1) {
       this.curser = index2
     } else if (this.curser === index2) {
@@ -500,7 +500,7 @@ const store = reactive({ //updates the html immediately
       }, 250)
     }, 0)
   },
-  makeSubCard(index1, index2) {
+  makeSubCard(index1, index2) { // demote a card to a sub card of the card at index2
     if (this.curser === index1) {
       this.curser = index2
     } else if (this.curser === index2) {
@@ -510,7 +510,7 @@ const store = reactive({ //updates the html immediately
     this.cards[index2].subCards = this.cards[index2].subCards.concat([temp])
     this.removeCard(index1)
   },
-  makeMainCard(index) {
+  makeMainCard(index) { // promote a card
     if (!window.location.hash.slice(1).split("/")[0]) return
     // if (makeHash(...) === )// sub mail not the some)
     const temp = {...this.cards[index]}
@@ -521,7 +521,7 @@ const store = reactive({ //updates the html immediately
 
     let path = window.location.hash.split("/") //added may need replacing
     path.pop()
-    window.location.href = path
+    window.location.history.pushState({}, "", path.join("/"))
   },
   removeCard(index) {
     this.cards.splice(index, 1)
