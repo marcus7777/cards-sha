@@ -230,7 +230,7 @@ const store = reactive({ //updates the html immediately
     trail.push(makeHash(this.cards[this.curser]))
 
     window.scrollTo(0, 0)
-    window.history.pushState({}, "", "#" + trail.join("/"))
+    window.history.pushState({}, "", "#" + trail.filter(card => !!card).join("/"))
     document.title = this.cards[this.curser].title
     this.title = this.cards[this.curser].title
     this.color = this.cards[this.curser].color
