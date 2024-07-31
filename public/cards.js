@@ -305,8 +305,8 @@ const store = reactive({ //updates the html immediately
       } else {
         card.subCards = []
       }
-    }
-    if (makeHash(card) === makeHash(this.newCard)) {
+    }//Don't add sub cards that are the same as the main card
+    if (makeHash(card) === makeHash(this.newCard)) { 
       document.getElementById("mainOrSunDialog").close()
       return alert("Don't add sub cards that are the same as the main card")
     }
@@ -409,7 +409,7 @@ const store = reactive({ //updates the html immediately
 
   },
   setColor() {
-    window.location.hash = window.location.hash.slice(1).split("/").pop() || ""
+    //window.location.hash = window.location.hash.slice(1).split("/").pop() || "" // breaks deeper may be used for other reasons
     const cardToSave = this.loadCard(root)
     saveCard(root, {...cardToSave, color: this.color})
 
@@ -515,21 +515,25 @@ const store = reactive({ //updates the html immediately
     // if (makeHash(...) === )// sub mail not the some)
     const temp = {...this.cards[index]}
     this.removeCard(index)
-    this.save()
     this.load(["root", window.location.hash.slice(1).split("/")].slice(-2)[0]) //tidy me
     this.cards = this.cards.concat([{...temp}])
+    this.save()
+
+    let path = window.location.hash.split("/") //added may need replacing
+    path.pop()
+    window.location.href = path
   },
   removeCard(index) {
     this.cards.splice(index, 1)
     this.curser = Math.max(0, this.curser -1)
     this.save()
-    this.layout()
+    this.layout(this.root.layout)
   },
   duplicateCard(index) {
     this.curser++
     this.cards = [...this.cards.slice(0, this.curser), {...this.cards[index]}, ...this.cards.slice(this.curser)]
     this.save()
-    this.layout()
+    this.layout(this.root.layout)
   },
   menuClick() {
     document.getElementById("menuDialog").showModal()

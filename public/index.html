@@ -50,7 +50,7 @@
               <input type="checkbox" name="done" :checked="store.root.done" @click="store.root.done = !store.root.done" />
               <button @click="store.saveToFile(store.root)">▼</button>
               <button @click="store.uploadFileInToCard(i)">▲</button>
-              <button @click="store.load(store.tr)">↑</button> <!--finish fixing-->
+              <!--<button @click="store.load(store.tr)">↑</button> <!--finish fixing what is the purpose of this at all?-->
               <button v-if="store.root.layout !== 'circle'" @click="store.layout('circle')">O</button>
               <button v-if="store.root.layout !== 'line'" @click="store.layout('line')">-</button>
               <button @click="store.sortByTitle">So</button>
@@ -71,7 +71,7 @@
             @drop="store.drop(i)"
             :data-index="i"
             :title="card.title"
-          > <!-- i is for index -->
+          >  <!-- i is for index -->
             <div class="card mainCard" v-if="!(store.hideDone && card.done)">
               <div class="inner curser form" v-if="store.curser === i" tabindex="0">
                 <input v-model="card.title" @blur="store.save" @keyup.enter="store.save">
@@ -84,9 +84,9 @@
                 <button @click="store.duplicateCard(i)">+</button>
                 <button @click="store.saveToFile(card)">▼</button>
                 <button @click="store.uploadFileInToCard(i)">▲</button>
-                <button v-if="store.cards[1] && store.curser > 0" @click="store.makeSubCard(i, i-1)"> ↓ </button>
+                <button v-if="store.cards[1] && store.curser > 0" @click="store.makeSubCard(i, i-1)"> ↓ </button> 
                 <button v-if="store.cards[1] && !store.curser > 0" @click="store.makeSubCard(i, i+1)"> ↓ </button>
-                <button v-if="window.location.hash.slice(1)" @click="store.makeMainCard(i)"> ↑ </button>
+                <button @click="store.makeMainCard(i)"> ↑ </button>
                 <button v-if="store.cards[1] && store.curser > 0" @click="store.swapCards(i, i-1)">&lt;</button> <!-- move cards -->
                 <button v-if="store.cards[1] && store.curser !== store.cards.length - 1" @click="store.swapCards(i, i+1)">&gt;</button>
               </div>
@@ -102,7 +102,7 @@
         <!--Display subcards-->
       <div v-for="(card, ci) in store.cards">
         <div class="container" v-if="store.curser === ci">
-          <div class="card" tabindex="0" :key="store.curser +' '+ i" v-for="(n, i) in card.subCards">
+          <div class="card subcard" tabindex="0" :key="store.curser +' '+ i" v-for="(n, i) in card.subCards">
             <div class="inner" @click="store.deeper(i)">
               <h3>{{ n.title }}</h3>
               <p> {{ n.body }} </p>
