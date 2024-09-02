@@ -35,6 +35,7 @@ body {
   height: 100vh;
   position: absolute;
   width: 100vw;
+  transform: scale(1.2);
 }
 input {
   margin: .5em;
@@ -43,6 +44,7 @@ input {
   margin-top: 60px;
   display: flex;
   justify-content: space-around;
+  padding-right: 180px;
 }
 .container.ellipse {
   margin-top: 0px;
@@ -62,13 +64,26 @@ h1 {
   font-weight: normal;
   font-style: italic;
 }
+p,h3,h2,h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .card {
   display: inline-block;
   transition: all 0.5s ease-in-out;
-  animation: slideInBottom .7s ease-in-out;
+  animation: slideInBottom 0.7s ease-in-out;
 }
-.ellipse .outerMainCard {
+.ellipse .outerMainCard, 
+.ellipse .subCard {
   position: absolute;
+}
+.ellipse .subCard {
+  transform: scale(0.3);
+  animation: slideInBottomSubEllipse 0.7s ease-in-out;
+}
+.ellipse .subCard:hover {
+  z-index: 1;
+  transform: scale(0.7);
 }
 .mainCard {
   height: -webkit-fill-available;
@@ -78,6 +93,8 @@ h1 {
 .outerMainCard {
   transition: all 0.5s ease-in-out;
   max-width: 20vw;
+  width: 5px;
+  display: flex;
 }
 .card.hidden {
   animation: fadeOut 1s ease-in-out;
@@ -116,6 +133,9 @@ h1 {
   border: solid 2px;
   box-shadow: 4px 4px 20px;
   height: -webkit-fill-available;
+  min-width: 138px;
+  min-height: 200px;
+  max-width: 300px;
 }
 
 .card:hover .inner,
@@ -124,7 +144,11 @@ h1 {
   background-color: #fff777;
   transition: all 0.2s ease-in-out;
   margin-left:0%;   
-  box-shadow: 10px 10px 20px 
+  box-shadow: 10px 10px 20px;
+}
+.outerMainCard:hover,
+.outerMainCard:has(.curser) {
+  z-index: 1;
 }
 
 .card > h1 {
@@ -155,14 +179,59 @@ h1 {
 }*/
 .fab {
   position: fixed;
-  right: 2vh;
-  bottom: 2vh;
-  font-size: 2vh;
+  right: 10vw;
+  bottom: 10vh;
   padding: 1%;
-  font-weight: 900;
-  font-size: 200%;
+  font-weight: 600;
+  font-size: 150%;
   border-radius: 50%;
   background-color: #ddd;
+  line-height: 20px;
+  cursor: pointer;
+  box-shadow: 4px 4px 20px;
+  width: 50px;
+  height: 50px;
+  z-index: 1000;
+  border: none;
+}
+.dialogClose {
+  right: 0;
+  position: absolute;
+  top: 0;
+}
+dialog {
+  border-radius: 10px;
+}
+.dot {
+  top: 0;
+  left: 0;
+  background-color: #55c2c3;
+  height: 10px;
+  width: 10px;
+  margin: -22px -13px;
+  border: .5px rgb(90, 89, 89) solid;
+  border-radius: 50%;
+}
+#addCardInput {
+  float:right;
+}
+.top-right {
+  position: fixed;
+  top: 1vh;
+  right: 1vh;
+  font-weight: 900;
+  line-height: 20px;
+  background-color: #0000;
+  cursor: pointer;
+  border: none;
+  font-size: 150%;
+}
+img,
+video {
+  max-width: 100%;
+}
+.inner.small{
+  max-width: 100px
 }
 /*.dropDownElements {
   position: relative;
@@ -236,10 +305,18 @@ h1 {
 }
 @keyframes slideInBottom {
   from {
-    transform: translateY(100vh);
+    transform: translateY(100vh) scale(0);
   }
   to {
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes slideInBottomSubEllipse {
+  from {
+    transform: translateY(100vh) scale(0);
+  }
+  to {
+    transform: translateY(0) scale(0.3);
   }
 }
 @keyframes slideOutBottom {
@@ -274,4 +351,3 @@ h1 {
     transform: rotate(360deg);
   }
 }
-
