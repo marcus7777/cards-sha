@@ -311,7 +311,7 @@ const store = reactive({ //updates the html immediately
         return index
       } 
       return curser
-    }, 0) // imperfect solution (confuses if there is more than one card witht he same hash)
+    }, 0) // imperfect solution (confuses if there is more than one card with the same hash)
     this.curser = newCurser
     this.layout(this.root.layout)
     document.title = this.root.title
