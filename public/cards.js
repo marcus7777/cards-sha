@@ -8,7 +8,7 @@ function saveCard(hash, card) {
   localStorage.setItem(hash, JSON.stringify(card))
 }
 function getUrlExtension( url ) {
-  return url.split(/[#?]/)[0].split('.').pop().trim();
+  return url.split(/[#?]/)[0].split('.').pop().trim(); //this may not always work?
 }
 function makeHash(card) {
   if (!card) return ""
@@ -671,11 +671,13 @@ const store = reactive({ //updates the html immediately
   getDataType(url) {
     const imageFormats = ["jpeg","svg","webp","png","gif"]
     const videoFormats = ["mp4","ogg","mpeg","mov","avi","webm"]
+    const audioFormats = ["mp3"]
     if (url == "") return ""
     const dataType = getUrlExtension(url)
-    if (dataType == "mp4") return "video"
+    if (videoFormats.includes(dataType)) return "video"
     if (imageFormats.includes(dataType)) return "image"
-    if (url.length < 2000 && url.length > 5) return "QrCode"
+    if (audioFormats.includes(dataType)) return "audio"
+    if (url.length < 2000 && url.length > 5) return "qrCode"
     if (dataType == url) return ""
     return "image"
   },

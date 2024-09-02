@@ -95,7 +95,11 @@
                 <p :data-index="i" > {{ card.body }} </p>
                 <img v-if="store.getDataType(card.image)=='image'" :src="card.image" @error="store.log"/>
                 <video v-if="store.getDataType(card.image)=='video'" :poster="card.thumbnail"><source :src="card.image" type="video/mp4"> </video>
-                <img v-if="store.getDataType(card.image)=='QrCode'" :src="store.makeQrCode(card.image)"/>
+                <img v-if="store.getDataType(card.image)=='qrCode'" :src="store.makeQrCode(card.image)"/>
+                <audio v-if="store.getDataType(card.image)=='audio'" :src="card.image" controls>
+                  <source :src="card.image" type="audio/mpeg">
+                Your browser does not support the audio element.
+                </audio>
               </div>
             </div>
           </div>
