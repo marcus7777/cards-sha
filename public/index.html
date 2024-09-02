@@ -1,39 +1,17 @@
-
+<!DOCTYPE html>
 <html>
   <head>
     <title>Sky Cards</title>
     <link rel="preload" href="/assets/Zapfino.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" type="text/css" href="cards.css">
     <script type="module" src="cards.js"></script>
+    <meta charset="utf-8">
   </head>
   <body>
-    <!--<div class="dropDown">
-      <div class="dropDownContent">
-        <button @click="store.load()"> Top </button>
-        <button @click="store.saveToFile('root')">▼</button>
-      
-        <input type="checkbox" name="hideDone" :checked="store.hideDone" @click="store.hideDone = !store.hideDone" />
-
-        <label for="hideDone">Hide Done</label>
-      </div>
-      <button class="fab" @click="store.menuClick()">⋮</button>
-    </div>-->
-    
     <div id="table" v-scope="{}" >
       <div>
-        <input v-model="store.newCard.title" id="title" @keyup.enter="store.onEnterTitle()">
-
-        <!--<button v-if="store.newCard.title" @click="store.inc()"> + Main </button>
-        <button v-if="store.cards[0] && store.newCard.title" @click="store.incSub()"> + Sub </button>
-        <button @click="store.load()"> Top </button>-->
-        <!--<button v-for="(breadcrumb, i) in store.trail" @click="store.load(breadcrumb)"> {{ store.trailNames[i] }} </button>-->
-        <!--<button @click="store.saveToFile('root')">▼</button>
-      
-        <input type="checkbox" name="hideDone" :checked="store.hideDone" @click="store.hideDone = !store.hideDone" />
-
-        <label for="hideDone">Hide Done</label>-->
-
-        <button class="fab" @click="store.menuClick()">⋮</button> 
+        <button class="fab"       @click="store.addClick()" > + </button> 
+        <button class="top-right" @click="store.menuClick()"> ⋮ </button> 
         <!-- <input type="number" v-model="store.showNext" >
         <label for="showNext">Show Next</label> -->
       </div>
@@ -41,21 +19,32 @@
       <div id="root">
         <div class="rootContainer">
           <div class="card rootCard" v-if="!(store.hideDone && store.root.done)">
-            <div class="inner curser form" tabindex="0">
+            <div class="inner curser form" tabindex="0" v-if="store.curser === -1">
               <input v-model="store.root.title" @blur="store.save" @keyup.enter="store.save">
               <h2> {{ store.root.title }}</h2>
               <input v-model="store.root.body" @blur="store.save" placeholder="text">
-              <img v-if="store.root.image" :src="store.root.image" @error="store.log"/>
+              <p :data-index="-1" > {{ store.root.body }} </p>
+              <img v-if="store.getDataType(store.root.image)=='image'" :src="store.root.image" @error="store.log"/>
+              <video v-if="store.getDataType(store.root.image)=='video'" controls :poster="store.root.thumbnail"><source :src="store.root.image" type="video/mp4"> </video>
+              <input v-if="store.getDataType(store.root.image)=='video'"  v-model="store.root.thumbnail" @blur="store.save" placeholder="https://image.jpg">
+              <img v-if="store.getDataType(store.root.image)=='QrCode'" :src="store.makeQrCode(store.root.image)"/>
               <input v-model="store.root.image" @blur="store.save" placeholder="https://image.jpg">
               <input type="checkbox" name="done" :checked="store.root.done" @click="store.root.done = !store.root.done" />
               <button @click="store.saveToFile(store.root)">▼</button>
-              <button @click="store.uploadFileInToCard(i)">▲</button>
-              <!--<button @click="store.load(store.tr)">↑</button> <!--finish fixing what is the purpose of this at all?-->
+              <button @click="store.uploadFileInToCard(-1)">▲</button>
+              <!--<button @click="store.load(store.tr)">↑</button> finish fixing what is the purpose of this at all?-->
               <button v-if="store.root.layout !== 'circle'" @click="store.layout('circle')">O</button>
               <button v-if="store.root.layout !== 'line'" @click="store.layout('line')">-</button>
               <button @click="store.sortByTitle">So</button>
               <button @click="store.shuffle">Sh</button>
-              <input type="color" name="color" v-model="store.root.color" @change="store.setColor()"/>
+              <input type="color" name="color" v-model="store.root.color" @change="store.setColor();store.saveRoot()"/>
+            </div>
+            <div :data-index="-1" v-else class="inner small" @click="store.curser = -1" >
+              <h2 :data-index="-1" > {{ store.root.title }} </h2>
+              <p :data-index="-1" > {{ store.root.body }} </p>
+              <img v-if="store.getDataType(store.root.image)=='image'" :src="store.root.image" @error="store.log"/>
+              <video v-if="store.getDataType(store.root.image)=='video'" :poster="store.root.thumbnail"><source :src="store.root.image" type="video/mp4"> </video>
+              <img v-if="store.getDataType(store.root.image)=='QrCode'" :src="store.makeQrCode(store.root.image)"/>
             </div>
           </div>
         </div>
@@ -74,26 +63,39 @@
           >  <!-- i is for index -->
             <div class="card mainCard" v-if="!(store.hideDone && card.done)">
               <div class="inner curser form" v-if="store.curser === i" tabindex="0">
+                <div class="dot"></div>
                 <input v-model="card.title" @blur="store.save" @keyup.enter="store.save">
                 <h2> {{ card.title }} </h2>
                 <input v-model="card.body" @blur="store.save" placeholder="text">
-                <img v-if="card.image" :src="card.image" @error="store.log"/>
+                <p :data-index="i" > {{ card.body }} </p>
+                <img v-if="store.getDataType(card.image)=='image'" :src="card.image" @error="store.log"/>
+                <video v-if="store.getDataType(card.image)=='video'" controls :poster="card.thumbnail"><source :src="card.image" type="video/mp4"> </video>
+                <input v-if="store.getDataType(card.image)=='video'"  v-model="card.thumbnail" @blur="store.save" placeholder="https://image.jpg">
+                <img v-if="store.getDataType(card.image)=='QrCode'" :src="store.makeQrCode(card.image)"/>
                 <input v-model="card.image" @blur="store.save" placeholder="https://image.jpg">
                 <input type="checkbox" name="done" :checked="card.done" @click="card.done = !card.done" />
                 <button @click="store.removeCard(i)">-</button>
                 <button @click="store.duplicateCard(i)">+</button>
                 <button @click="store.saveToFile(card)">▼</button>
                 <button @click="store.uploadFileInToCard(i)">▲</button>
+                <button @click="store.saveToFileCloud(card)">▼ᯤ</button>
+                <!--<fb-upload ref="upload" v-model="files" :meta="meta" :uid="user.uid" @uploading="updateUploading">
+                  <button @click="$refs.upload.selectFile()" >▲ᯤ</button> 
+                </fb-upload>-->
+                <button @click="store.uploadFileInToCardCloud(i)">▲ᯤ</button>
                 <button v-if="store.cards[1] && store.curser > 0" @click="store.makeSubCard(i, i-1)"> ↓ </button> 
                 <button v-if="store.cards[1] && !store.curser > 0" @click="store.makeSubCard(i, i+1)"> ↓ </button>
                 <button @click="store.makeMainCard(i)"> ↑ </button>
-                <button v-if="store.cards[1] && store.curser > 0" @click="store.swapCards(i, i-1)">&lt;</button> <!-- move cards -->
-                <button v-if="store.cards[1] && store.curser !== store.cards.length - 1" @click="store.swapCards(i, i+1)">&gt;</button>
+                <button v-if="store.cards[1] && store.curser > 0" @click="store.swapCards(i, i-1)">&lt;</button> <!-- < move cards -->
+		            <button v-if="store.cards[1] && store.curser !== store.cards.length - 1" @click="store.swapCards(i, i+1)">&gt;</button> <!-- > move cards -->
               </div>
-              <div :data-index="i" v-else class="inner" @click="store.curser = i" >
+              <div :data-index="i" v-else class="inner small" @click="store.curser = i; store.layout(store.root.layout)" >
+                <div class="dot"></div>
                 <h2 :data-index="i" > {{ card.title }} </h2>
                 <p :data-index="i" > {{ card.body }} </p>
-                <img :data-index="i" v-if="card.image" :src="card.image" @error="store.log" />
+                <img v-if="store.getDataType(card.image)=='image'" :src="card.image" @error="store.log"/>
+                <video v-if="store.getDataType(card.image)=='video'" :poster="card.thumbnail"><source :src="card.image" type="video/mp4"> </video>
+                <img v-if="store.getDataType(card.image)=='QrCode'" :src="store.makeQrCode(card.image)"/>
               </div>
             </div>
           </div>
@@ -102,10 +104,13 @@
         <!--Display subcards-->
       <div v-for="(card, ci) in store.cards">
         <div class="container" v-if="store.curser === ci">
-          <div class="card subcard" tabindex="0" :key="store.curser +' '+ i" v-for="(n, i) in card.subCards">
+          <div class="card subCard" tabindex="0" :key="store.curser +' '+ i" v-for="(subCard, i) in card.subCards">
             <div class="inner" @click="store.deeper(i)">
-              <h3>{{ n.title }}</h3>
-              <p> {{ n.body }} </p>
+              <h3>{{ subCard.title }}</h3>
+              <p> {{ subCard.body }} </p>
+              <video v-if="store.getDataType(subCard.image)=='video'" controls :poster="subCard.thumbnail"><source :src="subCard.image" type="video/mp4"> </video>
+              <img v-if="store.getDataType(subCard.image)=='QrCode'" :src="store.makeQrCode(subCard.image)"/>
+              <img v-if="store.getDataType(subCard.image)=='image'" :src="subCard.image" @error="store.log"/>
             </div>
           </div>
         </div>
@@ -115,23 +120,53 @@
         <dialog id="mainOrSunDialog">
           <p>Would you like this card to be a subcard or main card</p>
           <button autofocus @click="store.inc()">Main</button> <!--this causes the swapping error if you click on another card before it is finished-->
-          <button v-if="store.cards[0]" @click="store.incSub()">Sub</button>
+          <button v-if="store.cards[0] && store.curser > -1" @click="store.incSub()">Sub</button>
         </dialog>
         <dialog id="menuDialog">
           <div>
+            <button @click="store.closeDialog('menuDialog')">x</button>
             <!--<input v-model="store.newCard.title" id="title" @keyup.enter="store.onEnterTitle()">
             <button v-if="store.newCard.title" @click="store.inc()"> + Main </button>
             <button v-if="store.cards[0] && store.newCard.title" @click="store.incSub()"> + Sub </button>-->
-            <button @click="store.load()"> Top </button> <!--Brocken-->
             <!--<button v-for="(breadcrumb, i) in store.trail" @click="store.load(breadcrumb)"> {{ store.trailNames[i] }} </button>-->
             <button @click="store.saveToFile('root')">▼</button>
           
             <input type="checkbox" name="hideDone" :checked="store.hideDone" @click="store.hideDone = !store.hideDone" />
             <label for="hideDone">Hide Done</label>
+
             
             <!-- <input type="number" v-model="store.showNext" >
             <label for="showNext">Show Next</label> -->
           </div>
+        </dialog>
+
+        <dialog id="addDialog">
+          <button class="dialogClose" @click="store.closeDialog('addDialog')">x</button>
+            <div class="card">
+              <div :data-index="i" class="inner small" @click="store.curser = i; store.layout(store.root.layout)" >
+                <div class="dot"></div>
+                <h2> {{ store.newCard.title }} </h2>
+                <p> {{ store.newCard.body }} </p>
+                <img v-if="store.getDataType(store.newCard.image)=='image'" :src="store.newCard.image" @error="store.log"/>
+                <video v-if="store.getDataType(store.newCard.image)=='video'" controls :poster="store.newCard.thumbnail"><source :src="store.newCard.image" type="video/mp4"> </video>
+                <img v-if="store.getDataType(store.newCard.image)=='QrCode'" :src="store.makeQrCode(store.newCard.image)"/>
+              </div>
+            </div>     
+          <div id="addCardInput">
+            <input v-model="store.newCard.title" id="title" @keyup.enter="store.onEnterTitle()" placeholder="title"> <br />
+            <input v-model="store.newCard.body" @blur="store.save" placeholder="text">
+            <input v-if="store.getDataType(store.newCard.image)=='video'"  v-model="store.newCard.thumbnail" @blur="store.save" placeholder="https://image.jpg"><br />
+            <input v-model="store.newCard.image" @blur="store.save" placeholder="https://image.jpg"><br />
+            <input type="color" name="color" v-model="store.newCard.color" @change="store.setColor()"/>
+          </div>
+          <!--<input type="number" v-model="store.showNext" >
+          <label for="showNext">Show Next</label> -->
+          <div>
+            <button @click="store.uploadFileInToCard(-1)">▲</button>
+            <button v-if="store.newCard.title" @click="store.inc()"> + Main </button>
+            <button v-if="store.cards[0] && store.newCard.title && store.curser > -1" @click="store.incSub()"> + Sub </button>
+          </div>
+          <iframe src="login.html" style="border:0px #ffffff none;" name="upload" frameborder="1" marginheight="0px" marginwidth="0px" height="240px" width="400px" allowfullscreen></iframe>
         </dialog>
       </div>
     </div>

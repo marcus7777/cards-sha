@@ -1,18 +1,18 @@
+//import { FORMERR } from 'dns'
 import { createApp, reactive } from './petite-vue.es.js'
 import QrCreator from './qr-creator.es6.min.js'
 
 function saveCard(hash, card) {
   if (!hash) return window.alert("no hash")
-  if (typeof hash !== 'string') return window.alert("hash is not a string")
   if (!card) return window.alert("no card")
-  if (typeof card !== 'object') return window.alert("card is not an object")
-  if (!card.title) return window.alert("no title")
-
   localStorage.setItem(hash, JSON.stringify(card))
 }
-
+function getUrlExtension( url ) {
+  console.log(url)
+  return url.split(/[#?]/)[0].split('.').pop().trim();
+}
 function makeHash(card) {
-  if (!card) return
+  if (!card) return ""
   if (typeof card === 'string') {
     return card
   }
@@ -20,8 +20,8 @@ function makeHash(card) {
   delete obj.subCards; //removes a property from an object: removing the subcards from each card so that the hash won't change when adding subcards
   const str = JSON.stringify(obj);
   let hash = 0;
-  if (str.length == 0) { //returns 0 (maybe useless?)
-    return hash;
+  if (str.length == 0) {
+    return "empty000";
   }
   for (let i = 0; i < str.length; i++) {
     let char = str.charCodeAt(i);
@@ -41,6 +41,7 @@ function makeHash(card) {
 function savesToLocalStorage(file, cb) { //cb is a callback function that is called when the file is read with the first card
   const reader = new FileReader()
   reader.onload = (e) => {
+    if (e.target === null || e.target.result === null || typeof e.target.result != "string") return
     const cards = e.target.result.split("\n").map(card => JSON.parse(card))
     cards.forEach(card => {
       saveCard(makeHash(card), card)
@@ -49,7 +50,7 @@ function savesToLocalStorage(file, cb) { //cb is a callback function that is cal
   }
   reader.readAsText(file)          
 }
-function saveFile(text, title) {
+function saveFile(text, title) { //saves the file to the local download
   const link = document.createElement("a");
   const file = new Blob([text], { type: 'text/plain' });
   link.href = URL.createObjectURL(file);
@@ -59,7 +60,7 @@ function saveFile(text, title) {
 }
 // swop the order of the cards
 const store = reactive({ //updates the html immediately
-  curser:0,
+  curser: 0,
   pageTitle: '',
   root: {
     title: '',
@@ -78,6 +79,12 @@ const store = reactive({ //updates the html immediately
     // look at the card and decide if it should be shown in the main list
     // trail is the path to the current card
     const topTrail = window.location.hash.slice(1).split("/").slice(0, -1)[0]
+    if (!card) {
+      return false
+    }
+    if (this.root.hideDone && card.done) {
+      return false
+    }
     return true
   },
   newCard: {
@@ -113,23 +120,27 @@ const store = reactive({ //updates the html immediately
         hashes.push(subCard)
       }
       if (typeof subCard === "object") {
-        hashes.push( makeHash(subCard) )
+        hashes.push( makeHash(subCard) || "")
       }
       return hashes = hashes.concat(this.getAllHashesNeededFrom(subCard))
     })
     return hashes
   },
   saveToFile(root) {
-    let hashes = []
+    let hashes = [];
     if (typeof root === 'object') {
       hashes = this.getAllHashesNeededFrom(makeHash(root))
     } else {
       hashes = this.getAllHashesNeededFrom(root)
     }
-    let cards = []
+    let cards = [];
     hashes.forEach(hash => {
       if (!hash) return
-      cards.push(localStorage.getItem(hash))
+      const card = localStorage.getItem(hash)
+      if (card != null) {
+        cards.push(card)
+      }
+      
     })
     saveFile(cards.filter(card => typeof card === "string" ).join("\n"), root.title || this.  pageTitle || this.title || "Sky Cards")
   },
@@ -138,14 +149,60 @@ const store = reactive({ //updates the html immediately
     input.type = 'file'
     input.accept = '.jsonl'
     input.onchange = (e) => {
-      savesToLocalStorage(e.target.files[0], (card) => {
-        this.cards[index].subCards = this.cards[index].subCards.concat([card])
-      })
-    }
+      if (e.target === null) return
+      const target =  e.target
+      if (target.files && target.files !== null && target.files.length) {
+        savesToLocalStorage(target.files[0], (card) => {
+          if (index === -1) {
+            this.root.subCards = this.cards[index].subCards.concat([card])
+          } else {
+            this.cards[index].subCards = this.cards[index].subCards.concat([card])
+          }
+        })
+      }
+    }  
     input.click()
   },
+  saveToFileCloud(root) { //copied from saveToFile
+    /*let hashes : string[] = [];
+    if (typeof root === 'object') {
+      hashes = this.getAllHashesNeededFrom(makeHash(root))
+    } else {
+      hashes = this.getAllHashesNeededFrom(root)
+    }
+    let cards : string[] = [];
+    hashes.forEach(hash => {
+      if (!hash) return
+      const card = localStorage.getItem(hash)
+      if (card != null) {
+        cards.push(card)
+      }
+    })
+    const stringToStore = cards.filter(card => typeof card === "string" ).join("\n")
+    const fileName = root.title || this.  pageTitle || this.title || "Sky Cards"
+
+    //storageRef.putString(stringToStore, fileName).then(snapshot => {*/
+
+    /*const storageRef = firebase.storage().ref();
+
+    document.getElementById('fileInput').addEventListener('change', event => {
+    const file = event.target.files[0];
+    const storageRef = firebase.storage().ref('path/to/file');
+   const task = storageRef.put(file);
+
+    task.on('state_changed', progress => {
+      console.log('Upload is ' + progress.snapshot.bytesTransferred / progress.snapshot.totalBytes * 100 + '% complete');
+    }, error => {
+      console.log(error.message);
+    }, complete => {
+      console.log('Upload complete!');
+    });
+  });*///doesn't work
+  },
+  uploadFileInToCardCloud(index) {
+
+  },
   loadCard(hash) {
-    if (hash.toString() === "[object HTMLDivElement]") return console.error("hash is an element")
     if (typeof hash === 'object') {
       hash = makeHash(hash)
     }
@@ -156,7 +213,11 @@ const store = reactive({ //updates the html immediately
       return
     }
 
-    let card = JSON.parse(localStorage.getItem(hash))
+    const tempCard = localStorage.getItem(hash)
+    if (tempCard === null) return
+    let card = JSON.parse(tempCard)
+    
+    
     
     if (!card.subCards) {
       card.subCards = []
@@ -164,23 +225,31 @@ const store = reactive({ //updates the html immediately
     card.subCards = card.subCards.map(subHash => {
       if (!subHash) return
       if (typeof subHash === 'string') {
-        return JSON.parse(localStorage.getItem(subHash))
+        const cardAsString = localStorage.getItem(subHash)
+        if (cardAsString === null) return
+        return JSON.parse(cardAsString)
       }
       return subHash
     })  
     return card
   },
-  load(cardHash) {
+  load(cardHash,newCurser) {
     // load cards from local storage
     if (!cardHash) {
       //this.trail = window.location.hash.slice(1).split("/") //this is causing the problem //useless now?
       cardHash = window.location.hash.slice(1).split("/").pop() || "root"
     } 
-    const fresh = window.location.hash.slice(1).split("/").pop().indexOf(cardHash)
+
+    const tempHashCheck = window.location.hash.slice(1).split("/").pop()
+    if (tempHashCheck === undefined) return
+    const fresh = tempHashCheck.indexOf(cardHash)
     
     //this.trail = this.trail.slice(0, fresh)
+
+    const tempCard = localStorage.getItem(cardHash)
+    if (tempCard === null) return
     
-    let rootCard = JSON.parse(localStorage.getItem(cardHash))
+    let rootCard = JSON.parse(tempCard)
     if (!rootCard) {
       rootCard = {...this.newCard}
       saveCard(cardHash, rootCard)
@@ -191,7 +260,7 @@ const store = reactive({ //updates the html immediately
     this.color = rootCard.color
     this.title = rootCard.title
     this.root = {...rootCard}
-    this.layout()
+    this.layout(this.root.layout)
     this.setColor()
     const subCards = rootCard.subCards.map(subHash => this.loadCard(subHash))
     // rootCard.subCards = subCards
@@ -204,6 +273,7 @@ const store = reactive({ //updates the html immediately
       subCard.subCards = subSubCards
     })
     this.cards = subCards
+    this.curser = newCurser || 0
   },
   save() {
     // save the root card to local storage
@@ -212,7 +282,9 @@ const store = reactive({ //updates the html immediately
     // save this.cards to local storage hash all cards and save under the hash with a list of hashs for sub cards
     this.cards.forEach(card => {
       if (typeof card === 'string') {
-        card = JSON.parse(localStorage.getItem(card))
+        const tempCard = localStorage.getItem(card)
+        if (tempCard === null) return
+        card = JSON.parse(tempCard)
       }
       if (!card.subCards) {
         card.subCards = []
@@ -229,10 +301,27 @@ const store = reactive({ //updates the html immediately
       saveCard(cardHash, {...card, subCards: subHashes})
     })
   },
+  shallower() {
+    const newTrail = window.location.hash.slice(1).split("/")
+    const fresh = newTrail.pop()
+    window.history.pushState({}, "", "#" + newTrail.join("/"))
+    this.load()
+    const newCurser = this.cards.reduce((curser, card, index) => {
+      if (fresh === makeHash(card)) {
+        return index
+      } 
+      return curser
+    }, 0) // imperfect solution (confuses if there is more than one card witht he same hash)
+    this.curser = newCurser
+    this.layout(this.root.layout)
+  },
   deeper(newCurser) {
     this.save()
-    let trail = window.location.hash.slice(1).split("/").filter(card => !!card)
-    trail.push(makeHash(this.cards[this.curser]))
+    let trail = window.location.hash.slice(1).split("/")
+
+    const currentCard = this.cards[this.curser]
+    if (!currentCard || currentCard === undefined) return
+    trail.push(makeHash(currentCard))
 
     window.scrollTo(0, 0)
     window.history.pushState({}, "", "#" + trail.join("/"))
@@ -257,11 +346,14 @@ const store = reactive({ //updates the html immediately
       return card
     })
     this.curser = newCurser
+    this.layout(this.root.layout)
   },
   onEnterTitle(){
     if (!this.newCard.title) return
     if (!this.cards[0]) return this.inc()
-    document.getElementById("mainOrSunDialog").showModal()
+    const addDialog = document.getElementById("mainOrSunDialog")
+    addDialog.showModal()
+
   },
   lastSwap: 0,
   draggingHash: "",
@@ -288,31 +380,40 @@ const store = reactive({ //updates the html immediately
     this.curser = to
     //this.distributeCardsCircle
   },
+  resetNewCard(){
+    this.newCard.title = ""
+    this.newCard.image = ""
+    this.newCard.body  = ""
+
+  },
   inc() {
     //this.curser++
     //this.cards = [...this.cards.slice(0, this.curser), {...this.newCard}, ...this.cards.slice(this.curser)]
     this.curser = this.cards.length
     this.cards = [...this.cards, {...this.newCard}]
-    this.newCard.title = ""
-    document.getElementById("mainOrSunDialog").close()
+    this.resetNewCard()
+    
+    const addDialog = document.getElementById("mainOrSunDialog")
+    addDialog.close()
     this.save()
     setTimeout(() => {
-      this.layout()
+      this.layout(this.root.layout)
     }, 100)
   },
   incSub() {
     let card = this.cards[this.curser]
     if (!card.subCards) {
       // check for an already existing card and load its subcards
-      const cardCheck = loadCard(makeHash(this.newCard))
+      const cardCheck = this.loadCard(makeHash(this.newCard))
       if (cardCheck && cardCheck.subCards) {
         card.subCards = cardCheck.subCards
       } else {
         card.subCards = []
       }
-    }//Don't add sub cards that are the same as the main card
-    if (makeHash(card) === makeHash(this.newCard)) { 
-      document.getElementById("mainOrSunDialog").close()
+    }
+    if (makeHash(card) === makeHash(this.newCard)) {
+      const addDialog = document.getElementById("mainOrSunDialog")
+      addDialog.close()
       return alert("Don't add sub cards that are the same as the main card")
     }
     this.cards.forEach(cardCheck => {
@@ -322,26 +423,44 @@ const store = reactive({ //updates the html immediately
     })
 
     // card.subCards = card.subCards.concat([{...this.newCard}])
-    this.newCard.title = ""
-    document.getElementById("mainOrSunDialog").close()
+    this.resetNewCard()
+    const addDialog = document.getElementById("mainOrSunDialog")
+    addDialog.close()
     this.save()
   },
   distributeCardsCircle() {
     var radius = 35;
-    let cardElements = [... document.getElementsByClassName("outerMainCard")]
-    let containers = document.getElementsByClassName("container")
-    const container = containers[0]
-    container.classList.add("ellipse")
-    let angle = -Math.PI/2;
-    let step = (2 * Math.PI) / cardElements.length;
+    let cardElements = [ ...document.getElementsByClassName("outerMainCard")]
+    let containers = [ ...document.getElementsByClassName("container")]
+    containers.forEach(container => {
+      container.classList.add("ellipse")
+    })
 
-    cardElements.forEach(function (card) {
-      const x = Math.round(radius * Math.cos(angle)) + 50
-      const y = Math.round(radius * Math.sin(angle)) + 50
+    let angle = -Math.PI/2
+    let step = (2 * Math.PI) / cardElements.length
+
+    cardElements.forEach((card,i) => {
+      const x = radius * Math.cos(angle) + 50
+      const y = radius * Math.sin(angle) + 50
       // var size = (Math.round(radius * Math.sin(step))) -9
+      if (i == this.curser) {
+        let subCardElements = [... document.getElementsByClassName("subCard")]
+        let subAngle = -Math.PI/2
+        let subStep = (2 * Math.PI) / subCardElements.length
+        const subRadius = 20
+        subCardElements.forEach((subCard) => {
+          const subX = (((subRadius * Math.cos(subAngle) + x) * 9) + 50) / 10
+          const subY = (((subRadius * Math.sin(subAngle) + y) * 9) + 50) / 10
 
-      card.style.left = `calc(${x}vw - ${card.offsetWidth/2}px)` //use vh (vi) to have a circle
-      card.style.top = `calc(${y}vh - ${card.offsetHeight/2}px)`
+          subCard.style.left = `calc(${subX}vw - ${subCard.offsetWidth/2}px)`
+          subCard.style.top = `calc(${subY}vh - ${subCard.offsetHeight/2}px)`
+
+          subAngle += subStep
+        })
+      }
+      
+      card.style.left = `calc(${x}vw - ${card.children[0].offsetWidth/2}px)` //use vh (vi) to have a circle
+      card.style.top = `calc(${y}vh - ${card.children[0].offsetHeight/2}px)`
       // card.style.transform = `rotateX(45deg) translateZ(calc(${y}vh - ${card.offsetHeight/2}px))
     
       //card.style.height = size + 'px';
@@ -353,6 +472,7 @@ const store = reactive({ //updates the html immediately
     
     this.save()
     let rootElement = document.getElementById("root")
+    if (rootElement === null) return
     rootElement.classList.add("ellipse")
     return () => {  //clean Up
       let cardElements = [... document.getElementsByClassName("outerMainCard")]
@@ -363,11 +483,12 @@ const store = reactive({ //updates the html immediately
       })
       const containers = document.getElementsByClassName("container")
       let container = containers[0]
+      if (rootElement === null) return //annoyingly redundant
       rootElement.classList.remove("ellipse")
       container.classList.remove("ellipse")
     }
   },
-  distributeCardsLine() { 
+  distributeCardsLine() {
     this.save()
     return () => {
       console.log("Clean up (does nothing) line")
@@ -387,10 +508,10 @@ const store = reactive({ //updates the html immediately
       }
     })
   },
-  sortByTitle() { // sort the cards by title
+  sortByTitle() {
     this.cards.sort((a,b) => {
       if (a.title == b.title) return 0
-      if ((""+a.title == +a.title) && (""+b.title == +b.title)) {
+      if ((""+a.title == +a.title) && (""+b.title == +b.title)) { //ignore this error
         if (+a.title > +b.title) {
           return 1
         }
@@ -403,7 +524,7 @@ const store = reactive({ //updates the html immediately
     })
     this.layout(this.root.layout)
   },
-  shuffle() { // shuffle the cards
+  shuffle() {
     for (let i = this.cards.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
@@ -414,15 +535,16 @@ const store = reactive({ //updates the html immediately
 
   },
   setColor() {
-    const cardToSave = this.loadCard(root)
-    saveCard(root, {...cardToSave, color: this.color})
+    //window.location.hash = window.location.hash.slice(1).split("/").pop() || ""
+    //const cardToSave = this.loadCard(this.root)
+    //saveCard(this.root, {...cardToSave, color: this.color})
 
     if (!this.root.color) {
       this.root.color = 'white'
     }
     document.body.style.backgroundColor = this.root.color
   },
-  autoAdd() { // add a new card if the title ends with add
+  autoAdd() {
     // If the new card title end with add, then add it as a new card.
     // And select all within the text box, so you can start typing the new card title
     const triggerArray = ['. add', '. ad' , 'full stop add', 'full stop at', ". dad", "full stop next", ". Next", ". next"]
@@ -430,7 +552,6 @@ const store = reactive({ //updates the html immediately
       if (this.newCard.title.includes(trigger) && this.newCard.title.indexOf(trigger) === this.newCard.title.length - trigger.length){
         this.newCard.title = this.newCard.title.slice(0, -trigger.length)
         this.inc() 
-        this.newCard.title = ''
         //document.getElementById('title').select() // this does not work on my Chromebook whilst dictating so not using it to Four now
       }
     })
@@ -439,12 +560,11 @@ const store = reactive({ //updates the html immediately
       if (this.newCard.title.includes(trigger) && this.newCard.title.indexOf(trigger) === this.newCard.title.length - trigger.length){
         this.newCard.title = this.newCard.title.slice(0, -trigger.length)
         this.incSub() 
-        this.newCard.title = ''
         //document.getElementById('title').select() // this does not work on my Chromebook whilst dictating so not using it to Four now
       }
     })
   },
-  swapCards(index1, index2, withFocus = true) { // swop the order of the cards
+  swapCards(index1, index2, withFocus = true) {
     if (this.curser === index1) {
       this.curser = index2
     } else if (this.curser === index2) {
@@ -456,16 +576,16 @@ const store = reactive({ //updates the html immediately
       this.cards[index2] = temp
       this.save()
     }
-    if (withFocus) {
-      const elements3 = document.getElementsByClassName("outerMainCard")[this.curser].getElementsByClassName("inner");
+    /*if (withFocus) {
+      const elements3 = document.getElementsByClassName("outerMainCard")[this.curser].getElementsByClassName("inner")
       elements3[0].focus()
-    }
+    }*/
     
     //give focus to the card that was moved
     //swop the cards with a timeout so that the cards are swopped before the focus is given
     window.requestAnimationFrame(() => {
-      const card1 = document.getElementsByClassName("outerMainCard")[index1];
-      const card2 = document.getElementsByClassName("outerMainCard")[index2];
+      const card1 = document.getElementsByClassName("outerMainCard")[index1]
+      const card2 = document.getElementsByClassName("outerMainCard")[index2]
       // move cards towards each other
       const card1Left = card1.getBoundingClientRect().left
       const card2Left = card2.getBoundingClientRect().left
@@ -478,10 +598,10 @@ const store = reactive({ //updates the html immediately
         card1.style.transform = ""
         card2.style.transform = ""
         swap()
-        if (withFocus) {
+        /*if (withFocus) {
           const elements3 = document.getElementsByClassName("outerMainCard")[this.curser].getElementsByClassName("inner");
           elements3[0].focus()
-        }
+        }*/
         //update card additions to include this card's weight
         const rootHash = window.location.hash.slice(1).split("/").pop() || 'root'
         let rootCard = this.loadCard(rootHash) //was a const but I changed it because it caused errors (maybe change back?)
@@ -502,9 +622,9 @@ const store = reactive({ //updates the html immediately
         this.save() 
 
       }, 250)
-    }, 0)
+    })
   },
-  makeSubCard(index1, index2) { // demote a card to a sub card of the card at index2
+  makeSubCard(index1, index2) {
     if (this.curser === index1) {
       this.curser = index2
     } else if (this.curser === index2) {
@@ -514,18 +634,14 @@ const store = reactive({ //updates the html immediately
     this.cards[index2].subCards = this.cards[index2].subCards.concat([temp])
     this.removeCard(index1)
   },
-  makeMainCard(index) { // promote a card
+  makeMainCard(index) {
     if (!window.location.hash.slice(1).split("/")[0]) return
     // if (makeHash(...) === )// sub mail not the some)
     const temp = {...this.cards[index]}
     this.removeCard(index)
+    this.save()
     this.load(["root", window.location.hash.slice(1).split("/")].slice(-2)[0]) //tidy me
     this.cards = this.cards.concat([{...temp}])
-    this.save()
-
-    let path = window.location.hash.split("/") //added may need replacing
-    path.pop()
-    window.location.history.pushState({}, "", path.join("/"))
   },
   removeCard(index) {
     this.cards.splice(index, 1)
@@ -540,36 +656,78 @@ const store = reactive({ //updates the html immediately
     this.layout(this.root.layout)
   },
   menuClick() {
-    document.getElementById("menuDialog").showModal()
-    console.log("Works!?")
-},
-  log(e) {
-    e.preventDefault()
-    const div = document.createElement("div");
-    const path = location.protocol + "//" + location.host + location.pathname
-    const text = e.target.src.replace(path, "")
-    if (text.length < 2000 && text.length > 5) {
-      QrCreator.render({
-        text,
-        radius: 0.5, // 0.0 to 0.5
-        ecLevel: 'L', // L, M, Q, H
-        fill: '#000',
-        background: null, // color or null for transparent
-        size: 150,
-      }, div)
-      e.target.src = div.children[0].toDataURL()
-    }
-
-    // e.target.replaceWith(div) // this does not work with petite-vue
-    
+    const addDialog = document.getElementById("menuDialog")
+    addDialog.showModal()
+  },
+  addClick() {
+    const addDialog = document.getElementById("addDialog")
+    addDialog.showModal()
+  },
+  closeDialog(dialog) {
+    const addDialog = document.getElementById(dialog)
+    addDialog.close()
+  },
+  getDataType(url) {
+    const imageFormats = ["jpeg","svg","webp","png","gif"]
+    const videoFormats = ["mp4","ogg","mpeg","mov","avi","webm"]
+    if (url == "") return ""
+    const dataType = getUrlExtension(url)
+    if (dataType == "mp4") return "video"
+    if (imageFormats.includes(dataType)) return "image"
+    if (url.length < 2000 && url.length > 5) return "QrCode"
+    if (dataType == url) return ""
+    return "image"
+  },
+  makeQrCode(text) {
+    const div = document.createElement("div")
+    QrCreator.render({ //TODO move to its own function
+      text,
+      radius: 0.5, // 0.0 to 0.5
+      ecLevel: 'L', // L, M, Q, H
+      fill: '#000',
+      background: null, // color or null for transparent
+      size: 150,
+    }, div)
+    return div.children[0].toDataURL()
+  },
+  log(e) { //this may be causing problems
+    console.warn(e)
   },
 })
+document.onkeydown = function (e) {
+  e = e || window.event;
+  // use e.keyCode
+  if(e.keyCode == 38) store.shallower()
+  if(e.keyCode == 40) {
+    if (store.curser == -1) store.curser = 0
+    else {
+      store.deeper(store.curser)
+      store.curser = 0
+    }
+  }
+  if(e.keyCode == 37) { //left
+    if (e.shiftKey) store.swapCards(store.curser, store.curser -1)
+    else store.curser =Math.max(store.curser -1,-1)
+    
+  }
+  if(e.keyCode == 39) { //right
+    if (e.shiftKey) store.swapCards(store.curser, store.curser +1)
+    else store.curser =Math.min(store.curser +1, store.cards.length-1)
+  }
+  
+  store.layout(store.root.layout)
 
+}
 createApp({
   // share it with app scopes
   store
 }).mount()
 store.load()
+
+window.addEventListener("message", (e) => {
+  store.newCard.image = e.data
+})
+
 setInterval(() => {
   store.autoAdd()
 }, 1000)
