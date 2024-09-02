@@ -8,7 +8,6 @@ function saveCard(hash, card) {
   localStorage.setItem(hash, JSON.stringify(card))
 }
 function getUrlExtension( url ) {
-  console.log(url)
   return url.split(/[#?]/)[0].split('.').pop().trim();
 }
 function makeHash(card) {
@@ -142,7 +141,7 @@ const store = reactive({ //updates the html immediately
       }
       
     })
-    saveFile(cards.filter(card => typeof card === "string" ).join("\n"), root.title || this.  pageTitle || this.title || "Sky Cards")
+    saveFile(cards.filter(card => typeof card === "string" ).join("\n"), root.title || this.pageTitle || this.title || "Sky Cards")
   },
   uploadFileInToCard(index) {
     const input = document.createElement('input')
@@ -302,6 +301,7 @@ const store = reactive({ //updates the html immediately
     })
   },
   shallower() {
+    this.save()
     const newTrail = window.location.hash.slice(1).split("/")
     const fresh = newTrail.pop()
     window.history.pushState({}, "", "#" + newTrail.join("/"))
@@ -314,6 +314,7 @@ const store = reactive({ //updates the html immediately
     }, 0) // imperfect solution (confuses if there is more than one card witht he same hash)
     this.curser = newCurser
     this.layout(this.root.layout)
+    document.title = this.root.title
   },
   deeper(newCurser) {
     this.save()
