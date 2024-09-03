@@ -95,7 +95,7 @@
                 <button v-if="store.cards[1] && !store.curser > 0" @click="store.makeSubCard(i, i+1)"> ↓ </button>
                 <button @click="store.makeMainCard(i)"> ↑ </button>
                 <button v-if="store.cards[1] && store.curser > 0" @click="store.swapCards(i, i-1)">&lt;</button> <!-- < move cards
-		            <button v-if="store.cards[1] && store.curser !== store.cards.length - 1" @click="store.swapCards(i, i+1)">&gt;</button> <!-- > move cards
+         	            <button v-if="store.cards[1] && store.curser !== store.cards.length - 1" @click="store.swapCards(i, i+1)">&gt;</button> <!-- > move cards
               </div>-->
               <div :data-index="i" class="inner small" @click="store.curser = i; store.layout(store.root.layout)" >
                 <div class="dot"></div>
@@ -195,34 +195,35 @@
               <video v-if="store.getDataType(store.cards[store.curser].media)=='video'" controls :poster="store.cards[store.curser].thumbnail"><source :src="store.cards[store.curser].media" type="video/mp4"> </video>
               <img v-if="store.getDataType(store.cards[store.curser].media)=='QrCode'" :src="store.makeQrCode(store.cards[store.curser].media)"/>
               <audio v-if="store.getDataType(store.cards[store.curser].media)=='audio'" :src="store.cards[store.curser].media" controls>
-              Your browser does not support the audio element.
+                Your browser does not support the audio element.
               </audio>
             </div>
+          </div>
+          <div id="addCardInput">
             <button @click="store.removeCard(store.curser)">-</button>
             <button @click="store.duplicateCard(store.curser)">+</button>
             <button @click="store.saveToFile(store.cards[store.curser])">▼</button>
-            <label for="done">
-              <input type="checkbox" name="done" :checked="card.done" @click="card.done = !card.done" />
-	      done
-	    </label>
-            <label for="autoplay">
-              <input type="checkbox" name="autoplay" :checked="card.autoplay" @click="card.autoplay = !card.autoplay" />
-	      autoplay
-	    </label>
-          </div>
-          <div id="addCardInput">
+            <button @click="store.uploadFileInToCard(store.curser)">▲</button>
+	    <br>
             <input v-model="store.cards[store.curser].title" id="title" @keyup.enter="store.onEnterTitle()" placeholder="title"> <br />
             <input v-model="store.cards[store.curser].body" @blur="store.save" placeholder="text">
             <input v-if="store.getDataType(store.cards[store.curser].media)=='video'"  v-model="store.cards[store.curser].thumbnail" @blur="store.save" placeholder="https://image.jpg"><br />
             <input v-model="store.cards[store.curser].media" @blur="store.save" placeholder="https://image.jpg"><br />
+            <label for="done">
+              <input type="checkbox" name="done" :checked="card.done" @click="card.done = !card.done" />
+              done
+            </label>
+	    <br>
+            <label for="autoplay">
+              <input type="checkbox" name="autoplay" :checked="card.autoplay" @click="card.autoplay = !card.autoplay" />
+              autoplay
+            </label>
+	    <br>
             <input type="color" name="color" v-model="store.cards[store.curser].color" @change="store.setColor()"/>
           </div>
           <!--<input type="number" v-model="store.showNext" >
           <label for="showNext">Show Next</label> -->
-          <div>
-            <button @click="store.uploadFileInToCard(store.curser)">▲</button>
-          </div>
-          <iframe src="login.html" style="border:0px #ffffff none;" name="upload" frameborder="1" marginheight="0px" marginwidth="0px" height="240px" width="400px" allowfullscreen></iframe>
+          <iframe src="login.html" style="border:0px #ffffff none;" name="upload" frameborder="1" marginheight="0px" marginwidth="0px" height="240px" width="300px" allowfullscreen></iframe>
         </dialog>
       </div>
     </div>
