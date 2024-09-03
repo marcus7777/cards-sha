@@ -201,6 +201,14 @@
             <button @click="store.removeCard(store.curser)">-</button>
             <button @click="store.duplicateCard(store.curser)">+</button>
             <button @click="store.saveToFile(store.cards[store.curser])">▼</button>
+            <label for="done">
+              <input type="checkbox" name="done" :checked="card.done" @click="card.done = !card.done" />
+	      done
+	    </label>
+            <label for="autoplay">
+              <input type="checkbox" name="autoplay" :checked="card.autoplay" @click="card.autoplay = !card.autoplay" />
+	      autoplay
+	    </label>
           </div>
           <div id="addCardInput">
             <input v-model="store.cards[store.curser].title" id="title" @keyup.enter="store.onEnterTitle()" placeholder="title"> <br />
