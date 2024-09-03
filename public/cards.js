@@ -669,6 +669,20 @@ const store = reactive({ //updates the html immediately
     store.disableKeys = false
     addDialog.close()
   },
+  endedAutoplay(card, index) {
+    console.log(card, index)
+    if (!card.autoplay) return
+    const nextCard = this.cards[index+1]
+    if (!nextCard) return
+    if (!nextCard.autoplay) return
+    const dataType = this.getDataType(nextCard.image)
+    if (dataType == "audio" || dataType == "video") {
+      const mediaCard = document.getElementsByClassName("outerMainCard")[index+1]
+      console.log(mediaCard)
+      mediaCard.querySelector(dataType).play()
+    }
+    
+  },
   getDataType(url) {
     const imageFormats = ["jpeg","svg","webp","png","gif"]
     const videoFormats = ["mp4","ogg","mpeg","mov","avi","webm"]
@@ -699,7 +713,10 @@ const store = reactive({ //updates the html immediately
   },
 })
 function arrowKeysOn (e) {
-  if(e.keyCode == 27) store.disableKeys = false //introduces some awkwardness when escape is hit and then typing in a text box
+  if(e.keyCode == 27) {
+    store.disableKeys = false //introduces some awkwardness when escape is hit and then typing in a text box
+    e.target.blur()
+  } 
   if(store.disableKeys) return
   e = e || window.event;
   // use e.keyCode

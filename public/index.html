@@ -73,14 +73,15 @@
                 <input v-model="card.body" @blur="store.save; store.disableKeys = false" @focus="store.disableKeys = true" placeholder="text">
                 <p :data-index="i" > {{ card.body }} </p>
                 <img v-if="store.getDataType(card.image)=='image'" :src="card.image" @error="store.log"/>
-                <video v-if="store.getDataType(card.image)=='video'" controls :poster="card.thumbnail"><source :src="card.image" type="video/mp4"> </video>
+                <video v-if="store.getDataType(card.image)=='video'" controls @ended="store.endedAutoplay(card,i)" class="media" :poster="card.thumbnail"><source :src="card.image" type="video/mp4"> </video>
                 <input v-if="store.getDataType(card.image)=='video'"  v-model="card.thumbnail" @blur="store.save; store.disableKeys = false" @focus="store.disableKeys = true" placeholder="https://image.jpg">
                 <img v-if="store.getDataType(card.image)=='QrCode'" :src="store.makeQrCode(card.image)"/>
-                <audio v-if="store.getDataType(card.image)=='audio'" :src="card.image" controls>
+                <audio v-if="store.getDataType(card.image)=='audio'" :src="card.image" @ended="store.endedAutoplay(card,i)" class="media" controls>
                   Your browser does not support the audio element.
                 </audio>
                 <input v-model="card.image" @blur="store.save; store.disableKeys = false" @focus="store.disableKeys = true" placeholder="https://image.jpg">
                 <input type="checkbox" name="done" :checked="card.done" @click="card.done = !card.done" />
+                <input type="checkbox" name="autoplay" :checked="card.autoplay" @click="card.autoplay = !card.autoplay" />
                 <button @click="store.removeCard(i)">-</button>
                 <button @click="store.duplicateCard(i)">+</button>
                 <button @click="store.saveToFile(card)">▼</button>
@@ -101,9 +102,9 @@
                 <h2 :data-index="i" > {{ card.title }} </h2>
                 <p :data-index="i" > {{ card.body }} </p>
                 <img v-if="store.getDataType(card.image)=='image'" :src="card.image" @error="store.log"/>
-                <video v-if="store.getDataType(card.image)=='video'" :poster="card.thumbnail"><source :src="card.image" type="video/mp4"> </video>
+                <video v-if="store.getDataType(card.image)=='video'" class="media" @ended="store.endedAutoplay(card,i)" :poster="card.thumbnail"><source :src="card.image" type="video/mp4"> </video>
                 <img v-if="store.getDataType(card.image)=='qrCode'" :src="store.makeQrCode(card.image)"/>
-                <audio v-if="store.getDataType(card.image)=='audio'" :src="card.image" controls>
+                <audio v-if="store.getDataType(card.image)=='audio'" :src="card.image" class="media"  @ended="store.endedAutoplay(card,i)" controls>
                   Your browser does not support the audio element.
                 </audio>
               </div>
