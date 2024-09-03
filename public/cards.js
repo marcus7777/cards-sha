@@ -311,7 +311,7 @@ const store = reactive({ //updates the html immediately
         return index
       } 
       return curser
-    }, 0) // imperfect solution (confuses if there is more than one card with the same hash)
+    }, -1) // imperfect solution (confuses if there is more than one card with the same hash)
     this.curser = newCurser
     this.layout(this.root.layout)
     document.title = this.root.title
@@ -354,6 +354,7 @@ const store = reactive({ //updates the html immediately
     if (!this.cards[0]) return this.inc()
     const addDialog = document.getElementById("mainOrSunDialog")
     addDialog.showModal()
+    store.disableKeys = true
 
   },
   lastSwap: 0,
@@ -394,8 +395,7 @@ const store = reactive({ //updates the html immediately
     this.cards = [...this.cards, {...this.newCard}]
     this.resetNewCard()
     
-    const addDialog = document.getElementById("mainOrSunDialog")
-    addDialog.close()
+    closeDialog(mainOrSunDialog)
     this.save()
     setTimeout(() => {
       this.layout(this.root.layout)
@@ -413,8 +413,7 @@ const store = reactive({ //updates the html immediately
       }
     }
     if (makeHash(card) === makeHash(this.newCard)) {
-      const addDialog = document.getElementById("mainOrSunDialog")
-      addDialog.close()
+      closeDialog(mainOrSunDialog)
       return alert("Don't add sub cards that are the same as the main card")
     }
     this.cards.forEach(cardCheck => {
@@ -425,8 +424,7 @@ const store = reactive({ //updates the html immediately
 
     // card.subCards = card.subCards.concat([{...this.newCard}])
     this.resetNewCard()
-    const addDialog = document.getElementById("mainOrSunDialog")
-    addDialog.close()
+    closeDialog("mainOrSunDialog")
     this.save()
   },
   distributeCardsCircle() {
@@ -658,14 +656,17 @@ const store = reactive({ //updates the html immediately
   },
   menuClick() {
     const addDialog = document.getElementById("menuDialog")
+    store.disableKeys = true
     addDialog.showModal()
   },
-  addClick() {
-    const addDialog = document.getElementById("addDialog")
+  openDialog(dialog) {
+    const addDialog = document.getElementById(dialog)
+    store.disableKeys = true
     addDialog.showModal()
   },
   closeDialog(dialog) {
     const addDialog = document.getElementById(dialog)
+    store.disableKeys = false
     addDialog.close()
   },
   getDataType(url) {
@@ -697,23 +698,25 @@ const store = reactive({ //updates the html immediately
     console.warn(e)
   },
 })
-document.onkeydown = function (e) {
+function arrowKeysOn (e) {
+  if(e.keyCode == 27) store.disableKeys = false //introduces some awkwardness when escape is hit and then typing in a text box
+  if(store.disableKeys) return
   e = e || window.event;
   // use e.keyCode
-  if(e.keyCode == 38) store.shallower()
-  if(e.keyCode == 40) {
+  if(e.keyCode == 38 || e.keyCode == 87 || e.keyCode == 75) store.shallower()
+  if(e.keyCode == 40 || e.keyCode == 83 || e.keyCode == 74) {
     if (store.curser == -1) store.curser = 0
     else {
       store.deeper(store.curser)
       store.curser = 0
     }
   }
-  if(e.keyCode == 37) { //left
+  if(e.keyCode == 37 || e.keyCode == 65 || e.keyCode == 72) { //left
     if (e.shiftKey) store.swapCards(store.curser, store.curser -1)
     else store.curser =Math.max(store.curser -1,-1)
     
   }
-  if(e.keyCode == 39) { //right
+  if(e.keyCode == 39 || e.keyCode == 68 || e.keyCode == 76) { //right
     if (e.shiftKey) store.swapCards(store.curser, store.curser +1)
     else store.curser =Math.min(store.curser +1, store.cards.length-1)
   }
@@ -721,6 +724,7 @@ document.onkeydown = function (e) {
   store.layout(store.root.layout)
 
 }
+document.onkeydown = arrowKeysOn
 createApp({
   // share it with app scopes
   store
