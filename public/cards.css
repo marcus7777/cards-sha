@@ -110,6 +110,9 @@ p,h3,h2,h1 {
   transition: all 0.5s ease-in-out; 
   margin: 0 0 0 0;
 }
+.card .inner:has(button) {
+  background-color: #fff777;
+}
 
 .form button {
   display: none

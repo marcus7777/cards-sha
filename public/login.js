@@ -127,8 +127,8 @@ var handleSignedInUser = function(user) {
     const fileRef = storageRef.child('userUploads/' + file.name)
     fileRef.put(file, metadata).then(function(snapshot) {
       fileRef.getDownloadURL().then((url) => {
-	window.parent.postMessage(url)
-	fileUploadElement.value = ''
+	      window.parent.postMessage(url)
+	      fileUploadElement.value = ''
       })
     }).catch(function(error) {
       console.error('Upload failed:', error);

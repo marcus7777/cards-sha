@@ -749,7 +749,13 @@ createApp({
 store.load()
 
 window.addEventListener("message", (e) => {
-  store.newCard.image = e.data
+  if (document.getElementById("addDialog").open) {
+    store.newCard.image = e.data
+  } else {
+    store.cards[store.curser].image = e.data
+  }
+    
+
 })
 
 setInterval(() => {

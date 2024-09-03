@@ -37,7 +37,7 @@
               <button v-if="store.root.layout !== 'line'" @click="store.layout('line')">-</button>
               <button @click="store.sortByTitle">So</button>
               <button @click="store.shuffle">Sh</button>
-              <input type="color" name="color" v-model="store.root.color" @change="store.setColor();store.saveRoot()"/>
+              <input type="color" name="color" v-model="store.root.color" @change="store.setColor();store.saveRoot(makeHash(store.root))"/>
             </div>
             <div :data-index="-1" v-else class="inner small" @click="store.curser = -1" >
               <h2 :data-index="-1" > {{ store.root.title }} </h2>
@@ -66,7 +66,7 @@
             :title="card.title"
           >  <!-- i is for index -->
             <div class="card mainCard" v-if="!(store.hideDone && card.done)">
-              <div class="inner curser form" v-if="store.curser === i" tabindex="0">
+              <!--<div class="inner curser form" v-if="store.curser === i" tabindex="0">
                 <div class="dot"></div>
                 <input v-model="card.title" @blur="store.save; store.disableKeys = false" @focus="store.disableKeys = true" @keyup.enter="store.save">
                 <h2> {{ card.title }} </h2>
@@ -89,16 +89,17 @@
                 <button @click="store.saveToFileCloud(card)">▼ᯤ</button>
                 <!--<fb-upload ref="upload" v-model="files" :meta="meta" :uid="user.uid" @uploading="updateUploading">
                   <button @click="$refs.upload.selectFile()" >▲ᯤ</button> 
-                </fb-upload>-->
+                </fb-upload>
                 <button @click="store.uploadFileInToCardCloud(i)">▲ᯤ</button>
                 <button v-if="store.cards[1] && store.curser > 0" @click="store.makeSubCard(i, i-1)"> ↓ </button> 
                 <button v-if="store.cards[1] && !store.curser > 0" @click="store.makeSubCard(i, i+1)"> ↓ </button>
                 <button @click="store.makeMainCard(i)"> ↑ </button>
-                <button v-if="store.cards[1] && store.curser > 0" @click="store.swapCards(i, i-1)">&lt;</button> <!-- < move cards -->
-		            <button v-if="store.cards[1] && store.curser !== store.cards.length - 1" @click="store.swapCards(i, i+1)">&gt;</button> <!-- > move cards -->
-              </div>
-              <div :data-index="i" v-else class="inner small" @click="store.curser = i; store.layout(store.root.layout)" >
+                <button v-if="store.cards[1] && store.curser > 0" @click="store.swapCards(i, i-1)">&lt;</button> <!-- < move cards
+		            <button v-if="store.cards[1] && store.curser !== store.cards.length - 1" @click="store.swapCards(i, i+1)">&gt;</button> <!-- > move cards
+              </div>-->
+              <div :data-index="i" class="inner small" @click="store.curser = i; store.layout(store.root.layout)" >
                 <div class="dot"></div>
+                <button v-if="store.curser==i" @click="store.openDialog('editDialog')">✎</button>
                 <h2 :data-index="i" > {{ card.title }} </h2>
                 <p :data-index="i" > {{ card.body }} </p>
                 <img v-if="store.getDataType(card.image)=='image'" :src="card.image" @error="store.log"/>
@@ -179,6 +180,39 @@
             <button @click="store.uploadFileInToCard(-1)">▲</button>
             <button v-if="store.newCard.title" @click="store.inc()"> + Main </button>
             <button v-if="store.cards[0] && store.newCard.title && store.curser > -1" @click="store.incSub()"> + Sub </button>
+          </div>
+          <iframe src="login.html" style="border:0px #ffffff none;" name="upload" frameborder="1" marginheight="0px" marginwidth="0px" height="240px" width="400px" allowfullscreen></iframe>
+        </dialog>
+
+        <dialog v-if="store.cards[0]" id="editDialog">
+          <button class="dialogClose" @click="store.closeDialog('editDialog')">x</button>
+          <div class="card">
+            <div class="inner small">
+              <div class="dot"></div>
+              <h2> {{ store.cards[store.curser].title }} </h2>
+              <p> {{ store.cards[store.curser].body }} </p>
+              <img v-if="store.getDataType(store.cards[store.curser].image)=='image'" :src="store.cards[store.curser].image" @error="store.log"/>
+              <video v-if="store.getDataType(store.cards[store.curser].image)=='video'" controls :poster="store.cards[store.curser].thumbnail"><source :src="store.cards[store.curser].image" type="video/mp4"> </video>
+              <img v-if="store.getDataType(store.cards[store.curser].image)=='QrCode'" :src="store.makeQrCode(store.cards[store.curser].image)"/>
+              <audio v-if="store.getDataType(store.cards[store.curser].image)=='audio'" :src="store.cards[store.curser].image" controls>
+              Your browser does not support the audio element.
+              </audio>
+            </div>
+            <button @click="store.removeCard(store.curser)">-</button>
+            <button @click="store.duplicateCard(store.curser)">+</button>
+            <button @click="store.saveToFile(store.cards[store.curser])">▼</button>
+          </div>
+          <div id="addCardInput">
+            <input v-model="store.cards[store.curser].title" id="title" @keyup.enter="store.onEnterTitle()" placeholder="title"> <br />
+            <input v-model="store.cards[store.curser].body" @blur="store.save" placeholder="text">
+            <input v-if="store.getDataType(store.cards[store.curser].image)=='video'"  v-model="store.cards[store.curser].thumbnail" @blur="store.save" placeholder="https://image.jpg"><br />
+            <input v-model="store.cards[store.curser].image" @blur="store.save" placeholder="https://image.jpg"><br />
+            <input type="color" name="color" v-model="store.cards[store.curser].color" @change="store.setColor()"/>
+          </div>
+          <!--<input type="number" v-model="store.showNext" >
+          <label for="showNext">Show Next</label> -->
+          <div>
+            <button @click="store.uploadFileInToCard(store.curser)">▲</button>
           </div>
           <iframe src="login.html" style="border:0px #ffffff none;" name="upload" frameborder="1" marginheight="0px" marginwidth="0px" height="240px" width="400px" allowfullscreen></iframe>
         </dialog>
