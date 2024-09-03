@@ -94,7 +94,7 @@ const store = reactive({ //updates the html immediately
     done: false,
     color: '#55c2c3',
     hideDone: false,
-    image: "",
+    media: "",
     layout: "line",
     showNext: 0, // show next cards in the list (0 = all, 1 = next, 2 = next and next)
   },
@@ -384,7 +384,7 @@ const store = reactive({ //updates the html immediately
   },
   resetNewCard(){
     this.newCard.title = ""
-    this.newCard.image = ""
+    this.newCard.media = ""
     this.newCard.body  = ""
 
   },
@@ -675,7 +675,7 @@ const store = reactive({ //updates the html immediately
     const nextCard = this.cards[index+1]
     if (!nextCard) return
     if (!nextCard.autoplay) return
-    const dataType = this.getDataType(nextCard.image)
+    const dataType = this.getDataType(nextCard.media)
     if (dataType == "audio" || dataType == "video") {
       const mediaCard = document.getElementsByClassName("outerMainCard")[index+1]
       console.log(mediaCard)
@@ -750,9 +750,9 @@ store.load()
 
 window.addEventListener("message", (e) => {
   if (document.getElementById("addDialog").open) {
-    store.newCard.image = e.data
+    store.newCard.media = e.data
   } else {
-    store.cards[store.curser].image = e.data
+    store.cards[store.curser].media = e.data
   }
     
 

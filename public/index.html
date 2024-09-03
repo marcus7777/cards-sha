@@ -24,11 +24,11 @@
               <h2> {{ store.root.title }}</h2>
               <input v-model="store.root.body" @blur="store.save; store.disableKeys = false" @focus="store.disableKeys = true" placeholder="text">
               <p :data-index="-1" > {{ store.root.body }} </p>
-              <img v-if="store.getDataType(store.root.image)=='image'" :src="store.root.image" @error="store.log"/>
-              <video v-if="store.getDataType(store.root.image)=='video'" controls :poster="store.root.thumbnail"><source :src="store.root.image" type="video/mp4"> </video>
-              <input v-if="store.getDataType(store.root.image)=='video'"  v-model="store.root.thumbnail" @blur="store.save; store.disableKeys = false" @focus="store.disableKeys = true" placeholder="https://image.jpg">
-              <img v-if="store.getDataType(store.root.image)=='QrCode'" :src="store.makeQrCode(store.root.image)"/>
-              <input v-model="store.root.image" @blur="store.save; store.disableKeys = false" @focus="store.disableKeys = true" placeholder="https://image.jpg">
+              <img v-if="store.getDataType(store.root.media)=='image'" :src="store.root.media" @error="store.log"/>
+              <video v-if="store.getDataType(store.root.media)=='video'" controls :poster="store.root.thumbnail"><source :src="store.root.media" type="video/mp4"> </video>
+              <input v-if="store.getDataType(store.root.media)=='video'"  v-model="store.root.thumbnail" @blur="store.save; store.disableKeys = false" @focus="store.disableKeys = true" placeholder="https://image.jpg">
+              <img v-if="store.getDataType(store.root.media)=='QrCode'" :src="store.makeQrCode(store.root.media)"/>
+              <input v-model="store.root.media" @blur="store.save; store.disableKeys = false" @focus="store.disableKeys = true" placeholder="https://image.jpg">
               <input type="checkbox" name="done" :checked="store.root.done" @click="store.root.done = !store.root.done" />
               <button @click="store.saveToFile(store.root)">▼</button>
               <button @click="store.uploadFileInToCard(-1)">▲</button>
@@ -42,10 +42,10 @@
             <div :data-index="-1" v-else class="inner small" @click="store.curser = -1" >
               <h2 :data-index="-1" > {{ store.root.title }} </h2>
               <p :data-index="-1" > {{ store.root.body }} </p>
-              <img v-if="store.getDataType(store.root.image)=='image'" :src="store.root.image" @error="store.log"/>
-              <video v-if="store.getDataType(store.root.image)=='video'" :poster="store.root.thumbnail"><source :src="store.root.image" type="video/mp4"> </video>
-              <img v-if="store.getDataType(store.root.image)=='QrCode'" :src="store.makeQrCode(store.root.image)"/>
-              <audio v-if="store.getDataType(store.root.image)=='audio'" :src="store.root.image" controls>
+              <img v-if="store.getDataType(store.root.media)=='image'" :src="store.root.media" @error="store.log"/>
+              <video v-if="store.getDataType(store.root.media)=='video'" :poster="store.root.thumbnail"><source :src="store.root.media" type="video/mp4"> </video>
+              <img v-if="store.getDataType(store.root.media)=='QrCode'" :src="store.makeQrCode(store.root.media)"/>
+              <audio v-if="store.getDataType(store.root.media)=='audio'" :src="store.root.media" controls>
                 Your browser does not support the audio element.
               </audio>
               
@@ -102,10 +102,10 @@
                 <button v-if="store.curser==i" @click="store.openDialog('editDialog')">✎</button>
                 <h2 :data-index="i" > {{ card.title }} </h2>
                 <p :data-index="i" > {{ card.body }} </p>
-                <img v-if="store.getDataType(card.image)=='image'" :src="card.image" @error="store.log"/>
-                <video v-if="store.getDataType(card.image)=='video'" class="media" @ended="store.endedAutoplay(card,i)" :poster="card.thumbnail"><source :src="card.image" type="video/mp4"> </video>
-                <img v-if="store.getDataType(card.image)=='qrCode'" :src="store.makeQrCode(card.image)"/>
-                <audio v-if="store.getDataType(card.image)=='audio'" :src="card.image" class="media"  @ended="store.endedAutoplay(card,i)" controls>
+                <img v-if="store.getDataType(card.media)=='image'" :src="card.media" @error="store.log"/>
+                <video v-if="store.getDataType(card.media)=='video'" class="media" @ended="store.endedAutoplay(card,i)" :poster="card.thumbnail"><source :src="card.media" type="video/mp4"> </video>
+                <img v-if="store.getDataType(card.media)=='qrCode'" :src="store.makeQrCode(card.media)"/>
+                <audio v-if="store.getDataType(card.media)=='audio'" :src="card.media" class="media"  @ended="store.endedAutoplay(card,i)" controls>
                   Your browser does not support the audio element.
                 </audio>
               </div>
@@ -120,9 +120,9 @@
             <div class="inner small" @click="store.deeper(i)">
               <h3>{{ subCard.title }}</h3>
               <p> {{ subCard.body }} </p>
-              <video v-if="store.getDataType(subCard.image)=='video'" controls :poster="subCard.thumbnail"><source :src="subCard.image" type="video/mp4"> </video>
-              <img v-if="store.getDataType(subCard.image)=='QrCode'" :src="store.makeQrCode(subCard.image)"/>
-              <img v-if="store.getDataType(subCard.image)=='image'" :src="subCard.image" @error="store.log"/>
+              <video v-if="store.getDataType(subCard.media)=='video'" controls :poster="subCard.thumbnail"><source :src="subCard.media" type="video/mp4"> </video>
+              <img v-if="store.getDataType(subCard.media)=='QrCode'" :src="store.makeQrCode(subCard.media)"/>
+              <img v-if="store.getDataType(subCard.media)=='image'" :src="subCard.media" @error="store.log"/>
             </div>
           </div>
         </div>
@@ -159,10 +159,10 @@
               <div class="dot"></div>
               <h2> {{ store.newCard.title }} </h2>
               <p> {{ store.newCard.body }} </p>
-              <img v-if="store.getDataType(store.newCard.image)=='image'" :src="store.newCard.image" @error="store.log"/>
-              <video v-if="store.getDataType(store.newCard.image)=='video'" controls :poster="store.newCard.thumbnail"><source :src="store.newCard.image" type="video/mp4"> </video>
-              <img v-if="store.getDataType(store.newCard.image)=='QrCode'" :src="store.makeQrCode(store.newCard.image)"/>
-              <audio v-if="store.getDataType(store.newCard.image)=='audio'" :src="store.newCard.image" controls>
+              <img v-if="store.getDataType(store.newCard.media)=='image'" :src="store.newCard.media" @error="store.log"/>
+              <video v-if="store.getDataType(store.newCard.media)=='video'" controls :poster="store.newCard.thumbnail"><source :src="store.newCard.media" type="video/mp4"> </video>
+              <img v-if="store.getDataType(store.newCard.media)=='QrCode'" :src="store.makeQrCode(store.newCard.media)"/>
+              <audio v-if="store.getDataType(store.newCard.media)=='audio'" :src="store.newCard.media" controls>
               Your browser does not support the audio element.
               </audio>
             </div>
@@ -170,8 +170,8 @@
           <div id="addCardInput">
             <input v-model="store.newCard.title" id="title" @keyup.enter="store.onEnterTitle()" placeholder="title"> <br />
             <input v-model="store.newCard.body" @blur="store.save" placeholder="text">
-            <input v-if="store.getDataType(store.newCard.image)=='video'"  v-model="store.newCard.thumbnail" @blur="store.save" placeholder="https://image.jpg"><br />
-            <input v-model="store.newCard.image" @blur="store.save" placeholder="https://image.jpg"><br />
+            <input v-if="store.getDataType(store.newCard.media)=='video'"  v-model="store.newCard.thumbnail" @blur="store.save" placeholder="https://image.jpg"><br />
+            <input v-model="store.newCard.media" @blur="store.save" placeholder="https://image.jpg"><br />
             <input type="color" name="color" v-model="store.newCard.color" @change="store.setColor()"/>
           </div>
           <!--<input type="number" v-model="store.showNext" >
@@ -191,10 +191,10 @@
               <div class="dot"></div>
               <h2> {{ store.cards[store.curser].title }} </h2>
               <p> {{ store.cards[store.curser].body }} </p>
-              <img v-if="store.getDataType(store.cards[store.curser].image)=='image'" :src="store.cards[store.curser].image" @error="store.log"/>
-              <video v-if="store.getDataType(store.cards[store.curser].image)=='video'" controls :poster="store.cards[store.curser].thumbnail"><source :src="store.cards[store.curser].image" type="video/mp4"> </video>
-              <img v-if="store.getDataType(store.cards[store.curser].image)=='QrCode'" :src="store.makeQrCode(store.cards[store.curser].image)"/>
-              <audio v-if="store.getDataType(store.cards[store.curser].image)=='audio'" :src="store.cards[store.curser].image" controls>
+              <img v-if="store.getDataType(store.cards[store.curser].media)=='image'" :src="store.cards[store.curser].media" @error="store.log"/>
+              <video v-if="store.getDataType(store.cards[store.curser].media)=='video'" controls :poster="store.cards[store.curser].thumbnail"><source :src="store.cards[store.curser].media" type="video/mp4"> </video>
+              <img v-if="store.getDataType(store.cards[store.curser].media)=='QrCode'" :src="store.makeQrCode(store.cards[store.curser].media)"/>
+              <audio v-if="store.getDataType(store.cards[store.curser].media)=='audio'" :src="store.cards[store.curser].media" controls>
               Your browser does not support the audio element.
               </audio>
             </div>
@@ -205,8 +205,8 @@
           <div id="addCardInput">
             <input v-model="store.cards[store.curser].title" id="title" @keyup.enter="store.onEnterTitle()" placeholder="title"> <br />
             <input v-model="store.cards[store.curser].body" @blur="store.save" placeholder="text">
-            <input v-if="store.getDataType(store.cards[store.curser].image)=='video'"  v-model="store.cards[store.curser].thumbnail" @blur="store.save" placeholder="https://image.jpg"><br />
-            <input v-model="store.cards[store.curser].image" @blur="store.save" placeholder="https://image.jpg"><br />
+            <input v-if="store.getDataType(store.cards[store.curser].media)=='video'"  v-model="store.cards[store.curser].thumbnail" @blur="store.save" placeholder="https://image.jpg"><br />
+            <input v-model="store.cards[store.curser].media" @blur="store.save" placeholder="https://image.jpg"><br />
             <input type="color" name="color" v-model="store.cards[store.curser].color" @change="store.setColor()"/>
           </div>
           <!--<input type="number" v-model="store.showNext" >
