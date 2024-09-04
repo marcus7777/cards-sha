@@ -40,10 +40,11 @@
             @drop="store.drop(i)"
             :data-index="i"
             :title="card.title"
+           
           >  <!-- i is for index -->
-            <div v-scope="Card({ card,i })"></div> 
+            <div v-if="store.on" :key="'main '+ i" v-scope="Card({ card,i })"></div> 
           </div>
-        </div>
+        </div>  
       </div>
         <!--Display subcards-->
       <div v-for="(card, ci) in store.cards">
@@ -72,6 +73,11 @@
             <input type="checkbox" name="hideDone" :checked="store.hideDone" @click="store.hideDone = !store.hideDone" />
             <label for="hideDone">Hide Done</label>
 
+            <button v-if="store.root.layout !== 'circle'" @click="store.layout('circle')">O</button>
+            <button v-if="store.root.layout !== 'line'" @click="store.layout('line')">-</button>
+            <button @click="store.sortByTitle">So</button>
+            <button @click="store.shuffle">Sh</button>
+
             
             <!-- <input type="number" v-model="store.showNext" >
             <label for="showNext">Show Next</label> -->
@@ -89,8 +95,8 @@
     </div>
 
     <template id="card">
-      <div class="card mainCard" v-if="!(store.hideDone && card.done)">
-        <div :data-index="i" class="inner small" @click="store.curser = i; store.layout(store.root.layout)" >
+      <div :key="i" class="card mainCard" v-if="!(store.hideDone && card.done)">
+        <div :data-index="i" class="inner small" @click="store.curser = i; store.layout(store.root.layout)" @dblclick="store.deeper(store.curser)">
           <div class="dot"></div>
           <button v-if="store.curser==i && displayMode!='subCard'" @click="store.openDialog(`editDialog${i}`)">✎</button>
           <h2 :data-index="i" > {{ card.title }} </h2>

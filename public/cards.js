@@ -59,6 +59,7 @@ function saveFile(text, title) { //saves the file to the local download
 }
 // swop the order of the cards
 const store = reactive({ //updates the html immediately
+  on: true,
   curser: 0,
   pageTitle: '',
   root: {
@@ -498,12 +499,15 @@ const store = reactive({ //updates the html immediately
   layout(layout = "line") {
     this.cleanUp()
     this.root.layout = layout
+    this.on = false
+      
     window.requestAnimationFrame(() => {
       if (this.root.layout === "circle") {
         this.cleanUp = this.distributeCardsCircle()
       } else {
         this.cleanUp = this.distributeCardsLine()
       }
+      this.on = true
     })
   },
   sortByTitle() {
@@ -755,8 +759,6 @@ window.addEventListener("message", (e) => {
   } else {
     store.cards[store.curser].media = e.data
   }
-    
-
 })
 
 function Card(props) {

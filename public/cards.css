@@ -71,7 +71,6 @@ p,h3,h2,h1 {
 .card {
   display: inline-block;
   transition: all 0.5s ease-in-out;
-  animation: slideInBottom 0.7s ease-in-out;
   text-align: center;
 }
 .ellipse .outerMainCard, 
@@ -89,7 +88,6 @@ p,h3,h2,h1 {
 .mainCard {
   height: -webkit-fill-available;
   text-align: center;
-  animation: slideInTop .5s ease-in-out;
 }
 .outerMainCard {
   transition: all 0.5s ease-in-out;
