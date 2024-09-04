@@ -351,10 +351,10 @@ const store = reactive({ //updates the html immediately
   },
   onEnterTitle(){
     if (!this.newCard.title) return
-    if (!this.cards[0]) return this.inc()
-    const addDialog = document.getElementById("mainOrSunDialog")
+    else return this.inc()
+    /*const addDialog = document.getElementById("mainOrSunDialog")
     addDialog.showModal()
-    store.disableKeys = true
+    store.disableKeys = true*/
 
   },
   lastSwap: 0,
@@ -386,7 +386,6 @@ const store = reactive({ //updates the html immediately
     this.newCard.title = ""
     this.newCard.media = ""
     this.newCard.body  = ""
-
   },
   inc() {
     //this.curser++
@@ -395,13 +394,13 @@ const store = reactive({ //updates the html immediately
     this.cards = [...this.cards, {...this.newCard}]
     this.resetNewCard()
     
-    closeDialog(mainOrSunDialog)
+    //closeDialog(mainOrSunDialog)
     this.save()
     setTimeout(() => {
       this.layout(this.root.layout)
     }, 100)
   },
-  incSub() {
+  /*incSub() {
     let card = this.cards[this.curser]
     if (!card.subCards) {
       // check for an already existing card and load its subcards
@@ -426,7 +425,7 @@ const store = reactive({ //updates the html immediately
     this.resetNewCard()
     closeDialog("mainOrSunDialog")
     this.save()
-  },
+  },*/
   distributeCardsCircle() {
     var radius = 35;
     let cardElements = [ ...document.getElementsByClassName("outerMainCard")]
@@ -744,7 +743,9 @@ function arrowKeysOn (e) {
 document.onkeydown = arrowKeysOn
 createApp({
   // share it with app scopes
-  store
+  store,
+  Card,
+  UpdateDialog
 }).mount()
 store.load()
 
@@ -757,6 +758,22 @@ window.addEventListener("message", (e) => {
     
 
 })
+
+function Card(props) {
+  return {
+    $template: '#card',
+    card: props.card,
+    displayMode: props.displayMode,
+    i: props.i,
+  }
+}
+function UpdateDialog(props) {
+  return {
+    $template: '#updateDialog',
+    dialogName: props.dialogName,
+    card: props.card,
+  }
+}
 
 setInterval(() => {
   store.autoAdd()
