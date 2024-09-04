@@ -163,7 +163,7 @@
               <video v-if="store.getDataType(store.newCard.media)=='video'" controls :poster="store.newCard.thumbnail"><source :src="store.newCard.media" type="video/mp4"> </video>
               <img v-if="store.getDataType(store.newCard.media)=='QrCode'" :src="store.makeQrCode(store.newCard.media)"/>
               <audio v-if="store.getDataType(store.newCard.media)=='audio'" :src="store.newCard.media" controls>
-              Your browser does not support the audio element.
+                Your browser does not support the audio element.
               </audio>
             </div>
           </div>     
