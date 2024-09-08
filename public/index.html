@@ -12,8 +12,6 @@
       <div>
         <button class="fab"       @click="store.openDialog('addDialog')" > + </button> 
         <button class="top-right" @click="store.openDialog('menuDialog')"> ⋮ </button> 
-        <!-- <input type="number" v-model="store.showNext" >
-        <label for="showNext">Show Next</label> -->
       </div>
       <!--Display rootcard here-->
       <div id="root">
@@ -23,9 +21,9 @@
             :title="root.title"
             :key="root.title"
           > 
-          <div class="card rootCard">
+            <div class="card rootCard">
               <div v-scope="Card({ card:root,i:'-1',displayMode:'root' })"></div>
-          </div>
+            </div>
           </div>
         </div>
       </div>
@@ -38,10 +36,8 @@
             draggable="true"
             @dragstart="store.draggingHash = store.hash(card)"
             @drop="store.drop(i)"
-            :data-index="i"
             :title="card.title"
-           
-          >  <!-- i is for index -->
+          >
             <div v-if="store.on" :key="'main '+ i" v-scope="Card({ card,i })"></div> 
           </div>
         </div>  
@@ -56,18 +52,9 @@
       </div>
       
       <div>
-        <!--<dialog id="mainOrSunDialog">
-          <p>Would you like this card to be a subcard or main card</p>
-          <button autofocus @click="store.inc()">Main</button>
-          <button v-if="store.cards[0] && store.curser > -1" @click="store.incSub()">Sub</button>
-        </dialog>-->
         <dialog id="menuDialog">
           <div>
             <button @click="store.closeDialog('menuDialog')">x</button>
-            <!--<input v-model="store.newCard.title" id="title" @keyup.enter="store.onEnterTitle()">
-            <button v-if="store.newCard.title" @click="store.inc()"> + Main </button>
-            <button v-if="store.cards[0] && store.newCard.title" @click="store.incSub()"> + Sub </button>-->
-            <!--<button v-for="(breadcrumb, i) in store.trail" @click="store.load(breadcrumb)"> {{ store.trailNames[i] }} </button>-->
             <button @click="store.saveToFile('root')">▼</button>
           
             <input type="checkbox" name="hideDone" :checked="store.hideDone" @click="store.hideDone = !store.hideDone" />
@@ -77,7 +64,6 @@
             <button v-if="store.root.layout !== 'line'" @click="store.layout('line')">-</button>
             <button @click="store.sortByTitle">So</button>
             <button @click="store.shuffle">Sh</button>
-
             
             <!-- <input type="number" v-model="store.showNext" >
             <label for="showNext">Show Next</label> -->
@@ -148,7 +134,7 @@
         <br>
           <input type="color" name="color" v-model="card.color" @change="store.setColor()"/>
         </div>
-        <button v-if="store.newCard.title && dialogName=='addDialog'" @click="store.inc()"> Done</button>
+        <button v-if="store.newCard.title && dialogName=='addDialog'" @click="store.inc()"> Add </button>
         <!--<input type="number" v-model="store.showNext" >
         <label for="showNext">Show Next</label> -->
         <iframe src="login.html" style="border:0px #ffffff none;" name="upload" frameborder="1" marginheight="0px" marginwidth="0px" height="240px" width="300px" allowfullscreen></iframe>

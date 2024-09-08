@@ -2,6 +2,7 @@
 import { createApp, reactive } from './petite-vue.es.js'
 import QrCreator from './qr-creator.es6.min.js'
 
+console.log(reactive)
 function saveCard(hash, card) {
   if (!hash) return window.alert("no hash")
   if (!card) return window.alert("no card")
@@ -428,7 +429,8 @@ const store = reactive({ //updates the html immediately
     this.save()
   },*/
   distributeCardsCircle() {
-    var radius = 35;
+    console.log("distributeCardsCircle@")  
+    let radius = 35;
     let cardElements = [ ...document.getElementsByClassName("outerMainCard")]
     let containers = [ ...document.getElementsByClassName("container")]
     containers.forEach(container => {
@@ -567,6 +569,7 @@ const store = reactive({ //updates the html immediately
     })
   },
   swapCards(index1, index2, withFocus = true) {
+    
     if (this.curser === index1) {
       this.curser = index2
     } else if (this.curser === index2) {
@@ -576,6 +579,7 @@ const store = reactive({ //updates the html immediately
       const temp = this.cards[index1]
       this.cards[index1] = this.cards[index2]
       this.cards[index2] = temp
+      this.cards = [...this.cards]    
       this.save()
     }
     /*if (withFocus) {
