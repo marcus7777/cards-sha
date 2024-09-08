@@ -38,7 +38,21 @@
             @drop="store.drop(i)"
             :title="card.title"
           >
-            <div v-if="store.on" :key="'main '+ i" v-scope="Card({ card,i })"></div> 
+	  <!-- <div :key="'main '+ i" v-scope="Card({ card,i })"></div> not updating --> 
+            <div :key="i" class="card mainCard" v-if="!(store.hideDone && card.done)">
+              <div :data-index="i" class="inner small" @click="store.curser = i; store.layout(store.root.layout)" @dblclick="store.deeper(store.curser)">
+                <div class="dot"></div>
+                <button v-if="store.curser==i" @click="store.openDialog(`editDialog${i}`)">✎</button>
+                <h2 :data-index="i" > {{ card.title }} </h2>
+                <p :data-index="i" > {{ card.body }} </p>
+                <img v-if="store.getDataType(card.media)=='image'" :src="card.media" @error="store.log"/>
+                <video v-if="store.getDataType(card.media)=='video'" class="media" @ended="store.endedAutoplay(card,i)" :poster="card.thumbnail"><source :src="card.media" type="video/mp4"> </video>
+                <img v-if="store.getDataType(card.media)=='qrCode'" :src="store.makeQrCode(card.media)"/>
+                <audio v-if="store.getDataType(card.media)=='audio'" :src="card.media" class="media"  @ended="store.endedAutoplay(card,i)" controls>
+                  Your browser does not support the audio element.
+                </audio>
+              </div>
+            </div>
           </div>
         </div>  
       </div>
@@ -119,7 +133,7 @@
           <button @click="store.uploadFileInToCard(store.curser)">▲</button>
         <br>
           <input v-model="card.title" id="title" @keyup.enter="store.onEnterTitle()" placeholder="title"> <br />
-          <input v-model="card.body" @blur="store.save" placeholder="text">
+	  <textarea v-model="card.body" @blur="store.save" placeholder="text"></textarea><br />
           <input v-if="store.getDataType(card.media)=='video'"  v-model="card.thumbnail" @blur="store.save" placeholder="https://image.jpg"><br />
           <input v-model="card.media" @blur="store.save" placeholder="https://image.jpg"><br />
           <label for="done">
