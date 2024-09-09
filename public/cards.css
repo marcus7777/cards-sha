@@ -44,7 +44,7 @@ input {
   margin-top: 60px;
   display: flex;
   justify-content: space-around;
-  padding-right: 180px;
+  /* padding-right: 180px; */
 }
 .container.ellipse {
   margin-top: 0px;
@@ -85,15 +85,26 @@ p,h3,h2,h1 {
   z-index: 1;
   transform: scale(0.7);
 }
+.subCard {
+  transform: scale(0.7);
+}
+
 .mainCard {
   height: -webkit-fill-available;
   text-align: center;
+}
+.rootCard button,
+.mainCard button {
+  position: absolute;
+  margin: 4px 0 0 64px;
+  border-radius: 9px;
 }
 .outerMainCard {
   transition: all 0.5s ease-in-out;
   max-width: 20vw;
   width: 5px;
   display: flex;
+  margin: 0 80px 0 -90px;
 }
 .card.hidden {
   animation: fadeOut 1s ease-in-out;
@@ -112,7 +123,6 @@ p,h3,h2,h1 {
 .card .inner:has(button) {
   background-color: #fff777;
   max-width:200px;
-  width: 200px;
 }
 
 .form button {

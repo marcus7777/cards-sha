@@ -2,14 +2,13 @@
 import { createApp, reactive } from './petite-vue.es.js'
 import QrCreator from './qr-creator.es6.min.js'
 
-console.log(reactive)
 function saveCard(hash, card) {
   if (!hash) return window.alert("no hash")
   if (!card) return window.alert("no card")
   localStorage.setItem(hash, JSON.stringify(card))
 }
 function getUrlExtension( url ) {
-  return url.split(/[#?]/)[0].split('.').pop().trim(); //this may not always work?
+  return url.split(/[#?]/)[0].split('.').pop().trim(); //may not always work?
 }
 function makeHash(card) {
   if (!card) return ""
@@ -54,13 +53,12 @@ function saveFile(text, title) { //saves the file to the local download
   const link = document.createElement("a");
   const file = new Blob([text], { type: 'text/plain' });
   link.href = URL.createObjectURL(file);
-  link.download = title+".jsonl";
+  link.download = title + ".jsonl";
   link.click();
   URL.revokeObjectURL(link.href);
 }
 // swop the order of the cards
 const store = reactive({ //updates the html immediately
-  on: true,
   curser: 0,
   pageTitle: '',
   root: {
@@ -69,10 +67,6 @@ const store = reactive({ //updates the html immediately
     cardAddtions: [],
   },
   cards: [],
-  addStyleToMe(i, setTo){ // work in progress
-    const elements = document.getElementsByClassName("outerMainCard")
-    elements[i].style.order = setTo
-  },
   hash(card){
     return makeHash(card)
   },
@@ -92,7 +86,7 @@ const store = reactive({ //updates the html immediately
     title: "", 
     body: "",
     subCards: [], // array of cards
-    cardAditions: [], // array of card adittions (like rel, weight, color, etc)
+    cardAditions: [], // array of card adittions (like related, weight, color, etc)
     done: false,
     color: '#55c2c3',
     hideDone: false,
@@ -111,7 +105,7 @@ const store = reactive({ //updates the html immediately
     if (!card) {
       return []
     }
-    hashes.push(hash) //push adds to
+    hashes.push(hash) // push adds to
     card.subCards.forEach(subCard => {
       if (!subCard) return
       if (typeof subCard === 'string') {
@@ -128,13 +122,13 @@ const store = reactive({ //updates the html immediately
     return hashes
   },
   saveToFile(root) {
-    let hashes = [];
+    let hashes = []
     if (typeof root === 'object') {
       hashes = this.getAllHashesNeededFrom(makeHash(root))
     } else {
       hashes = this.getAllHashesNeededFrom(root)
     }
-    let cards = [];
+    let cards = []
     hashes.forEach(hash => {
       if (!hash) return
       const card = localStorage.getItem(hash)
@@ -180,7 +174,7 @@ const store = reactive({ //updates the html immediately
       }
     })
     const stringToStore = cards.filter(card => typeof card === "string" ).join("\n")
-    const fileName = root.title || this.  pageTitle || this.title || "Sky Cards"
+    const fileName = root.title || this.pageTitle || this.title || "Sky Cards"
 
     //storageRef.putString(stringToStore, fileName).then(snapshot => {*/
 
@@ -218,8 +212,6 @@ const store = reactive({ //updates the html immediately
     if (tempCard === null) return
     let card = JSON.parse(tempCard)
     
-    
-    
     if (!card.subCards) {
       card.subCards = []
     }
@@ -234,18 +226,14 @@ const store = reactive({ //updates the html immediately
     })  
     return card
   },
-  load(cardHash,newCurser) {
+  load(cardHash, newCurser) {
     // load cards from local storage
     if (!cardHash) {
-      //this.trail = window.location.hash.slice(1).split("/") //this is causing the problem //useless now?
       cardHash = window.location.hash.slice(1).split("/").pop() || "root"
     } 
 
     const tempHashCheck = window.location.hash.slice(1).split("/").pop()
     if (tempHashCheck === undefined) return
-    const fresh = tempHashCheck.indexOf(cardHash)
-    
-    //this.trail = this.trail.slice(0, fresh)
 
     const tempCard = localStorage.getItem(cardHash)
     if (tempCard === null) return
@@ -388,10 +376,15 @@ const store = reactive({ //updates the html immediately
     this.newCard.title = ""
     this.newCard.media = ""
     this.newCard.body  = ""
+    this.newCard.color = '#55c2c3'
+    this.newCard.hideDone = false
+    this.newCard.subCards = []
+    this.newCard.done = false
+    this.newCard.layout = "line"
+    this.newCard.showNext = 0
+    this.newCard.cardAddtions = []
   },
   inc() {
-    //this.curser++
-    //this.cards = [...this.cards.slice(0, this.curser), {...this.newCard}, ...this.cards.slice(this.curser)]
     this.curser = this.cards.length
     this.cards = [...this.cards, {...this.newCard}]
     this.resetNewCard()
@@ -402,7 +395,7 @@ const store = reactive({ //updates the html immediately
       this.layout(this.root.layout)
     }, 100)
   },
-  /*incSub() {
+  incSub() {
     let card = this.cards[this.curser]
     if (!card.subCards) {
       // check for an already existing card and load its subcards
@@ -427,9 +420,8 @@ const store = reactive({ //updates the html immediately
     this.resetNewCard()
     closeDialog("mainOrSunDialog")
     this.save()
-  },*/
+  },
   distributeCardsCircle() {
-    console.log("distributeCardsCircle@")  
     let radius = 35;
     let cardElements = [ ...document.getElementsByClassName("outerMainCard")]
     let containers = [ ...document.getElementsByClassName("container")]
@@ -482,11 +474,12 @@ const store = reactive({ //updates the html immediately
         card.style.top = ""
         // card.style.transform = ""
       })
-      const containers = document.getElementsByClassName("container")
-      let container = containers[0]
       if (rootElement === null) return //annoyingly redundant
       rootElement.classList.remove("ellipse")
-      container.classList.remove("ellipse")
+      let containers = [ ...document.getElementsByClassName("container")]
+      containers.forEach(container => {
+        container.classList.remove("ellipse")
+      })
     }
   },
   distributeCardsLine() {
@@ -501,7 +494,6 @@ const store = reactive({ //updates the html immediately
   layout(layout = "line") {
     this.cleanUp()
     this.root.layout = layout
-    this.on = false
       
     window.requestAnimationFrame(() => {
       if (this.root.layout === "circle") {
@@ -509,7 +501,6 @@ const store = reactive({ //updates the html immediately
       } else {
         this.cleanUp = this.distributeCardsLine()
       }
-      this.on = true
     })
   },
   sortByTitle() {
@@ -535,14 +526,7 @@ const store = reactive({ //updates the html immediately
     }
     this.layout(this.root.layout)
   },
-  addWeight() {
-
-  },
   setColor() {
-    //window.location.hash = window.location.hash.slice(1).split("/").pop() || ""
-    //const cardToSave = this.loadCard(this.root)
-    //saveCard(this.root, {...cardToSave, color: this.color})
-
     if (!this.root.color) {
       this.root.color = 'white'
     }
@@ -556,7 +540,6 @@ const store = reactive({ //updates the html immediately
       if (this.newCard.title.includes(trigger) && this.newCard.title.indexOf(trigger) === this.newCard.title.length - trigger.length){
         this.newCard.title = this.newCard.title.slice(0, -trigger.length)
         this.inc() 
-        //document.getElementById('title').select() // this does not work on my Chromebook whilst dictating so not using it to Four now
       }
     })
     const triggerArraySub = ['. sub', 'full stop sub']
@@ -564,12 +547,10 @@ const store = reactive({ //updates the html immediately
       if (this.newCard.title.includes(trigger) && this.newCard.title.indexOf(trigger) === this.newCard.title.length - trigger.length){
         this.newCard.title = this.newCard.title.slice(0, -trigger.length)
         this.incSub() 
-        //document.getElementById('title').select() // this does not work on my Chromebook whilst dictating so not using it to Four now
       }
     })
   },
   swapCards(index1, index2, withFocus = true) {
-    
     if (this.curser === index1) {
       this.curser = index2
     } else if (this.curser === index2) {
@@ -715,9 +696,6 @@ const store = reactive({ //updates the html immediately
     }, div)
     return div.children[0].toDataURL()
   },
-  log(e) { //this may be causing problems
-    console.warn(e)
-  },
 })
 function arrowKeysOn (e) {
   if(e.keyCode == 27) {
@@ -753,7 +731,7 @@ createApp({
   // share it with app scopes
   store,
   Card,
-  UpdateDialog
+  UpdateDialog,
 }).mount()
 store.load()
 
@@ -769,6 +747,7 @@ function Card(props) {
   return {
     $template: '#card',
     card: props.card,
+    cardFunc: () => props.card,
     displayMode: props.displayMode,
     i: props.i,
   }
