@@ -364,11 +364,16 @@ const store = reactive({ //updates the html immediately
     if (from === -1) return
     // TODO make sure that the swap is intened.
     if (to == from) return
-    this.lastSwap = Date.now();
-    this.curser = -1
-    this.swapCards(from, to, false)
+    if (to === -1) {
+      this.makeMainCard(from)
+    } else {
+      this.lastSwap = Date.now();
+      this.swapCards(from, to, false)
+    }
   },
   drop(to) {
+    if (this.lastSwap >= (Date.now() - 500)) return;
+    console.log("drop", to)
     this.curser = to
     //this.distributeCardsCircle
   },

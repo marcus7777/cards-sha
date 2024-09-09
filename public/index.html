@@ -97,12 +97,12 @@
       <div :data-index="i" class="inner small" @click="store.curser = i; store.layout(store.root.layout)" @dblclick="store.deeper(store.curser)">
         <div class="dot"></div>
         <button v-if="store.curser==i && displayMode!='subCard'" @click="store.openDialog(`editDialog${i}`)">✎</button>
-        <h2 :data-index="i" > {{ cardFunc().title }} </h2>
-        <p :data-index="i" > {{ cardFunc().body }} </p>
-        <img v-if="store.getDataType(cardFunc().media)=='image'" :src="cardFunc().media" @error="store.log"/>
-        <video v-if="store.getDataType(cardFunc().media)=='video'" class="media" @ended="store.endedAutoplay(cardFunc(),i)" :poster="cardFunc().thumbnail"><source :src="cardFunc().media" type="video/mp4"> </video>
-        <img v-if="store.getDataType(cardFunc().media)=='qrCode'" :src="store.makeQrCode(cardFunc().media)"/>
-        <audio v-if="store.getDataType(cardFunc().media)=='audio'" :src="cardFunc().media" class="media"  @ended="store.endedAutoplay(cardFunc(),i)" controls></audio>
+        <h2 :data-index="i" > {{ card.title }} </h2>
+        <p :data-index="i" > {{ card.body }} </p>
+        <img v-if="store.getDataType(card.media)=='image'" :src="card.media" @error="store.log"/>
+        <video v-if="store.getDataType(card.media)=='video'" class="media" @ended="store.endedAutoplay(card,i)" :poster="card.thumbnail"><source :src="card.media" type="video/mp4"> </video>
+        <img v-if="store.getDataType(card.media)=='qrCode'" :src="store.makeQrCode(card.media)"/>
+        <audio v-if="store.getDataType(card.media)=='audio'" :src="card.media" class="media"  @ended="store.endedAutoplay(card,i)" controls></audio>
       </div>
     </template>
     <template id="updateDialog">
