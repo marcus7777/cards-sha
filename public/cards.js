@@ -434,8 +434,8 @@ const store = reactive({ //updates the html immediately
       container.classList.add("ellipse")
     })
 
-    let angle = -Math.PI/2
     let step = (2 * Math.PI) / cardElements.length
+    let angle = -Math.PI/2 + (step/2)
 
     cardElements.forEach((card,i) => {
       const x = radius * Math.cos(angle) + 50
@@ -443,22 +443,26 @@ const store = reactive({ //updates the html immediately
       // var size = (Math.round(radius * Math.sin(step))) -9
       if (i == this.curser) {
         let subCardElements = [... document.getElementsByClassName("subCard")]
-        let subAngle = -Math.PI/2
         let subStep = (2 * Math.PI) / subCardElements.length
+        let subAngle = -Math.PI/2 + (subStep/2)
         const subRadius = 20
         subCardElements.forEach((subCard) => {
-          const subX = (((subRadius * Math.cos(subAngle) + x) * 9) + 50) / 10
-          const subY = (((subRadius * Math.sin(subAngle) + y) * 9) + 50) / 10
-
-          subCard.style.left = `calc(${subX}vw - ${subCard.offsetWidth/2}px)`
+          const subX = (((subRadius * Math.cos(subAngle) + x) * 8) + 50) / 10
+          const subY = (((subRadius * Math.sin(subAngle) + y) * 8) + 50) / 10
+          // if on the right side of the circle, move the card to the left
+          if ((Math.cos(subAngle) > 0)) { // if the angle is positive
+	    subCard.style.left = `calc(${subX}vw - ${subCard.offsetWidth/2}px + ${card.children[0].offsetWidth}px)`
+	  } else {
+            subCard.style.left = `calc(${subX}vw - ${subCard.offsetWidth/2}px)`
+	  }
           subCard.style.top = `calc(${subY}vh - ${subCard.offsetHeight/2}px)`
 
           subAngle += subStep
         })
       }
       
-      card.style.left = `calc(${x}vw - ${card.children[0].offsetWidth/2}px)` //use vh (vi) to have a circle
-      card.style.top = `calc(${y}vh - ${card.children[0].offsetHeight/2}px)`
+      card.style.left = `calc(${x}vw - ${card.offsetWidth/2}px)` //use vh (vi) to have a circle
+      card.style.top = `calc(${y}vh - ${card.offsetHeight/2}px)`
       // card.style.transform = `rotateX(45deg) translateZ(calc(${y}vh - ${card.offsetHeight/2}px))
     
       //card.style.height = size + 'px';

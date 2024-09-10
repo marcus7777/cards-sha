@@ -124,6 +124,9 @@ p,h3,h2,h1 {
   background-color: #fff777;
   max-width:200px;
 }
+#root:has(button) {
+  z-index: 1;
+}
 
 .form button {
   display: none
