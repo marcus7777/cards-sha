@@ -451,7 +451,7 @@ const store = reactive({ //updates the html immediately
           const subY = (((subRadius * Math.sin(subAngle) + y) * 8) + 50) / 10
           // if on the right side of the circle, move the card to the left
           if ((Math.cos(subAngle) > 0)) { // if the angle is positive
-	    subCard.style.left = `calc(${subX}vw - ${subCard.offsetWidth/2}px + ${card.children[0].offsetWidth}px)`
+	    subCard.style.left = `calc(${subX}vw - ${subCard.offsetWidth/2}px + ${card.children[0].offsetWidth * 0.5}px)`
 	  } else {
             subCard.style.left = `calc(${subX}vw - ${subCard.offsetWidth/2}px)`
 	  }
