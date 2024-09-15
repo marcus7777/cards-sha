@@ -745,6 +745,7 @@ createApp({
 store.load()
 
 window.addEventListener("message", (e) => {
+  console.log(e)
   if (document.getElementById("addDialog").open) {
     store.newCard.media = e.data
   } else {
