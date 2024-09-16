@@ -718,22 +718,24 @@ function arrowKeysOn (e) {
   if(e.keyCode == 40 || e.keyCode == 83 || e.keyCode == 74) {
     if (store.curser == -1) store.curser = 0
     else {
-      store.deeper(store.curser)
-      store.curser = 0
+      store.deeper(0)
     }
   }
   if(e.keyCode == 37 || e.keyCode == 65 || e.keyCode == 72) { //left
-    if (e.shiftKey) store.swapCards(store.curser, store.curser -1)
-    else store.curser =Math.max(store.curser -1,-1)
-    
+    if (e.shiftKey) {
+      store.swapCards(store.curser, store.curser -1)
+    } else {
+      store.curser = Math.max(store.curser -1,-1)
+    }
   }
   if(e.keyCode == 39 || e.keyCode == 68 || e.keyCode == 76) { //right
-    if (e.shiftKey) store.swapCards(store.curser, store.curser +1)
-    else store.curser =Math.min(store.curser +1, store.cards.length-1)
+    if (e.shiftKey) {
+      store.swapCards(store.curser, store.curser + 1)
+    } else { 
+      store.curser = Math.min(store.curser +1, store.cards.length - 1)
+    }
   }
-  
   store.layout(store.root.layout)
-
 }
 document.onkeydown = arrowKeysOn
 createApp({
