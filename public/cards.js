@@ -8,6 +8,7 @@ function saveCard(hash, card) {
   localStorage.setItem(hash, JSON.stringify(card))
 }
 function getUrlExtension( url ) {
+  if (!url) return ""
   return url.split(/[#?]/)[0].split('.').pop().trim(); //may not always work?
 }
 function makeHash(card) {
@@ -659,6 +660,7 @@ const store = reactive({ //updates the html immediately
   openDialog(dialog) {
     const addDialog = document.getElementById(dialog)
     store.disableKeys = true
+    console.log("addDialog", dialog, addDialog)
     addDialog.showModal()
   },
   closeDialog(dialog) {
@@ -684,7 +686,7 @@ const store = reactive({ //updates the html immediately
     const imageFormats = ["jpeg","svg","webp","png","gif"]
     const videoFormats = ["mp4","ogg","mpeg","mov","avi","webm"]
     const audioFormats = ["mp3"]
-    if (url == "") return ""
+    if (!url) return ""
     const dataType = getUrlExtension(url)
     if (videoFormats.includes(dataType)) return "video"
     if (imageFormats.includes(dataType)) return "image"
@@ -745,6 +747,10 @@ createApp({
   UpdateDialog,
 }).mount()
 store.load()
+window.onhashchange = function(e) {
+  console.log("hash change", e)
+  store.load()
+}
 
 window.addEventListener("message", (e) => {
   console.log(e)
@@ -772,6 +778,10 @@ function UpdateDialog(props) {
   }
 }
 
+/* 
+
 setInterval(() => {
   store.autoAdd()
-}, 1000)
+}, 1000) 
+
+*/
