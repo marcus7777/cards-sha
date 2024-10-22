@@ -29,13 +29,11 @@ body {
   justify-content: center;
 }
 #root.ellipse {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
+  display: inline-block;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(1.2);
   position: absolute;
-  width: 100vw;
-  transform: scale(1.2);
 }
 input {
   margin: .5em;
