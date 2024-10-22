@@ -125,7 +125,9 @@ var handleSignedInUser = function(user) {
     }
     // upload file
     const fileRef = storageRef.child('userUploads/' + file.name)
+    document.getElementById('uploading').style.display = 'block'
     fileRef.put(file, metadata).then(function(snapshot) {
+      document.getElementById('uploading').style.display = 'none'
       fileRef.getDownloadURL().then((url) => {
 	      window.parent.postMessage(url)
 	      fileUploadElement.value = ''

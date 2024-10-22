@@ -757,6 +757,7 @@ window.addEventListener("message", (e) => {
   if (document.getElementById("addDialog").open) {
     store.newCard.media = e.data
   } else {
+    if (store.curser === -1) return store.root.media = e.data
     store.cards[store.curser].media = e.data
   }
 })

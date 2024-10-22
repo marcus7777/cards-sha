@@ -124,7 +124,7 @@
         </div>
         <div id="addCardInput" v-if="dialogName !== 'addDialog'">
           Make sub card of:
-	  <div v-for="(card, i) in store.cards">
+          <div v-for="(card, i) in store.cards">
             <button v-if="i !== store.curser" @click="store.makeSubCard(store.curser, i)">{{card.title}}</button>
           </div>
           <button @click="store.removeCard(store.curser)">-</button>
@@ -133,10 +133,10 @@
           <button @click="store.saveToFile(card)">▼</button>
           <button @click="store.uploadFileInToCard(store.curser)">▲</button>
 
-	</div>
-	<div>
+        </div>
+        <div>
           <input v-model="card.title" id="title" @keyup.enter="store.onEnterTitle()" placeholder="title"> <br />
-	  <textarea v-model="card.body" @blur="store.save" placeholder="text"></textarea><br />
+          <textarea v-model="card.body" @blur="store.save" placeholder="text"></textarea><br />
           <input v-if="store.getDataType(card.media)=='video'"  v-model="card.thumbnail" @blur="store.save" placeholder="https://image.jpg"><br />
           <input v-model="card.media" @blur="store.save" placeholder="https://image.jpg"><br />
           <label for="done">
