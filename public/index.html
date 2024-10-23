@@ -102,7 +102,7 @@
         <h2 :data-index="i" > {{ card.title }} </h2>
         <p  :data-index="i" > {{ card.body }} </p>
 
-        <img v-if="store.getDataType(card.media)=='image'" :src="card.media" @error="store.log"/>
+        <img v-if="store.getDataType(card.media)=='image'" :src="card.media" />
         <video v-if="store.getDataType(card.media)=='video'" class="media" @ended="store.endedAutoplay(card,i)" :poster="card.thumbnail"><source :src="card.media" type="video/mp4"> </video>
         <img v-if="store.getDataType(card.media)=='qrCode'" :src="store.makeQrCode(card.media)"/>
         <audio v-if="store.getDataType(card.media)=='audio'" :src="card.media" class="media"  @ended="store.endedAutoplay(card,i)" controls></audio>
