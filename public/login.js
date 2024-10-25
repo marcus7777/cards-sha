@@ -128,8 +128,8 @@ var handleSignedInUser = function(user) {
       fileRef.put(file, metadata).then(function(snapshot) {
         document.getElementById('uploading').style.display = 'none'
         fileRef.getDownloadURL().then((url) => {
-	      window.parent.postMessage(url)
-	      fileUploadElement.value = ''
+	  window.parent.postMessage(url)
+	  fileUploadElement.value = ''
         })
       }).catch(function(error) {
         console.error('Upload failed:', error);
