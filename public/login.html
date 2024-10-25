@@ -9,6 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.13.0/firebase-storage-compat.js"></script>
     <script src="config.js"></script>
     <script src="assets/common.js"></script>
+    <script src="imageResize.umd.js"></script>
     <link href="login.css" rel="stylesheet" type="text/css" media="screen" />
     <script src="assets/firebaseui.js"></script>
     <link type="text/css" rel="stylesheet" href="assets/firebaseui.css" />
@@ -29,14 +30,15 @@
               <div id="phone"></div>
               <div id="is-new-user"></div>
               <div class="clearfix"></div>
-	      <form id="file-form">
-		<input type="file" id="file-upload" accept="*">
-	      </form>
-	      <div id="file-upload-container">
-		<div id="file-upload-loading"></div>
-		<div id="file-upload-error"></div>
-		<div id="file-upload-success"></div>
-	      </div>
+              <div id="uploading" class="hidden">Uploading...</div>
+              <form id="file-form">
+                <input type="file" id="file-upload" accept="*">
+              </form>
+              <div id="file-upload-container">
+                <div id="file-upload-loading"></div>
+                <div id="file-upload-error"></div>
+                <div id="file-upload-success"></div>
+              </div>
             </div>
             <p>
               <button id="sign-out">Sign Out</button>

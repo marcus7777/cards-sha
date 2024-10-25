@@ -1,24 +1,3 @@
-/*
- * Copyright 2016 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the
- * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/**
- * FirebaseUI initialization to be used in a Single Page application context.
- */
-
-/**
- * @return {!Object} The FirebaseUI config.
- */
 function getUiConfig() {
   return {
     'callbacks': {
@@ -125,14 +104,37 @@ var handleSignedInUser = function(user) {
     }
     // upload file
     const fileRef = storageRef.child('userUploads/' + file.name)
-    fileRef.put(file, metadata).then(function(snapshot) {
-      fileRef.getDownloadURL().then((url) => {
+    document.getElementById('uploading').style.display = 'block'
+    // if image  
+	  // resize image
+    if (file.type.indexOf('image') !== -1) {
+      imageResize(file, {
+        format: 'png',
+        width: 640,
+        output: 'blob'
+      }).then(b => {
+        fileRef.put(b, metadata).then(function(snapshot) {
+          document.getElementById('uploading').style.display = 'none'
+          fileRef.getDownloadURL().then((url) => {
+            window.parent.postMessage(url)
+	    fileUploadElement.value = ''
+          })
+        }).catch(function(error) {
+          console.error('Uploading image failed:', error);
+        });
+      })
+    } else {
+
+      fileRef.put(file, metadata).then(function(snapshot) {
+        document.getElementById('uploading').style.display = 'none'
+        fileRef.getDownloadURL().then((url) => {
 	      window.parent.postMessage(url)
 	      fileUploadElement.value = ''
-      })
-    }).catch(function(error) {
-      console.error('Upload failed:', error);
-    });
+        })
+      }).catch(function(error) {
+        console.error('Upload failed:', error);
+      });
+    }
   };
 
      
