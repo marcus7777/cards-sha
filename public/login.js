@@ -109,9 +109,8 @@ var handleSignedInUser = function(user) {
 	  // resize image
     if (file.type.indexOf('image') !== -1) {
       imageResize(file, {
-        format: 'png',
         width: 640,
-        output: 'blob'
+        outputType: 'blob'
       }).then(b => {
         fileRef.put(b, metadata).then(function(snapshot) {
           document.getElementById('uploading').style.display = 'none'

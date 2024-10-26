@@ -683,7 +683,7 @@ const store = reactive({ //updates the html immediately
     
   },
   getDataType(url) {
-    const imageFormats = ["jpeg","svg","webp","png","gif"]
+    const imageFormats = ["jpg", "jpeg","svg","webp","png","gif"]
     const videoFormats = ["mp4","ogg","mpeg","mov","avi","webm"]
     const audioFormats = ["mp3"]
     if (!url) return ""
