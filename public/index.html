@@ -45,13 +45,15 @@
             <div :key="i" class="card mainCard" v-if="!(store.hideDone && card.done)">
               <div :data-index="i" class="inner small" @click="store.curser = i; store.layout(store.root.layout)" @dblclick="store.deeper(0)">
                 <div class="dot"></div>
-                <button v-if="store.curser==i" @click="store.openDialog(`editDialog${i}`)">✎</button>
+                <button v-if="store.curser==i" @click="store.deeper(i)">^</button>
                 <h2 :data-index="i" > {{ card.title }} </h2>
                 <p :data-index="i" > {{ card.body }} </p>
-                <img v-if="store.getDataType(card.media)=='image'" :src="card.media" @error="store.log"/>
-                <video controls v-if="store.getDataType(card.media)=='video'" class="media" @ended="store.endedAutoplay(card,i)" :poster="card.thumbnail" ><source :src="card.media" type="video/mp4"> </video>
-                <img v-if="store.getDataType(card.media)=='qrCode'" :src="store.makeQrCode(card.media)"/>
+		<a v-if="card.media" :href="card.media" target="lb">
+                  <img v-if="store.getDataType(card.media)=='image'" :src="card.media" />
+                  <img v-if="store.getDataType(card.media)=='qrCode'" :src="store.makeQrCode(card.media)"/>
+		</a>  
                 <audio v-if="store.getDataType(card.media)=='audio'" :src="card.media" class="media"  @ended="store.endedAutoplay(card,i)" controls></audio>
+                <video controls v-if="store.getDataType(card.media)=='video'" class="media" @ended="store.endedAutoplay(card,i)" :poster="card.thumbnail" ><source :src="card.media" type="video/mp4"> </video>
               </div>
             </div>
           </div>
@@ -157,5 +159,6 @@
         <iframe src="login.html" style="border:0px #ffffff none;" name="upload" frameborder="1" marginheight="0px" marginwidth="0px" height="240px" width="300px" allowfullscreen></iframe>
       </dialog>
     </template>
+    <script src="fslb.js"></script>
   </body>
 </html>
