@@ -3,8 +3,8 @@ import { createApp, reactive } from './petite-vue.es.js'
 import QrCreator from './qr-creator.es6.min.js'
 
 function saveCard(hash, card) {
-  if (!hash) return window.alert("no hash")
-  if (!card) return window.alert("no card")
+  if (!hash) return // window.alert("no hash")
+  if (!card) return // window.alert("no card")
   localStorage.setItem(hash, JSON.stringify(card))
 }
 function getUrlExtension( url ) {
@@ -67,6 +67,7 @@ const store = reactive({ //updates the html immediately
     color: 'white',
     cardAddtions: [],
   },
+  draggingSub: false,
   cards: [],
   hash(card){
     return makeHash(card)
@@ -253,7 +254,7 @@ const store = reactive({ //updates the html immediately
     this.layout(this.root.layout)
     this.setColor()
     const subCards = rootCard.subCards.map(subHash => this.loadCard(subHash))
-    // rootCard.subCards = subCards
+    // rootCard.subCards = subCards ** main cards
     subCards.forEach(subCard => {
       if (!subCard) return
       if (!subCard.subCards) {
@@ -375,6 +376,41 @@ const store = reactive({ //updates the html immediately
   drop(to) {
     if (this.lastSwap >= (Date.now() - 500)) return;
     console.log("drop", to)
+    if (this.draggingSub) {
+      this.draggingSub = false
+      console.log(this.curser)
+      // find sub card
+      const from = this.cards[this.curser].subCards.reduce((index, card, currentIndex) => {
+        if (makeHash(card) == this.draggingHash) {
+          return currentIndex
+        }
+        return index
+      }, -1)
+      const theCard = this.cards[this.curser].subCards[from]
+      delete this.cards[this.curser].subCards[from]
+
+      if (to === -1) { //move to sub card
+        this.cards = [...this.cards.map((card, i) => {
+	  if (i === this.curser) {
+            return {...card, subCards: card.subCards.filter((subCard, j) => j !== from)}
+	  }
+          return card
+	}), {...theCard}]
+      } else {
+	this.cards = [...this.cards.map((card, i) => {
+	  if (i === to) {
+	    return {...card, subCards: card.subCards.concat([{...theCard}])}
+	  }
+	  if (i === this.curser) {
+            return {...card, subCards: card.subCards.filter((subCard, j) => j !== from)}
+	  }
+	  return card
+        })]
+      }
+      this.layout(this.root.layout)
+      this.save()
+      // remove old card
+    }
     this.curser = to
     //this.distributeCardsCircle
   },
@@ -439,6 +475,11 @@ const store = reactive({ //updates the html immediately
     let angle = -Math.PI/2 + (step/2)
 
     cardElements.forEach((card,i) => {
+
+ 
+      const dot = card.getElementsByClassName("dot")[0] 
+      dot.style.backgroundColor = this.cards[i].color
+
       const x = radius * Math.cos(angle) + 50
       const y = radius * Math.sin(angle) + 50
       // var size = (Math.round(radius * Math.sin(step))) -9
@@ -452,10 +493,10 @@ const store = reactive({ //updates the html immediately
           const subY = (((subRadius * Math.sin(subAngle) + y) * 8) + 50) / 10
           // if on the right side of the circle, move the card to the left
           if ((Math.cos(subAngle) > 0)) { // if the angle is positive
-	    subCard.style.left = `calc(${subX}vw - ${subCard.offsetWidth/2}px + ${card.children[0].offsetWidth * 0.5}px)`
-	  } else {
+            subCard.style.left = `calc(${subX}vw - ${subCard.offsetWidth/2}px + ${card.children[0].offsetWidth * 0.5}px)`
+          } else {
             subCard.style.left = `calc(${subX}vw - ${subCard.offsetWidth/2}px)`
-	  }
+          }
           subCard.style.top = `calc(${subY}vh - ${subCard.offsetHeight/2}px)`
 
           subAngle += subStep
@@ -475,11 +516,15 @@ const store = reactive({ //updates the html immediately
     
     this.save()
     let rootElement = document.getElementById("root")
+    const dot = rootElement.getElementsByClassName("dot")[0] 
+    dot.style.backgroundColor = this.root.color
     if (rootElement === null) return
     rootElement.classList.add("ellipse")
     return () => {  //clean Up
       let cardElements = [... document.getElementsByClassName("outerMainCard")]
-      cardElements.forEach(function (card) {
+      cardElements.forEach((card, i) => {
+        const dot = card.getElementsByClassName("dot")[0] 
+        dot.style.backgroundColor = this.cards[i].color
         card.style.left = ""
         card.style.top = ""
         // card.style.transform = ""
@@ -494,12 +539,21 @@ const store = reactive({ //updates the html immediately
   },
   distributeCardsLine() {
     this.save()
+    let rootElement = document.getElementById("root")
+    const dot = rootElement.getElementsByClassName("dot")[0] 
+    dot.style.backgroundColor = this.root.color
+    if (rootElement === null) return
+    let cardElements = [... document.getElementsByClassName("outerMainCard")]
+    cardElements.forEach((card, i) => {
+      const dot = card.getElementsByClassName("dot")[0] 
+      dot.style.backgroundColor = this.cards[i].color
+    })
     return () => {
-      console.log("Clean up (does nothing) line")
+      // console.log("Clean up (does nothing) line")
     }
   },
   cleanUp() {
-    console.log("Clean up (does nothing)")
+    // console.log("Clean up (does nothing)")
   },
   layout(layout = "line") {
     this.cleanUp()
@@ -630,6 +684,28 @@ const store = reactive({ //updates the html immediately
     const temp = this.cards[index1]
     this.cards[index2].subCards = this.cards[index2].subCards.concat([temp])
     this.removeCard(index1)
+  },
+  dragOverSub(to) { //drag over the sub cards
+    if (to === null) return
+    if (this.lastSwap >= (Date.now() - 500)) return;
+    console.log("drag over sub",to)
+    //find the card that is being dragged over and the card that is being dragged
+    const from = this.cards.reduce((index, card, currentIndex) => {
+      if (makeHash(card) == this.draggingHash) {
+        return currentIndex
+      }
+      return index
+    }, -1)
+    if (from === -1) return
+    // TODO make sure that the swap is intened.
+    if (to == from) return
+    if (to === -1) {
+      this.makeMainCard(from)
+    } else {
+      this.lastSwap = Date.now()
+      this.makeSubCard(from, to)
+      
+    }
   },
   makeMainCard(index) {
     if (!window.location.hash.slice(1).split("/")[0]) return
