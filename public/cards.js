@@ -151,9 +151,12 @@ const store = reactive({ //updates the html immediately
       if (target.files && target.files !== null && target.files.length) {
         savesToLocalStorage(target.files[0], (card) => {
           if (index === -1) {
-            this.root.subCards = this.cards[index].subCards.concat([card])
+            this.root = {...card}
+            this.cards = [].concat(card.subCards).map(subCard => this.loadCard(subCard))
+            this.curser = 0
+            
           } else {
-            this.cards[index].subCards = this.cards[index].subCards.concat([card])
+            this.cards[index].subCards = (this.cards[index].subCards || []).concat([card])
           }
         })
       }
@@ -387,7 +390,7 @@ const store = reactive({ //updates the html immediately
         return index
       }, -1)
       const theCard = this.cards[this.curser].subCards[from]
-      delete this.cards[this.curser].subCards[from]
+      // delete this.cards[this.curser].subCards[from]
 
       if (to === -1) { //move to sub card
         this.cards = [...this.cards.map((card, i) => {
@@ -413,6 +416,26 @@ const store = reactive({ //updates the html immediately
     }
     this.curser = to
     //this.distributeCardsCircle
+  },
+  dropToDup(e) {
+    e.preventDefault()
+    if (this.lastSwap >= (Date.now() - 500)) return;
+    const theCard = this.cards.reduce((acc, card) => {
+      if (makeHash(card) == this.draggingHash) {
+	return card
+      }
+      // look in sub cards
+      return card.subCards.reduce((acc, subCard, currentIndex) => {
+	if (makeHash(subCard) == this.draggingHash) {
+	  return subCard
+	}
+	return acc
+      }, acc)
+    }, this.root)
+    if (theCard === null) return
+    this.cards = [...this.cards, {...theCard}]
+    this.layout(this.root.layout)
+    this.save()
   },
   resetNewCard(){
     this.newCard.title = ""
