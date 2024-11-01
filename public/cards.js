@@ -394,20 +394,20 @@ const store = reactive({ //updates the html immediately
 
       if (to === -1) { //move to sub card
         this.cards = [...this.cards.map((card, i) => {
-	  if (i === this.curser) {
+          if (i === this.curser) {
             return {...card, subCards: card.subCards.filter((subCard, j) => j !== from)}
-	  }
+          }
           return card
-	}), {...theCard}]
+        }), {...theCard}]
       } else {
-	this.cards = [...this.cards.map((card, i) => {
-	  if (i === to) {
-	    return {...card, subCards: card.subCards.concat([{...theCard}])}
-	  }
-	  if (i === this.curser) {
+        this.cards = [...this.cards.map((card, i) => {
+          if (i === to) {
+            return {...card, subCards: card.subCards.concat([{...theCard}])}
+          }
+          if (i === this.curser) {
             return {...card, subCards: card.subCards.filter((subCard, j) => j !== from)}
-	  }
-	  return card
+          }
+          return card
         })]
       }
       this.layout(this.root.layout)
@@ -422,14 +422,14 @@ const store = reactive({ //updates the html immediately
     if (this.lastSwap >= (Date.now() - 500)) return;
     const theCard = this.cards.reduce((acc, card) => {
       if (makeHash(card) == this.draggingHash) {
-	return card
+        return card
       }
       // look in sub cards
       return card.subCards.reduce((acc, subCard, currentIndex) => {
-	if (makeHash(subCard) == this.draggingHash) {
-	  return subCard
-	}
-	return acc
+        if (makeHash(subCard) == this.draggingHash) {
+          return subCard
+        }
+        return acc
       }, acc)
     }, this.root)
     if (theCard === null) return

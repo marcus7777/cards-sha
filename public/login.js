@@ -105,10 +105,10 @@ var handleSignedInUser = function(user) {
     // upload file
     const fileRef = storageRef.child('userUploads/' + file.name)
     document.getElementById('uploading').style.display = 'block'
-    // if image  
-	  // resize image
+    // if image then resize image
     if (file.type.indexOf('image') !== -1) {
       imageResize(file, {
+        type: 'png',
         width: 640,
         outputType: 'blob'
       }).then(b => {
@@ -116,7 +116,7 @@ var handleSignedInUser = function(user) {
           document.getElementById('uploading').style.display = 'none'
           fileRef.getDownloadURL().then((url) => {
             window.parent.postMessage(url)
-	    fileUploadElement.value = ''
+            fileUploadElement.value = ''
           })
         }).catch(function(error) {
           console.error('Uploading image failed:', error);
@@ -127,8 +127,8 @@ var handleSignedInUser = function(user) {
       fileRef.put(file, metadata).then(function(snapshot) {
         document.getElementById('uploading').style.display = 'none'
         fileRef.getDownloadURL().then((url) => {
-	  window.parent.postMessage(url)
-	  fileUploadElement.value = ''
+          window.parent.postMessage(url)
+          fileUploadElement.value = ''
         })
       }).catch(function(error) {
         console.error('Upload failed:', error);
