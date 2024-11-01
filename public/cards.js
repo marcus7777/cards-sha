@@ -123,6 +123,36 @@ const store = reactive({ //updates the html immediately
     })
     return hashes
   },
+  listOrphanedCards() {
+    let mostChildren = 0
+
+    const topcard = this.findOrphanedCards().reduce((acc, hash) => {
+      const children = this.getAllHashesNeededFrom(hash)
+      if (children.length > mostChildren) {
+	mostChildren = children.length
+	return hash
+      }
+      return acc
+    }, "root")
+
+    return this.loadCard(topcard)
+  },
+  findOrphanedCards() {
+    let rootHash = window.location.hash.slice(1).split("/").pop() || "root"
+    let rootCard = this.loadCard(rootHash)
+    let allHashes = this.getAllHashesNeededFrom(rootHash)
+    let orphanedCards = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key === null) continue
+      if (key === "root") continue
+      if (key === rootHash) continue
+      if (!allHashes.includes(key)) {
+        orphanedCards.push(key)
+      }
+    }
+    return orphanedCards
+  },
   saveToFile(root) {
     let hashes = []
     if (typeof root === 'object') {

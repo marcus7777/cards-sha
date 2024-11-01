@@ -46,9 +46,9 @@
                 <button v-if="store.curser==i" @click="store.deeper(i)">^</button>
                 <h2 :data-index="i" > {{ card.title }} </h2>
                 <p :data-index="i" > {{ card.body }} </p>
-        	<a v-if="card.media" :href="card.media" target="lb">
+                <a v-if="card.media" :href="card.media" target="lb">
                   <img v-if="store.getDataType(card.media)=='image'" :src="card.media" />
-        	</a>  
+                </a>  
                 <img v-if="store.getDataType(card.media)=='qrCode'" :src="store.makeQrCode(card.media)"/>
                 <audio v-if="store.getDataType(card.media)=='audio'" :src="card.media" class="media"  @ended="store.endedAutoplay(card,i)" controls></audio>
                 <video controls v-if="store.getDataType(card.media)=='video'" class="media" @ended="store.endedAutoplay(card,i)" :poster="card.thumbnail" ><source :src="card.media" type="video/mp4"> </video>
@@ -74,9 +74,10 @@
       
       <div>
         <dialog id="menuDialog">
+          <button @click="store.closeDialog('menuDialog')">x</button>
           <div>
-            <button @click="store.closeDialog('menuDialog')">x</button>
             <button @click="store.saveToFile('root')">▼</button>
+            <button @click="console.log(store.listOrphanedCards())">List</button>
           
             <input type="checkbox" name="hideDone" :checked="store.hideDone" @click="store.hideDone = !store.hideDone" />
             <label for="hideDone">Hide Done</label>
