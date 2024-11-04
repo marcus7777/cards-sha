@@ -84,9 +84,14 @@ const store = reactive({ //updates the html immediately
     }
     return true
   },
+  big: false,
+  toggleBig(){
+    this.big = !this.big
+  },
   newCard: {
     title: "", 
     body: "",
+    smBody: "",
     subCards: [], // array of cards
     cardAditions: [], // array of card adittions (like related, weight, color, etc)
     done: false,
@@ -471,6 +476,7 @@ const store = reactive({ //updates the html immediately
     this.newCard.title = ""
     this.newCard.media = ""
     this.newCard.body  = ""
+    this.newCard.smBody  = ""
     this.newCard.color = '#55c2c3'
     this.newCard.hideDone = false
     this.newCard.subCards = []
@@ -576,6 +582,7 @@ const store = reactive({ //updates the html immediately
     return () => {  //clean Up
       let cardElements = [... document.getElementsByClassName("outerMainCard")]
       cardElements.forEach((card, i) => {
+	if (!this.cards[i]) return
         const dot = card.getElementsByClassName("dot")[0] 
         dot.style.backgroundColor = this.cards[i].color
         card.style.left = ""

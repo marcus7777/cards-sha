@@ -94,8 +94,9 @@ p,h3,h2,h1 {
 .rootCard button,
 .mainCard button {
   position: absolute;
-  margin: 4px 0 0 64px;
   border-radius: 9px;
+  margin: 4px 0 0 -18px;
+  display: block;
 }
 .outerMainCard {
   transition: all 0.5s ease-in-out;
@@ -121,6 +122,10 @@ p,h3,h2,h1 {
 .card .inner:has(button) {
   background-color: #fff777;
   max-width:200px;
+}
+.card .inner:has(h1) {
+  background-color: #fff;
+  max-width:640px;
 }
 #root:has(button) {
   z-index: 1;

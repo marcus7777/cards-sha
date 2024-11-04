@@ -9,10 +9,10 @@
   </head>
   <body>
     <div id="table" v-scope="{}" >
-      <div>
+      <div v-if="!store.big">
         <button class="top-right" @click="store.openDialog('menuDialog')"> ⋮ </button> 
       </div>
-      <button class="fab" @click="store.openDialog('addDialog')" @dragover="dropToDup" @drop="dropToDup" > + </button> 
+      <button v-if="!store.big" class="fab" @click="store.openDialog('addDialog')" @dragover="dropToDup" @drop="dropToDup" > + </button> 
       <!--Display rootcard here-->
       <div id="root">
         <div class="rootContainer">
@@ -23,14 +23,14 @@
             @dragover="store.dragOver"
             @drop="store.drop(-1)"
           > 
-            <div class="card rootCard" @click="store.curser = -1" @dblclick="store.shallower()">
-              <div v-scope="Card({ card:root, i:'-1', displayMode:'root' })"></div>
+            <div class="card rootCard" @click="store.curser = -1; store.toggleBig()" @dblclick="store.shallower()">
+              <div v-scope="Card({ card: root, i:'-1', displayMode: 'root'})"></div>
             </div>
           </div>
         </div>
       </div>
       <!--Display main cards-->
-      <div>
+      <div v-if="!store.big">
         <div class="container">
           <div v-for="(card, i) in store.cards" 
             class="outerMainCard outerCard"
@@ -45,7 +45,7 @@
                 <div class="dot"></div>
                 <button v-if="store.curser==i" @click="store.deeper(i)">^</button>
                 <h2 :data-index="i" > {{ card.title }} </h2>
-                <p :data-index="i" > {{ card.body }} </p>
+                <p :data-index="i" > {{ card.smBody card.body }} </p>
                 <a v-if="card.media" :href="card.media" target="lb">
                   <img v-if="store.getDataType(card.media)=='image'" :src="card.media" />
                 </a>  
@@ -57,17 +57,19 @@
           </div>
         </div>  
       </div>
-        <!--Display subcards-->
-      <div v-for="(card, ci) in store.cards">
-        <div class="container" v-if="store.curser === ci" @dragover="store.dragOverSub(ci)" >
-          <div class="card subCard" tabindex="0" :key="store.curser +' '+ i" v-for="(subCard, i) in card.subCards">
-            <div 
-              draggable="true"
-              @dragstart="store.draggingHash = store.hash(subCard); store.draggingSub = true"
-              @drop="store.drop(i)"
-              v-scope="Card({ card:subCard, i, displayMode:'subCard' })"
-              @click="store.deeper(ci)"
-            ></div>
+      <!--Display subcards-->
+      <div v-if="!store.big">
+        <div v-for="(card, ci) in store.cards">
+          <div class="container" v-if="store.curser === ci" @dragover="store.dragOverSub(ci)" >
+            <div class="card subCard" tabindex="0" :key="store.curser +' '+ i" v-for="(subCard,i) in card.subCards">
+              <div 
+                draggable="true"
+                @dragstart="store.draggingHash = store.hash(subCard); store.draggingSub = true"
+                @drop="store.drop(i)"
+                v-scope="Card({ card:subCard, i, displayMode:'subCard' })"
+                @click="store.deeper(ci)"
+              ></div>
+            </div>
           </div>
         </div>
       </div>
@@ -98,16 +100,21 @@
         <div v-for="(card, ci) in store.cards">
           <div v-scope="UpdateDialog({dialogName:`editDialog${ci}`, card})"></div>
         </div>
-        
       </div>
     </div>
 
     <template id="card">
       <div :data-index="i" class="inner small" @click="store.layout(store.root.layout)" @dblclick="store.deeper(store.curser)">
         <div class="dot"></div>
-        <button v-if="store.curser==i && displayMode!='subCard'" @click="store.openDialog(`editDialog${i}`)">✎</button>
-        <h2 :data-index="i" > {{ card.title }} </h2>
-        <p  :data-index="i" > {{ card.body }} </p>
+        <button v-if="store.curser == i && displayMode!='subCard'" v-show="!store.big" @click="store.openDialog(`editDialog${i}`)">✎</button>
+        <h1 v-if="store.big"> {{ card.title }} </h1>
+        <h2 v-else > {{ card.title }} </h2>
+        <p v-if="store.big">
+          {{ card.body }}
+        </p>
+        <p v-else>
+          {{ card.smBody }}
+        </p>
 
         <img v-if="store.getDataType(card.media)=='image'" :src="card.media" />
         <video v-if="store.getDataType(card.media)=='video'" class="media" @ended="store.endedAutoplay(card,i)" :poster="card.thumbnail"><source :src="card.media" type="video/mp4"> </video>
@@ -122,7 +129,7 @@
           <div class="inner small">
             <div class="dot"></div>
             <h2> {{ card.title }} </h2>
-            <p> {{ card.body }} </p>
+            <p> {{ card.smBody }} </p>
             <img v-if="store.getDataType(card.media)=='image'" :src="card.media" @error="store.log"/>
             <video v-if="store.getDataType(card.media)=='video'" controls :poster="card.thumbnail"><source :src="card.media" type="video/mp4"> </video>
             <img v-if="store.getDataType(card.media)=='QrCode'" :src="store.makeQrCode(card.media)"/>
@@ -130,19 +137,15 @@
           </div>
         </div>
         <div id="addCardInput" v-if="dialogName !== 'addDialog'">
-          Make sub card of:
-          <div v-for="(card, i) in store.cards">
-            <button v-if="i !== store.curser" @click="store.makeSubCard(store.curser, i)">{{card.title}}</button>
-          </div>
           <button @click="store.removeCard(store.curser)">-</button>
           <button @click="store.duplicateCard(store.curser)">+</button>
           <button @click="store.duplicateCard(store.curser)">+</button>
           <button @click="store.saveToFile(card)">▼</button>
           <button @click="store.uploadFileInToCard(store.curser)">▲</button>
-
         </div>
         <div>
           <input v-model="card.title" id="title" @keyup.enter="store.onEnterTitle()" placeholder="title"> <br />
+          <textarea v-model="card.smBody" @blur="store.save" placeholder="small text"></textarea><br />
           <textarea v-model="card.body" @blur="store.save" placeholder="text"></textarea><br />
           <input v-if="store.getDataType(card.media)=='video'"  v-model="card.thumbnail" @blur="store.save" placeholder="https://image.jpg"><br />
           <input v-model="card.media" @blur="store.save" placeholder="https://image.jpg"><br />
