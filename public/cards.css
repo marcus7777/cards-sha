@@ -93,10 +93,8 @@ p,h3,h2,h1 {
 }
 .rootCard button,
 .mainCard button {
-  position: absolute;
   border-radius: 9px;
-  margin: 4px 0 0 -18px;
-  display: block;
+  margin: 4px 0 0;
 }
 .outerMainCard {
   transition: all 0.5s ease-in-out;

@@ -43,7 +43,11 @@
             <div :key="i" class="card mainCard" v-if="!(store.hideDone && card.done)">
               <div :data-index="i" class="inner small" @click="store.curser = i; store.layout(store.root.layout)" @dblclick="store.deeper(0)">
                 <div class="dot"></div>
-                <button v-if="store.curser==i" @click="store.deeper(i)">^</button>
+		<div v-if="store.curser == i">
+                  <button @click="store.removeCard(i)" title="Remove Card" >-</button>
+                  <button @click="store.deeper(i)" title="Load">^</button>
+                  <button @click="store.duplicateCard(i)" title="Duplicate Card" >+</button>
+		</div>
                 <h2 :data-index="i" > {{ card.title }} </h2>
                 <p :data-index="i" > {{ card.smBody card.body }} </p>
                 <a v-if="card.media" :href="card.media" target="lb">
@@ -137,8 +141,6 @@
           </div>
         </div>
         <div id="addCardInput" v-if="dialogName !== 'addDialog'">
-          <button @click="store.removeCard(store.curser)">-</button>
-          <button @click="store.duplicateCard(store.curser)">+</button>
           <button @click="store.duplicateCard(store.curser)">+</button>
           <button @click="store.saveToFile(card)">▼</button>
           <button @click="store.uploadFileInToCard(store.curser)">▲</button>
