@@ -110,7 +110,7 @@
     <template id="card">
       <div :data-index="i" class="inner small" @click="store.layout(store.root.layout)" @dblclick="store.deeper(store.curser)">
         <div class="dot"></div>
-        <button v-if="store.curser == i && displayMode!='subCard'" v-show="!store.big" @click="store.openDialog(`editDialog${i}`)">✎</button>
+        <button v-if="store.curser == i && displayMode!='subCard'" @click="store.openDialog(`editDialog${i}`)">✎</button>
         <h1 v-if="store.big"> {{ card.title }} </h1>
         <h2 v-else > {{ card.title }} </h2>
         <p v-if="store.big">
@@ -128,7 +128,9 @@
     </template>
     <template id="updateDialog">
       <dialog :id="dialogName">
-        <button class="dialogClose" @click="store.closeDialog(dialogName)">x</button>
+	<form method="dialog">
+          <button class="dialogClose" @click="store.closeDialog(dialogName)">x</button>
+	</form>
         <div class="card">
           <div class="inner small">
             <div class="dot"></div>
@@ -141,26 +143,36 @@
           </div>
         </div>
         <div id="addCardInput" v-if="dialogName !== 'addDialog'">
-          <button @click="store.duplicateCard(store.curser)">+</button>
           <button @click="store.saveToFile(card)">▼</button>
           <button @click="store.uploadFileInToCard(store.curser)">▲</button>
         </div>
         <div>
-          <input v-model="card.title" id="title" @keyup.enter="store.onEnterTitle()" placeholder="title"> <br />
+          <input autofocus v-model="card.title" id="title" @keyup.enter="store.onEnterTitle()" placeholder="title">
+	  <br />
           <textarea v-model="card.smBody" @blur="store.save" placeholder="small text"></textarea><br />
           <textarea v-model="card.body" @blur="store.save" placeholder="text"></textarea><br />
           <input v-if="store.getDataType(card.media)=='video'"  v-model="card.thumbnail" @blur="store.save" placeholder="https://image.jpg"><br />
           <input v-model="card.media" @blur="store.save" placeholder="https://image.jpg"><br />
           <label for="done">
             <input type="checkbox" name="done" :checked="card.done" @click="card.done = !card.done" />
-            done
+            Done
           </label>
-        <br>
-          <label for="autoplay">
-            <input type="checkbox" name="autoplay" :checked="card.autoplay" @click="card.autoplay = !card.autoplay" />
-            autoplay
+          <br />
+          <label>
+            <input type="checkbox" :checked="card.autoplay" @click="card.autoplay = !card.autoplay" />
+            Autoplay
           </label>
-        <br>
+          <br />
+          <label>
+            <input type="checkbox" :checked="card.pauseOthers" @click="card.autoplay = !card.autoplay" />
+            On play pause others (not implemented yet)
+          </label>
+          <br />
+          <label>
+            <input type="checkbox" :checked="card." @click="card.autoplay = !card.autoplay" />
+            Audio ducking while playing (not implemented yet)
+          </label>
+          <br />
           <input type="color" name="color" v-model="card.color" @change="store.setColor()"/>
         </div>
         <button v-if="store.newCard.title && dialogName=='addDialog'" @click="store.inc()"> Add </button>

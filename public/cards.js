@@ -853,7 +853,7 @@ function arrowKeysOn (e) {
   e = e || window.event;
   // use e.keyCode
   if(e.keyCode == 38 || e.keyCode == 87 || e.keyCode == 75) store.shallower()
-  if(e.keyCode == 40 || e.keyCode == 83 || e.keyCode == 74) {
+  if(e.keyCode == 40 || e.keyCode == 83 || e.keyCode == 74 || e.keyCode == 13) {
     if (store.curser == -1) store.curser = 0
     else {
       store.deeper(0)
