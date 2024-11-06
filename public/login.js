@@ -109,13 +109,14 @@ var handleSignedInUser = function(user) {
     if (file.type.indexOf('image') !== -1) {
       imageResize(file, {
         type: 'png',
+        bgColor: 'white',
         width: 640,
         outputType: 'blob'
       }).then(b => {
         fileRef.put(b, metadata).then(function(snapshot) {
           document.getElementById('uploading').style.display = 'none'
           fileRef.getDownloadURL().then((url) => {
-            window.parent.postMessage(url)
+            window.parent.postMessage({url, file})
             fileUploadElement.value = ''
           })
         }).catch(function(error) {
@@ -127,7 +128,7 @@ var handleSignedInUser = function(user) {
       fileRef.put(file, metadata).then(function(snapshot) {
         document.getElementById('uploading').style.display = 'none'
         fileRef.getDownloadURL().then((url) => {
-          window.parent.postMessage(url)
+          window.parent.postMessage({url, file})
           fileUploadElement.value = ''
         })
       }).catch(function(error) {

@@ -92,14 +92,21 @@ const store = reactive({ //updates the html immediately
     title: "", 
     body: "",
     smBody: "",
-    subCards: [], // array of cards
+    subCards: [],     // array of cards
     cardAditions: [], // array of card adittions (like related, weight, color, etc)
+    doneForToday: false,
+    doneFirst: [],    // array of cards that need to be done first
     done: false,
     color: '#55c2c3',
     hideDone: false,
     media: "",
+    autoplay: false,
+    thumbnail: "",
     layout: "line",
-    showNext: 0, // show next cards in the list (0 = all, 1 = next, 2 = next and next)
+    showNext: 0, // show next cards in the list (0 = all, 1 = next, 2 = next and next, -1 all but one)
+    onlyShowDone: false,
+    doneOn: "",
+    madeOn: "",
   },
   saveRoot(rootHash = "root") {
     let rootCard = {...(this.loadCard(rootHash) || this.newCard), ...this.root}
@@ -134,8 +141,8 @@ const store = reactive({ //updates the html immediately
     const topcard = this.findOrphanedCards().reduce((acc, hash) => {
       const children = this.getAllHashesNeededFrom(hash)
       if (children.length > mostChildren) {
-	mostChildren = children.length
-	return hash
+        mostChildren = children.length
+        return hash
       }
       return acc
     }, "root")
@@ -350,8 +357,8 @@ const store = reactive({ //updates the html immediately
     this.save()
     let trail = window.location.hash.slice(1).split("/")
 
-    const currentCard = this.cards[this.curser]
-    if (!currentCard || currentCard === undefined) return
+    const currentCard = this.cards[this.curser] // this is the card that is being drilled into
+    if (!currentCard || currentCard === undefined) return // if null or undefined stop the function
     trail.push(makeHash(currentCard))
 
     window.scrollTo(0, 0)
@@ -582,7 +589,7 @@ const store = reactive({ //updates the html immediately
     return () => {  //clean Up
       let cardElements = [... document.getElementsByClassName("outerMainCard")]
       cardElements.forEach((card, i) => {
-	if (!this.cards[i]) return
+        if (!this.cards[i]) return
         const dot = card.getElementsByClassName("dot")[0] 
         dot.style.backgroundColor = this.cards[i].color
         card.style.left = ""
@@ -821,7 +828,7 @@ const store = reactive({ //updates the html immediately
   getDataType(url) {
     const imageFormats = ["jpg", "jpeg","svg","webp","png","gif"]
     const videoFormats = ["mp4","ogg","mpeg","mov","avi","webm"]
-    const audioFormats = ["mp3"]
+    const audioFormats = ["mp3", "wav", "ogg", "m4a", "flac", "aac"]
     if (!url) return ""
     const dataType = getUrlExtension(url)
     if (videoFormats.includes(dataType)) return "video"
@@ -845,35 +852,39 @@ const store = reactive({ //updates the html immediately
   },
 })
 function arrowKeysOn (e) {
-  if(e.keyCode == 27) {
+  if (e.keyCode == 27) {
     store.disableKeys = false //introduces some awkwardness when escape is hit and then typing in a text box
     e.target.blur()
   } 
-  if(store.disableKeys) return
+  if (store.disableKeys) return
   e = e || window.event;
   // use e.keyCode
-  if(e.keyCode == 38 || e.keyCode == 87 || e.keyCode == 75) store.shallower()
-  if(e.keyCode == 40 || e.keyCode == 83 || e.keyCode == 74 || e.keyCode == 13) {
+  if (e.keyCode == 38 || e.keyCode == 87 || e.keyCode == 75) store.shallower()
+  if (e.keyCode == 40 || e.keyCode == 83 || e.keyCode == 74 || e.keyCode == 13) {
     if (store.curser == -1) store.curser = 0
     else {
       store.deeper(0)
     }
   }
-  if(e.keyCode == 37 || e.keyCode == 65 || e.keyCode == 72) { //left
+  if (e.keyCode == 37 || e.keyCode == 65 || e.keyCode == 72) { //left
     if (e.shiftKey) {
       store.swapCards(store.curser, store.curser -1)
     } else {
       store.curser = Math.max(store.curser -1,-1)
     }
   }
-  if(e.keyCode == 39 || e.keyCode == 68 || e.keyCode == 76) { //right
+  if (e.keyCode == 39 || e.keyCode == 68 || e.keyCode == 76) { //right
     if (e.shiftKey) {
       store.swapCards(store.curser, store.curser + 1)
     } else { 
-      store.curser = Math.min(store.curser +1, store.cards.length - 1)
+      store.curser = Math.min(store.curser + 1, store.cards.length - 1)
     }
   }
+  if (e.keyCode == 43) store.openDialog('addDialog') // plus
+  if (e.keyCode == 45) store.removeCard(store.curser) // minus
+  store.big = false
   store.layout(store.root.layout)
+
 }
 document.onkeydown = arrowKeysOn
 createApp({
@@ -890,11 +901,45 @@ window.onhashchange = function(e) {
 
 window.addEventListener("message", (e) => {
   console.log(e)
+  console.log(e.data)
   if (document.getElementById("addDialog").open) {
-    store.newCard.media = e.data
+    if (e.data.file.type.indexOf('image') !== -1) {
+      if (store.getDataType(store.newCard.media) === "video") {
+        return store.newCard.thumbnail = e.data.url
+      }
+    }
+    if (store.getDataType(e.data.url) === "video") {
+      store.newCard.media = e.data.url
+    }
+    if (store.getDataType(e.data.url) === "image") {
+      store.newCard.media = e.data.url
+    }
+    if (store.getDataType(e.data.url) === "audio") {
+      store.newCard.media = e.data.url
+    }
+    if (e.data.file && !store.newCard.title) {
+      console.log(e.data.file)
+      store.newCard.title = e.data.file.name
+    }
   } else {
-    if (store.curser === -1) return store.root.media = e.data
-    store.cards[store.curser].media = e.data
+    if (store.getDataType(e.data.url) === "image") {
+      if (store.getDataType(store.root.media) === "video") {
+        return store.root.thumbnail = e.data.url
+      }
+    }
+    if (store.getDataType(e.data.url) === "video") {
+      store.root.media = e.data.url
+    }
+    if (store.getDataType(e.data.url) === "image") {
+      store.root.media = e.data.url
+    }
+    if (store.getDataType(e.data.url) === "audio") {
+      store.root.media = e.data.url
+    }
+    if (e.data.file && !store.root.title) {
+      console.log(e.data.file)
+      store.root.title = e.data.file.name
+    }
   }
 })
 
