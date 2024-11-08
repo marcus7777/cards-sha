@@ -12,8 +12,10 @@
       <div v-if="!store.big">
         <button class="top-right" @click="store.openDialog('menuDialog')"> ⋮ </button> 
       </div>
-      <button v-if="!store.big" class="fab" @click="store.openDialog('addDialog')" @dragover="dropToDup" @drop="dropToDup" > + </button> 
       <!--Display rootcard here-->
+      <div v-if="() => window.location.hash !== '#'">
+        <button class="top-left" @click="store.shallower()">^</button>
+      </div>
       <div id="root">
         <div class="rootContainer">
           <div v-for="root in [store.root]" 
@@ -22,8 +24,9 @@
             :key="root.title"
             @dragover="store.dragOver"
             @drop="store.drop(-1)"
+	    data-index="-1"
           > 
-            <div class="card rootCard" @click="store.curser = -1; store.toggleBig()" @dblclick="store.shallower()">
+            <div class="card rootCard" @click="store.curser = -1; store.toggleBig()">
               <div v-scope="Card({ card: root, i:'-1', displayMode: 'root'})"></div>
             </div>
           </div>
@@ -32,33 +35,36 @@
       <!--Display main cards-->
       <div v-if="!store.big">
         <div class="container">
-          <div v-for="(card, i) in store.cards" 
+          <div v-for="(card, i) in store.displayedCards()" 
             class="outerMainCard outerCard"
             @dragover="store.dragOver"
             draggable="true"
-            @dragstart="store.draggingHash = store.hash(card)"
-            @drop="store.drop(i)"
+            @dragstart="store.draggingHash = store.hash(store.cards[card.index])"
+            @drop="store.drop(card.index)"
             :title="card.title"
+	    data-index="card.index"
           >
             <div :key="i" class="card mainCard" v-if="!(store.hideDone && card.done)">
-              <div :data-index="i" class="inner small" @click="store.curser = i; store.layout(store.root.layout)" @dblclick="store.deeper(0)">
+              <div :data-index="card.index" class="inner small" @click="store.curser = card.index; store.layout(store.root.layout)" @dblclick="store.deeper(0)">
                 <div class="dot"></div>
-		<div v-if="store.curser == i">
-                  <button @click="store.removeCard(i)" title="Remove Card" >-</button>
-                  <button @click="store.deeper(i)" title="Load">^</button>
-                  <button @click="store.duplicateCard(i)" title="Duplicate Card" >+</button>
-		</div>
-                <h2 :data-index="i" > {{ card.title }} </h2>
-		<p v-if="!store.big" > {{ card.smBody }}
-		<p v-else > {{card.body }} </p>
+                <div v-if="store.curser == card.index">
+                  <button @click="store.removeCard(card.index)" title="Remove Card" >-</button>
+                  <button @click="store.deeper(card.index)" title="Load">^</button>
+                  <button @click="store.duplicateCard(card.index)" title="Duplicate Card" >+</button>
+		  <input type="checkbox" name="done" v-model="store.cards[card.index].done" @change="store.save" />
+		  <!-- <button @click="store.openDialog(`editDialog${card.index}`)" title="Edit">✎</button> -->
+                </div>
+                <h2> {{ card.title }} </h2>
+                <p v-if="!store.big" > {{ card.smBody }}
+                <p v-else > {{card.body }} </p>
                 <a v-if="card.media" :href="card.media" target="lb">
                   <img v-if="store.getDataType(card.media)=='image'" :src="card.media" />
                 </a>  
                 <img v-if="store.getDataType(card.media)=='qrCode'" :src="store.makeQrCode(card.media)"/>
-                <audio v-if="store.getDataType(card.media)=='audio'" :src="card.media" class="media"  @ended="store.endedAutoplay(card,i)" controls></audio>
-                <video v-if="store.getDataType(card.media)=='video'" controls class="media" @ended="store.endedAutoplay(card,i)" :poster="card.thumbnail" >
+                <audio v-if="store.getDataType(card.media)=='audio'" :src="card.media" class="media"  @ended="store.endedAutoplay(card, card.index)" controls></audio>
+                <video v-if="store.getDataType(card.media)=='video'" controls class="media" @ended="store.endedAutoplay(card,card.index)" :poster="card.thumbnail" >
                   <source :src="card.media" type="video/mp4">
-		</video>
+                </video>
               </div>
             </div>
           </div>
@@ -88,17 +94,37 @@
             <button @click="store.saveToFile('root')">▼</button>
             <button @click="console.log(store.listOrphanedCards())">List</button>
           
-            <input type="checkbox" name="hideDone" :checked="store.hideDone" @click="store.hideDone = !store.hideDone" />
-            <label for="hideDone">Hide Done</label>
 
             <button v-if="store.root.layout !== 'circle'" @click="store.layout('circle')">O</button>
             <button v-if="store.root.layout !== 'line'" @click="store.layout('line')">-</button>
+	    <button v-if="store.root.layout !== 'grid'" @click="store.layout('grid')">□</button>
+	    <br />
             <button @click="store.sortByTitle">Sort</button>
             <button @click="store.shuffle">Shuffle</button>
+	    mark all <button @click="store.markAllDone()">done ✔</button> <button @click="store.markAllNotDone()">undone</button>
+
+
+	    <button @click="store.openDialog('editDialog-1')">✎</button>
+	    <button @click="store.openDialog('addDialog')">+</button>
+	    <button @click="store.toggleBig()">⬚</button>
+	    <br />
             
-            <label for="showNext">
-              Show <input type="number" v-model="store.showNext" >
-	    </label>
+            <label>
+              only done 
+	      <input type="checkbox" v-model="store.root.onlyShowDone" @change="store.layout(store.root.layout)" >
+	    </label> <br />
+            <label>
+              only undone 
+	      <input type="checkbox" v-model="store.root.onlyShowNotDone" @change="store.layout(store.root.layout)" >
+	    </label> <br />
+            <label>
+              Mix 
+	      <input type="checkbox" v-model="store.root.mix" @change="store.layout(store.root.layout)" >
+	    </label> <br />
+            <label>
+              Slice 
+	      <input type="number" v-model="store.root.slice" @change="store.layout(store.root.layout)" >
+	    </label> <br />
           </div>
         </dialog>
 
@@ -127,25 +153,25 @@
         <img v-if="store.getDataType(card.media)=='image'" :src="card.media" />
         <video v-if="store.getDataType(card.media)=='video'" controls :poster="card.thumbnail">
           <source :src="card.media" type="video/mp4">
-	</video>
+        </video>
         <img v-if="store.getDataType(card.media)=='qrCode'" :src="store.makeQrCode(card.media)"/>
         <audio v-if="store.getDataType(card.media)=='audio'" :src="card.media" class="media"  @ended="store.endedAutoplay(card,i)" controls></audio>
       </div>
     </template>
     <template id="updateDialog">
       <dialog :id="dialogName">
-	<form method="dialog">
+        <form method="dialog">
           <button class="dialogClose" @click="store.closeDialog(dialogName)">x</button>
-	</form>
+        </form>
         <div class="card">
           <div class="inner small">
             <div class="dot"></div>
             <h2> {{ card.title }} </h2>
             <p> {{ card.smBody }} </p>
-            <img v-if="store.getDataType(card.media)=='image'" :src="card.media" @error="store.log"/>
+            <img v-if="store.getDataType(card.media)=='image'" :src="card.media" />
             <video v-if="store.getDataType(card.media)=='video'" controls :poster="card.thumbnail">
               <source :src="card.media" type="video/mp4">
-	    </video>
+            </video>
             <img v-if="store.getDataType(card.media)=='QrCode'" :src="store.makeQrCode(card.media)"/>
             <audio v-if="store.getDataType(card.media)=='audio'" :src="card.media" controls></audio>
           </div>
@@ -156,42 +182,39 @@
         </div>
         <div>
           <input autofocus v-model="card.title" id="title" @keyup.enter="store.onEnterTitle()" placeholder="title">
-	  <br />
+          <br />
           <textarea v-model="card.smBody" @blur="store.save" placeholder="small text"></textarea><br />
           <textarea v-model="card.body" @blur="store.save" placeholder="text"></textarea><br />
           <input v-if="store.getDataType(card.media)=='video'"  v-model="card.thumbnail" @blur="store.save" placeholder="https://thumbnail-image.jpg"><br />
           <input v-model="card.media" @blur="store.save" placeholder="https://image.jpg"><br />
           <label for="done">
-            <input type="checkbox" name="done" :checked="card.done" @click="card.done = !card.done" />
+            <input type="checkbox" name="done" v-model="card.done" />
             Done
           </label>
           <br />
-	  <div v-if="store.getDataType(card.media)=='audio' || store.getDataType(card.media)=='video'">
-	    <label for="autoplay">
-	      <input type="checkbox" name="autoplay" :checked="card.autoplay" @click="card.autoplay = !card.autoplay" />
-	      Autoplay
-	    </label>
-	    <br />
-	    <label for="pauseOthers">
-	      <input type="checkbox" name="pauseOthers" :checked="card.pauseOthers" @click="card.pauseOthers = !card.pauseOthers" />
-	      On play pause others (not implemented yet)
-	    </label>
-	    <br />
-	    <label for="ducking">
-	      <input type="checkbox" name="ducking" :checked="card.ducking" @click="card.ducking = !card.ducking" />
-	      Audio ducking while playing (not implemented yet)
-	    </label>
-	    <br />
-	  </div>
+          <div v-if="store.getDataType(card.media)=='audio' || store.getDataType(card.media)=='video'">
+            <label for="autoplay">
+              <input type="checkbox" name="autoplay" v-model="card.autoplay" />
+              Autoplay
+            </label>
+            <br />
+            <label for="pauseOthers">
+              <input type="checkbox" name="pauseOthers" v-model="card.pauseOthers" />
+              On play pause others (not implemented yet)
+            </label>
+            <br />
+            <label for="ducking">
+              <input type="checkbox" name="ducking" v-model="card.ducking" />
+              Audio ducking while playing (not implemented yet)
+            </label>
+            <br />
+          </div>
           <br />
           <input type="color" name="color" v-model="card.color" @change="store.setColor()"/>
         </div>
         <button v-if="store.newCard.title && dialogName=='addDialog'" @click="store.inc()"> Add </button>
-        <!--<input type="number" v-model="store.showNext" >
-        <label for="showNext">Show Next</label> -->
         <iframe src="login.html" style="border:0px #ffffff none;" name="upload" frameborder="1" marginheight="0px" marginwidth="0px" height="240px" width="300px" allowfullscreen></iframe>
       </dialog>
     </template>
-    <script src="fslb.js"></script>
   </body>
 </html>

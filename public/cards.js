@@ -41,7 +41,7 @@ function makeHash(card) {
 function savesToLocalStorage(file, cb) { //cb is a callback function that is called when the file is read with the first card
   const reader = new FileReader()
   reader.onload = (e) => {
-    if (e.target === null || e.target.result === null || typeof e.target.result != "string") return
+    if (e.target === null || e.target.result === null || typeof e.target.result != "string" || !e.target.result) return alert("No file or file is empty")
     const cards = e.target.result.split("\n").map(card => JSON.parse(card))
     cards.forEach(card => {
       saveCard(makeHash(card), card)
@@ -66,23 +66,39 @@ const store = reactive({ //updates the html immediately
     title: '',
     color: 'white',
     cardAddtions: [],
+    layout: "line",
+    slice: 0,
+    onlyShowDone: false,
+    onlyShowNotDone: false,
+    mix: false,
   },
   draggingSub: false,
   cards: [],
+  displayedCards: () => {
+    let cards = store.cards.map((card, index) => ({...card, index}))
+    if (!store.root.onlyShowDone && !store.root.onlyShowNotDone && !+store.root.slice && !store.root.mix) {
+      return cards
+    }
+    if (store.root.mix) {
+      for (let i = cards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+      }
+    }
+    return cards.filter((card, index) => {
+      if (!card) return false
+      if (store.root.onlyShowDone && !card.done) {
+        return false
+      }
+      if (store.root.onlyShowNotDone && card.done) {
+        return false
+      }
+      return true
+    }).reverse().slice(+store.root.slice).reverse()
+    this.layout(this.root.layout)
+  },
   hash(card){
     return makeHash(card)
-  },
-  showMain(card, index) {
-    // look at the card and decide if it should be shown in the main list
-    // trail is the path to the current card
-    const topTrail = window.location.hash.slice(1).split("/").slice(0, -1)[0]
-    if (!card) {
-      return false
-    }
-    if (this.root.hideDone && card.done) {
-      return false
-    }
-    return true
   },
   big: false,
   toggleBig(){
@@ -103,8 +119,10 @@ const store = reactive({ //updates the html immediately
     autoplay: false,
     thumbnail: "",
     layout: "line",
-    showNext: 0, // show next cards in the list (0 = all, 1 = next, 2 = next and next, -1 all but one)
+    slice: 0, // show next cards in the list (0 = all, 1 = next, 2 = next and next, -1 all but one)
     onlyShowDone: false,
+    onlyShowNotDone: false,
+    mix: false,
     doneOn: "",
     madeOn: "",
   },
@@ -411,7 +429,7 @@ const store = reactive({ //updates the html immediately
     if (from === -1) return
     // TODO make sure that the swap is intened.
     if (to == from) return
-    if (to === -1) {
+    if (to == -1) {
       this.makeMainCard(from)
     } else {
       this.lastSwap = Date.now();
@@ -489,7 +507,7 @@ const store = reactive({ //updates the html immediately
     this.newCard.subCards = []
     this.newCard.done = false
     this.newCard.layout = "line"
-    this.newCard.showNext = 0
+    this.newCard.slice = 0
     this.newCard.cardAddtions = []
   },
   inc() {
@@ -654,6 +672,18 @@ const store = reactive({ //updates the html immediately
     for (let i = this.cards.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
+    }
+    this.layout(this.root.layout)
+  },
+  markAllDone() {
+    for (let i = this.cards.length - 1; i > 0; i--) {
+      this.cards[i].done = true
+    }
+    this.layout(this.root.layout)
+  },
+  markAllNotDone() {
+    for (let i = this.cards.length - 1; i > 0; i--) {
+      this.cards[i].done = false
     }
     this.layout(this.root.layout)
   },
