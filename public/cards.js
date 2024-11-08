@@ -1,4 +1,3 @@
-//import { FORMERR } from 'dns'
 import { createApp, reactive } from './petite-vue.es.js'
 import QrCreator from './qr-creator.es6.min.js'
 
@@ -676,16 +675,14 @@ const store = reactive({ //updates the html immediately
     this.layout(this.root.layout)
   },
   markAllDone() {
-    for (let i = this.cards.length - 1; i > 0; i--) {
-      this.cards[i].done = true
-    }
+    this.cards = this.cards.map(card => ({...card, done: true, doneOn: new Date().toISOString()}))
     this.layout(this.root.layout)
+    this.save()
   },
   markAllNotDone() {
-    for (let i = this.cards.length - 1; i > 0; i--) {
-      this.cards[i].done = false
-    }
+    this.cards = this.cards.map(card => ({...card, done: false, doneOn: ""}))
     this.layout(this.root.layout)
+    this.save()
   },
   setColor() {
     if (!this.root.color) {
@@ -947,9 +944,20 @@ window.addEventListener("message", (e) => {
     if (store.getDataType(e.data.url) === "audio") {
       store.newCard.media = e.data.url
     }
+    console.log("deck title",e.data.file, store.newCard)
     if (e.data.file && !store.newCard.title) {
-      console.log(e.data.file)
-      store.newCard.title = e.data.file.name
+      const dataType = getUrlExtension(e.data.file.name)
+      store.newCard.title = e.data.file.name.replace("." + dataType, "")
+    }
+    if (e.data.number > 1) { // auto add
+      console.log("auto add", e.data.index)
+      const dataType = getUrlExtension(e.data.file.name)
+      store.newCard.title = e.data.file.name.replace("." + dataType, "")
+      store.cards = [...store.cards, {...store.newCard}]
+      console.log([...store.cards])
+      store.save()
+      store.resetNewCard()
+      store.layout(store.root.layout)
     }
   } else {
     if (store.getDataType(e.data.url) === "image") {
@@ -968,7 +976,9 @@ window.addEventListener("message", (e) => {
     }
     if (e.data.file && !store.root.title) {
       console.log(e.data.file)
-      store.root.title = e.data.file.name
+      
+      const dataType = getUrlExtension(e.data.file.name)
+      store.root.title = e.data.file.name.replace("." + dataType, "")
     }
   }
 })

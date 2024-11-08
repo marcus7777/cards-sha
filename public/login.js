@@ -94,47 +94,51 @@ var handleSignedInUser = function(user) {
   document.getElementById('phone').textContent = user.phoneNumber
   const fileUploadElement = document.getElementById('file-upload')
   fileUploadElement.onchange = function(event) {
-    var file = event.target.files[0]
-    var storageRef = firebase.storage().ref()
-    var user = firebase.auth().currentUser
-    // prepare metadata
-    var metadata = {
-     userId: user.uid,
-     contentType: file.type
-    }
-    // upload file
-    const fileRef = storageRef.child('userUploads/' + file.name)
-    document.getElementById('uploading').style.display = 'block'
-    // if image then resize image
-    if (file.type.indexOf('image') !== -1) {
-      imageResize(file, {
-        type: 'png',
-        bgColor: 'white',
-        width: 640,
-        outputType: 'blob'
-      }).then(b => {
-        fileRef.put(b, metadata).then(function(snapshot) {
+    [...event.target.files].forEach((file, index) => {
+      var storageRef = firebase.storage().ref()
+      var user = firebase.auth().currentUser
+      // prepare metadata
+      var metadata = {
+       userId: user.uid,
+       contentType: file.type
+      }
+      // upload file
+      const fileRef = storageRef.child('userUploads/' + file.name)
+      document.getElementById('uploading').style.display = 'block'
+      // if image then resize image
+      if (file.type.indexOf('image') !== -1) {
+        imageResize(file, {
+          type: 'png',
+          bgColor: 'white',
+          width: 640,
+          outputType: 'blob'
+        }).then(b => {
+          fileRef.put(b, metadata).then(function(snapshot) {
+            document.getElementById('uploading').style.display = 'none'
+            fileRef.getDownloadURL().then((url) => {
+	      const msg = {url, file, index, number: event.target.files.length} 
+              setTimeout(() => {
+                window.parent.postMessage(msg)
+                fileUploadElement.value = ''
+	      }, 500+index*300)
+            })
+          }).catch(function(error) {
+            console.error('Uploading image failed:', error);
+          });
+        })
+      } else {
+  
+        fileRef.put(file, metadata).then(function(snapshot) {
           document.getElementById('uploading').style.display = 'none'
           fileRef.getDownloadURL().then((url) => {
-            window.parent.postMessage({url, file})
+            window.parent.postMessage({url, file, index})
             fileUploadElement.value = ''
           })
         }).catch(function(error) {
-          console.error('Uploading image failed:', error);
+          console.error('Upload failed:', error);
         });
-      })
-    } else {
-
-      fileRef.put(file, metadata).then(function(snapshot) {
-        document.getElementById('uploading').style.display = 'none'
-        fileRef.getDownloadURL().then((url) => {
-          window.parent.postMessage({url, file})
-          fileUploadElement.value = ''
-        })
-      }).catch(function(error) {
-        console.error('Upload failed:', error);
-      });
-    }
+      }
+    })
   };
 
      
