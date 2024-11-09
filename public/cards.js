@@ -948,15 +948,16 @@ createApp({
   UpdateDialog,
 }).mount()
 store.load()
-document.body.removeClassName("loading")
+setTimeout(() => {
+  document.title = store.root.title
+  document.body.style.display = "block"
+}, 200)
 window.onhashchange = function(e) {
   console.log("hash change", e)
   store.load()
 }
 
 window.addEventListener("message", (e) => {
-  console.log(e)
-  console.log(e.data)
   if (document.getElementById("addDialog").open) {
     if (e.data.file.type.indexOf('image') !== -1) {
       if (store.getDataType(store.newCard.media) === "video") {

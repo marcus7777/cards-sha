@@ -7,7 +7,7 @@
     <script type="module" src="cards.js"></script>
     <meta charset="utf-8">
   </head>
-  <body>
+  <body style="display: none">
     <div id="table" v-scope="{}" >
       <div v-if="!store.big">
         <button class="top-right" @click="store.openDialog('menuDialog')"> ⋮ </button> 
@@ -48,7 +48,7 @@
             <div :key="i" class="card mainCard" v-if="!(store.hideDone && card.done)">
               <div :data-index="card.index" class="inner small" @click="store.curser = card.index; store.layout(store.root.layout)" @dblclick="store.deeper(0)">
                 <div class="dot"></div>
-                <div v-if="store.curser == card.index">
+                <div v-if="store.curser == card.index" style="position: absolute">
                   <button @click="store.removeCard(card.index)" title="Remove Card" >-</button>
                   <button @click="store.deeper(card.index)" title="Load">^</button>
                   <button @click="store.duplicateCard(card.index)" title="Duplicate Card" >+</button>

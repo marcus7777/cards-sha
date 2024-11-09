@@ -135,6 +135,7 @@ p,h3,h2,h1 {
 .mainCard {
   height: -webkit-fill-available;
   text-align: center;
+  padding: 30px;
 }
 .rootCard button,
 .mainCard button {
