@@ -98,6 +98,7 @@
             <button v-if="store.root.layout !== 'circle'" @click="store.layout('circle')">O</button>
             <button v-if="store.root.layout !== 'line'" @click="store.layout('line')">-</button>
 	    <button v-if="store.root.layout !== 'grid'" @click="store.layout('grid')">□</button>
+	    <button @click="store.openDialog('addDialog')">+</button>
 	    <br />
             <button @click="store.sortByTitle">Sort</button>
             <button @click="store.shuffle">Shuffle</button>
@@ -108,8 +109,6 @@
 	    
 	    <button @click="store.removeAllDone" >Remove all done</button>
 	    <button @click="store.openDialog('editDialog-1')">✎</button>
-	    <button @click="store.toggleBig()">⬚</button>
-	    <button @click="store.openDialog('addDialog')">+</button>
 	    <br />
             
             <label>

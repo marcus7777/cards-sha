@@ -53,6 +53,8 @@ input {
   display: flex;
   justify-content: space-around;
   /* padding-right: 180px; */
+  overflow: scroll;
+  width: 100vw;
 }
 .container.ellipse {
   margin-top: 0px;
