@@ -95,8 +95,8 @@ var handleSignedInUser = function(user) {
   const fileUploadElement = document.getElementById('file-upload')
   fileUploadElement.onchange = function(event) {
     [...event.target.files].forEach((file, index) => {
-      var storageRef = firebase.storage().ref()
-      var user = firebase.auth().currentUser
+      const storageRef = firebase.storage().ref()
+      const user = firebase.auth().currentUser
       // prepare metadata
       var metadata = {
        userId: user.uid,
@@ -107,27 +107,28 @@ var handleSignedInUser = function(user) {
       document.getElementById('uploading').style.display = 'block'
       // if image then resize image
       if (file.type.indexOf('image') !== -1) {
-        imageResize(file, {
-          type: 'png',
-          bgColor: 'white',
-          width: 640,
-          outputType: 'blob'
-        }).then(b => {
-          fileRef.put(b, metadata).then(function(snapshot) {
-            document.getElementById('uploading').style.display = 'none'
-            fileRef.getDownloadURL().then((url) => {
-	      const msg = {url, file, index, number: event.target.files.length} 
-              setTimeout(() => {
-                window.parent.postMessage(msg)
+        const msg = {file, index, number: event.target.files.length} 
+        setTimeout(() => {
+          imageResize(file, {
+            type: 'png',
+            bgColor: 'white',
+            width: 640,
+            outputType: 'blob'
+            
+          }).then(b => {
+	    const toUpload = b.size < file.size ? b : file // if resized image is bigger than original, upload original
+            fileRef.put(toUpload, metadata).then(function(snapshot) {
+              document.getElementById('uploading').style.display = 'none'
+              fileRef.getDownloadURL().then((url) => {
+                window.parent.postMessage({...msg, url})
                 fileUploadElement.value = ''
-	      }, 500+index*300)
-            })
-          }).catch(function(error) {
-            console.error('Uploading image failed:', error);
-          });
-        })
+              })
+            }).catch(function(error) {
+              console.error('Uploading image failed:', error);
+            });
+          })
+        }, 50+index*300) // delay resizing & upload
       } else {
-  
         fileRef.put(file, metadata).then(function(snapshot) {
           document.getElementById('uploading').style.display = 'none'
           fileRef.getDownloadURL().then((url) => {

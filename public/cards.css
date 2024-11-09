@@ -35,6 +35,30 @@ body {
   transform: translate(-50%, -50%) scale(1.2);
   position: absolute;
 }
+.loading div {
+  display: inline-block;
+}
+.loading-spinner {
+  display: none;
+}
+.loading .loading-spinner {
+  display: inline-block;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+}
+
+#root.grid {
+  display: inline-block;
+  left: none;
+  top: none;
+  transform: none;
+  position: relative;
+  transform: translate(-50%, 0) scale(1.2);
+  left: 50%;
+}
 input {
   margin: .5em;
 }
@@ -49,6 +73,22 @@ input {
   display: block;
   justify-content: none;
   /*  perspective: 1000px; */
+}
+.container.grid {
+  margin-top: 60px;
+  display: inline-block;
+  justify-content: none;
+  text-align: center;
+}
+.container.grid .outerMainCard {
+  margin: 0;
+  display: inline-block;
+  padding: 10px;
+}
+.gridItem {
+  display: inline-block;
+  padding: 10px;
+  width: 200px;
 }
 @font-face {
   font-family: 'Zapfino';
@@ -83,6 +123,22 @@ p,h3,h2,h1 {
   z-index: 1;
   transform: scale(0.7);
 }
+.grid {
+   max-width: 100vw;
+}
+.grid .outerMainCard, 
+.grid .subCard {
+  position: relative;
+  width: 200px;
+}
+.grid .subCard {
+  transform: scale(0.3);
+  animation: slideInBottomSubEllipse 0.7s ease-in-out;
+}
+.grid .subCard:hover {
+  z-index: 1;
+  transform: scale(0.7);
+}
 .subCard {
   transform: scale(0.7);
 }
@@ -102,6 +158,13 @@ p,h3,h2,h1 {
   width: 5px;
   display: flex;
   margin: 0 80px 0 -90px;
+}
+.grid .outerMainCard {
+  transition: all 0.5s ease-in-out;
+  max-width: none;
+  width: 200px;
+  display: flex;
+  margin: 0;
 }
 .card.hidden {
   animation: fadeOut 1s ease-in-out;

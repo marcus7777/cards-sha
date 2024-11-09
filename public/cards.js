@@ -508,6 +508,11 @@ const store = reactive({ //updates the html immediately
     this.newCard.layout = "line"
     this.newCard.slice = 0
     this.newCard.cardAddtions = []
+    this.newCard.onlyShowDone = false
+    this.newCard.onlyShowNotDone = false
+    this.newCard.mix = false
+    this.newCard.doneOn = ""
+    this.newCard.madeOn = ""
   },
   inc() {
     this.curser = this.cards.length
@@ -559,21 +564,18 @@ const store = reactive({ //updates the html immediately
 
     cardElements.forEach((card,i) => {
 
- 
-      const dot = card.getElementsByClassName("dot")[0] 
-      dot.style.backgroundColor = this.cards[i].color
-
       const x = radius * Math.cos(angle) + 50
       const y = radius * Math.sin(angle) + 50
       // var size = (Math.round(radius * Math.sin(step))) -9
-      if (i == this.curser) {
+
+      if (card.dataset.index == this.curser) {
         let subCardElements = [... document.getElementsByClassName("subCard")]
         let subStep = (2 * Math.PI) / subCardElements.length
         let subAngle = -Math.PI/2 + (subStep/2)
         const subRadius = 20
         subCardElements.forEach((subCard) => {
-          const subX = (((subRadius * Math.cos(subAngle) + x) * 8) + 50) / 10
-          const subY = (((subRadius * Math.sin(subAngle) + y) * 8) + 50) / 10
+          const subX = (((subRadius * Math.cos(subAngle) + x) * 5) + 50) / 10
+          const subY = (((subRadius * Math.sin(subAngle) + y) * 5) + 50) / 10
           // if on the right side of the circle, move the card to the left
           if ((Math.cos(subAngle) > 0)) { // if the angle is positive
             subCard.style.left = `calc(${subX}vw - ${subCard.offsetWidth/2}px + ${card.children[0].offsetWidth * 0.5}px)`
@@ -598,17 +600,14 @@ const store = reactive({ //updates the html immediately
     })
     
     this.save()
+    this.colorDots()
     let rootElement = document.getElementById("root")
-    const dot = rootElement.getElementsByClassName("dot")[0] 
-    dot.style.backgroundColor = this.root.color
     if (rootElement === null) return
     rootElement.classList.add("ellipse")
     return () => {  //clean Up
       let cardElements = [... document.getElementsByClassName("outerMainCard")]
       cardElements.forEach((card, i) => {
         if (!this.cards[i]) return
-        const dot = card.getElementsByClassName("dot")[0] 
-        dot.style.backgroundColor = this.cards[i].color
         card.style.left = ""
         card.style.top = ""
         // card.style.transform = ""
@@ -623,6 +622,11 @@ const store = reactive({ //updates the html immediately
   },
   distributeCardsLine() {
     this.save()
+    this.colorDots()
+    return () => {
+    }
+  },
+  colorDots() {
     let rootElement = document.getElementById("root")
     const dot = rootElement.getElementsByClassName("dot")[0] 
     dot.style.backgroundColor = this.root.color
@@ -632,8 +636,22 @@ const store = reactive({ //updates the html immediately
       const dot = card.getElementsByClassName("dot")[0] 
       dot.style.backgroundColor = this.cards[i].color
     })
+  },
+  distributeCardsGrid() {
+    this.save()
+    this.colorDots()
+    const rootElement = document.getElementById("root")
+    rootElement.classList.add("grid")
+    const containers = [ ...document.getElementsByClassName("container")]
+    containers.forEach(container => {
+      container.classList.add("grid")
+    })
+    
     return () => {
-      // console.log("Clean up (does nothing) line")
+      rootElement.classList.remove("grid")
+      containers.forEach(container => {
+        container.classList.remove("grid")
+      })
     }
   },
   cleanUp() {
@@ -646,8 +664,12 @@ const store = reactive({ //updates the html immediately
     window.requestAnimationFrame(() => {
       if (this.root.layout === "circle") {
         this.cleanUp = this.distributeCardsCircle()
-      } else {
+      } else if (this.root.layout === "line"){
         this.cleanUp = this.distributeCardsLine()
+      } else if (this.root.layout === "grid") {
+	this.cleanUp = this.distributeCardsGrid()
+      } else {
+	this.cleanUp = () => {}
       }
     })
   },
@@ -681,6 +703,11 @@ const store = reactive({ //updates the html immediately
   },
   markAllNotDone() {
     this.cards = this.cards.map(card => ({...card, done: false, doneOn: ""}))
+    this.layout(this.root.layout)
+    this.save()
+  },
+  removeAllDone() {
+    this.cards = this.cards.filter(card => !card.done)
     this.layout(this.root.layout)
     this.save()
   },
@@ -921,6 +948,7 @@ createApp({
   UpdateDialog,
 }).mount()
 store.load()
+document.body.removeClassName("loading")
 window.onhashchange = function(e) {
   console.log("hash change", e)
   store.load()
