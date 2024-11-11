@@ -108,11 +108,21 @@ var handleSignedInUser = function(user) {
       // if image then resize image
       if (file.type.indexOf('image') !== -1) {
         const msg = {file, index, number: event.target.files.length} 
+	let dotColor = ""
+        const fileReader = new FileReader();
+        const preview = document.getElementById('file-preview');
+        fileReader.onload = event => {
+          preview.setAttribute('src', event.target.result);
+          colorjs.prominent(preview, { amount: 1, format: 'hex' }).then(color => {
+            dotColor = color 
+          })
+        }
+        fileReader.readAsDataURL(file);
         setTimeout(() => {
           imageResize(file, {
             type: 'png',
             bgColor: 'white',
-            width: 640,
+            width: 520,
             outputType: 'blob'
             
           }).then(b => {
@@ -120,7 +130,7 @@ var handleSignedInUser = function(user) {
             fileRef.put(toUpload, metadata).then(function(snapshot) {
               document.getElementById('uploading').style.display = 'none'
               fileRef.getDownloadURL().then((url) => {
-                window.parent.postMessage({...msg, url})
+                window.parent.postMessage({...msg, url, dotColor})
                 fileUploadElement.value = ''
               })
             }).catch(function(error) {
@@ -132,7 +142,7 @@ var handleSignedInUser = function(user) {
         fileRef.put(file, metadata).then(function(snapshot) {
           document.getElementById('uploading').style.display = 'none'
           fileRef.getDownloadURL().then((url) => {
-            window.parent.postMessage({url, file, index})
+            window.parent.postMessage({url, file, index, dotColor: "green", number: event.target.files.length})
             fileUploadElement.value = ''
           })
         }).catch(function(error) {

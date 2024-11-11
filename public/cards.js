@@ -112,7 +112,7 @@ const store = reactive({ //updates the html immediately
     doneForToday: false,
     doneFirst: [],    // array of cards that need to be done first
     done: false,
-    color: '#55c2c3',
+    color: '',
     hideDone: false,
     media: "",
     autoplay: false,
@@ -501,7 +501,7 @@ const store = reactive({ //updates the html immediately
     this.newCard.media = ""
     this.newCard.body  = ""
     this.newCard.smBody  = ""
-    this.newCard.color = '#55c2c3'
+    this.newCard.color = ''
     this.newCard.hideDone = false
     this.newCard.subCards = []
     this.newCard.done = false
@@ -632,9 +632,11 @@ const store = reactive({ //updates the html immediately
     dot.style.backgroundColor = this.root.color
     if (rootElement === null) return
     let cardElements = [... document.getElementsByClassName("outerMainCard")]
-    cardElements.forEach((card, i) => {
+    cardElements.forEach(card => {
+      const cardIndex = +card.dataset.index
       const dot = card.getElementsByClassName("dot")[0] 
-      dot.style.backgroundColor = this.cards[i].color
+      if (!dot || dot === null) return
+      dot.style.backgroundColor = this.cards[cardIndex].color
     })
   },
   distributeCardsGrid() {
@@ -958,7 +960,7 @@ window.onhashchange = function(e) {
 }
 
 window.addEventListener("message", (e) => {
-  if (document.getElementById("addDialog").open) {
+  if (document.getElementById("addDialog").open || e.data.number != 1) {
     if (e.data.file.type.indexOf('image') !== -1) {
       if (store.getDataType(store.newCard.media) === "video") {
         return store.newCard.thumbnail = e.data.url
@@ -977,6 +979,9 @@ window.addEventListener("message", (e) => {
     if (e.data.file && !store.newCard.title) {
       const dataType = getUrlExtension(e.data.file.name)
       store.newCard.title = e.data.file.name.replace("." + dataType, "")
+    }
+    if (!store.newCard.color) {
+      store.newCard.color = e.data.dotColor
     }
     if (e.data.number > 1) { // auto add
       console.log("auto add", e.data.index)
