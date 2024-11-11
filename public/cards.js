@@ -69,13 +69,14 @@ const store = reactive({ //updates the html immediately
     slice: 0,
     onlyShowDone: false,
     onlyShowNotDone: false,
+    onlyShowDoable: false,
     mix: false,
   },
   draggingSub: false,
   cards: [],
   displayedCards: () => {
     let cards = store.cards.map((card, index) => ({...card, index}))
-    if (!store.root.onlyShowDone && !store.root.onlyShowNotDone && !+store.root.slice && !store.root.mix) {
+    if (!store.root.onlyShowDone && !store.root.onlyShowNotDone && !store.root.onlyShowDoable && !+store.root.slice && !store.root.mix) {
       return cards
     }
     if (store.root.mix) {
@@ -84,7 +85,7 @@ const store = reactive({ //updates the html immediately
         [cards[i], cards[j]] = [cards[j], cards[i]];
       }
     }
-    return cards.filter((card, index) => {
+    cards = cards.filter((card, index) => {
       if (!card) return false
       if (store.root.onlyShowDone && !card.done) {
         return false
@@ -92,9 +93,19 @@ const store = reactive({ //updates the html immediately
       if (store.root.onlyShowNotDone && card.done) {
         return false
       }
+      if (store.root.onlyShowDoable) {
+	// load the array of cards that need to be done first and see if they are all done
+        if (card.toDoFirst && card.toDoFirst.length) {
+          if (!card.toDoFirst.every(hash => store.loadCard(hash).done)) {
+	    return false
+	  }
+	}
+      }
       return true
     }).reverse().slice(+store.root.slice).reverse()
     this.layout(this.root.layout)
+    this.currentlyDisplayCards = cards
+    return cards
   },
   hash(card){
     return makeHash(card)
@@ -109,22 +120,25 @@ const store = reactive({ //updates the html immediately
     smBody: "",
     subCards: [],     // array of cards
     cardAditions: [], // array of card adittions (like related, weight, color, etc)
+    toDoFirst: [],    // array of cards that need to be before this card
     doneForToday: false,
     doneFirst: [],    // array of cards that need to be done first
     done: false,
-    color: '',
+    color: '', // dot color and background color of the page
     hideDone: false,
     media: "",
-    autoplay: false,
-    thumbnail: "",
-    layout: "line",
-    slice: 0, // show next cards in the list (0 = all, 1 = next, 2 = next and next, -1 all but one)
+    autoplay: false,  
+    thumbnail: "", // thumbnail for the media just video for now
+    layout: "line", // line, circle, grid
+    slice: 0,
     onlyShowDone: false,
     onlyShowNotDone: false,
+    onlyShowDoable: false,
     mix: false,
     doneOn: "",
     madeOn: "",
   },
+  currentlyDisplayCards: [],
   saveRoot(rootHash = "root") {
     let rootCard = {...(this.loadCard(rootHash) || this.newCard), ...this.root}
     rootCard.subCards = this.cards.map(card => makeHash(card))
@@ -510,8 +524,9 @@ const store = reactive({ //updates the html immediately
     this.newCard.cardAddtions = []
     this.newCard.onlyShowDone = false
     this.newCard.onlyShowNotDone = false
+    this.newCard.onlyShowDoable = false
     this.newCard.mix = false
-    this.newCard.doneOn = ""
+    this.newCard.doneOn = []
     this.newCard.madeOn = ""
   },
   inc() {
@@ -699,12 +714,12 @@ const store = reactive({ //updates the html immediately
     this.layout(this.root.layout)
   },
   markAllDone() {
-    this.cards = this.cards.map(card => ({...card, done: true, doneOn: new Date().toISOString()}))
+    this.cards = this.cards.map(card => ({...card, done: true, doneOn: [...(card.doneOn || []),new Date().toISOString()]}))
     this.layout(this.root.layout)
     this.save()
   },
   markAllNotDone() {
-    this.cards = this.cards.map(card => ({...card, done: false, doneOn: ""}))
+    this.cards = this.cards.map(card => ({...card, done: false}))
     this.layout(this.root.layout)
     this.save()
   },
@@ -914,6 +929,7 @@ function arrowKeysOn (e) {
   } 
   if (store.disableKeys) return
   e = e || window.event;
+  const currentIndex = store.currentlyDisplayCards.map(card => card.index)
   // use e.keyCode
   if (e.keyCode == 38 || e.keyCode == 87 || e.keyCode == 75) store.shallower()
   if (e.keyCode == 40 || e.keyCode == 83 || e.keyCode == 74 || e.keyCode == 13) {
@@ -924,16 +940,16 @@ function arrowKeysOn (e) {
   }
   if (e.keyCode == 37 || e.keyCode == 65 || e.keyCode == 72) { //left
     if (e.shiftKey) {
-      store.swapCards(store.curser, store.curser -1)
+      store.swapCards(currentIndex[store.curser], currentIndex[store.curser -1])
     } else {
-      store.curser = Math.max(store.curser -1,-1)
+      store.curser = Math.max(currentIndex[store.curser -1],-1)
     }
   }
   if (e.keyCode == 39 || e.keyCode == 68 || e.keyCode == 76) { //right
     if (e.shiftKey) {
-      store.swapCards(store.curser, store.curser + 1)
+      store.swapCards(currentIndex[store.curser], currentIndex[store.curser + 1])
     } else { 
-      store.curser = Math.min(store.curser + 1, store.cards.length - 1)
+      store.curser = Math.min(store.curser + 1, store.currentlyDisplayCards.length - 1)
     }
   }
   if (e.keyCode == 43) store.openDialog('addDialog') // plus

@@ -51,7 +51,7 @@ input {
 .container {
   margin-top: 60px;
   display: flex;
-  justify-content: space-between;
+  justify-content: space-around;
   overflow: scroll;
   width: calc(100vw - 120px);
   padding: 18px 0 18px 107px;

@@ -93,38 +93,43 @@
             <button @click="store.saveToFile('root')">▼</button>
             <button @click="console.log(store.listOrphanedCards())">List</button>
 
-            <button v-if="store.root.layout !== 'circle'" @click="store.layout('circle')">O</button>
-            <button v-if="store.root.layout !== 'line'" @click="store.layout('line')">-</button>
-	    <button v-if="store.root.layout !== 'grid'" @click="store.layout('grid')">□</button>
 	    <button @click="store.openDialog('addDialog')">+</button>
-	    <br />
+	    <h4> Sub cards </h4>
             <button @click="store.sortByTitle">Sort</button>
             <button @click="store.shuffle">Shuffle</button>
-	    <h4> Mark all : </h4>
+	    <h4> Mark all: </h4>
 	    <button @click="store.markAllDone()">done ✔</button>
 	    <button @click="store.markAllNotDone()">undone</button>
 	    <br />
 	    
 	    <button @click="store.removeAllDone" >Remove all done</button>
+	    <button @click="store.clearLocalStore" >Remove all</button>
 	    <button @click="store.openDialog('editDialog-1')">✎</button>
-	    <br />
-            
+	    <h4>Only show:</h4>
             <label>
-              only done 
+              done 
 	      <input type="checkbox" v-model="store.root.onlyShowDone" @change="store.layout(store.root.layout)" >
 	    </label> <br />
             <label>
-              only undone 
+              undone 
 	      <input type="checkbox" v-model="store.root.onlyShowNotDone" @change="store.layout(store.root.layout)" >
 	    </label> <br />
             <label>
-              Mix 
-	      <input type="checkbox" v-model="store.root.mix" @change="store.layout(store.root.layout)" >
+              doable 
+	      <input type="checkbox" v-model="store.root.onlyShowDoable" @change="store.layout(store.root.layout)" >
 	    </label> <br />
             <label>
               Slice 
 	      <input type="number" v-model="store.root.slice" @change="store.layout(store.root.layout)" >
 	    </label> <br />
+	    <h3>Display Options</h3>
+            <label>
+              Mix 
+	      <input type="checkbox" v-model="store.root.mix" @change="store.layout(store.root.layout)" >
+	    </label>
+            <button v-if="store.root.layout !== 'circle'" @click="store.layout('circle')">O</button>
+            <button v-if="store.root.layout !== 'line'" @click="store.layout('line')">-</button>
+	    <button v-if="store.root.layout !== 'grid'" @click="store.layout('grid')">□</button>
           </div>
         </dialog>
 
