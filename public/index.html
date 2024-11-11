@@ -13,7 +13,8 @@
       <!--Display rootcard here-->
       <div>
         <button class="top-left" @click="store.shallower()">^</button>
-	<button @click="store.openDialog('editDialog-1')">✎</button>
+        <input autofocus v-if="store.root.quickAdd" v-model="store.newCard.title" id="title" @keyup.enter="store.onEnterTitle()" placeholder="title." title="Title a card followed by a full stop to add it">
+
       </div>
       <div id="root">
         <div class="rootContainer">
@@ -72,9 +73,9 @@
       </div>
       <!--Display subcards-->
       <div v-if="!store.big">
-        <div v-for="(card, ci) in store.cards">
+        <div v-for="(card, ci) in store.currentlyDisplayCards">
           <div class="container" v-if="store.curser === ci" @dragover="store.dragOverSub(ci)" >
-            <div class="card subCard" tabindex="0" :key="store.curser +' '+ i" v-for="(subCard,i) in card.subCards">
+            <div class="card subCard" tabindex="0" :key="store.curser +' '+ i" v-for="(subCard,i) in store.displayedSubCards(card)">
               <div 
                 draggable="true"
                 @dragstart="store.draggingHash = store.hash(subCard); store.draggingSub = true"
@@ -184,9 +185,13 @@
             Done
           </label>
           <br />
+          <label>
+            <input type="checkbox" v-model="card.quickAdd" />
+            Quick Add
+          </label>
           <div v-if="store.getDataType(card.media)=='audio' || store.getDataType(card.media)=='video'">
-            <label for="autoplay">
-              <input type="checkbox" name="autoplay" v-model="card.autoplay" />
+            <label>
+              <input type="checkbox"  v-model="card.autoplay" />
               Autoplay
             </label>
             <br />

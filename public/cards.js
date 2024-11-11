@@ -71,15 +71,21 @@ const store = reactive({ //updates the html immediately
     onlyShowNotDone: false,
     onlyShowDoable: false,
     mix: false,
+    quickAdd: false,
   },
   draggingSub: false,
   cards: [],
   displayedCards: () => {
-    let cards = store.cards.map((card, index) => ({...card, index}))
-    if (!store.root.onlyShowDone && !store.root.onlyShowNotDone && !store.root.onlyShowDoable && !+store.root.slice && !store.root.mix) {
+    let cards = store.displayedSubCards({...store.root, subCards: store.cards})
+    store.currentlyDisplayCards = cards
+    return cards
+  },
+  displayedSubCards: (ofCard) => {
+    let cards = ofCard.subCards.map((card, index) => ({...card, index}))
+    if (!ofCard.onlyShowDone && !ofCard.onlyShowNotDone && !ofCard.onlyShowDoable && !+ofCard.slice && !ofCard.mix) {
       return cards
     }
-    if (store.root.mix) {
+    if (ofCard.mix) {
       for (let i = cards.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [cards[i], cards[j]] = [cards[j], cards[i]];
@@ -87,13 +93,13 @@ const store = reactive({ //updates the html immediately
     }
     cards = cards.filter((card, index) => {
       if (!card) return false
-      if (store.root.onlyShowDone && !card.done) {
+      if (ofCard.onlyShowDone && !card.done) {
         return false
       }
-      if (store.root.onlyShowNotDone && card.done) {
+      if (ofCard.onlyShowNotDone && card.done) {
         return false
       }
-      if (store.root.onlyShowDoable) {
+      if (ofCard.onlyShowDoable) {
 	// load the array of cards that need to be done first and see if they are all done
         if (card.toDoFirst && card.toDoFirst.length) {
           if (!card.toDoFirst.every(hash => store.loadCard(hash).done)) {
@@ -102,10 +108,13 @@ const store = reactive({ //updates the html immediately
 	}
       }
       return true
-    }).reverse().slice(+store.root.slice).reverse()
-    this.layout(this.root.layout)
-    this.currentlyDisplayCards = cards
+    }).reverse().slice(+ofCard.slice).reverse()
     return cards
+  },
+  
+  clearLocalStore() {
+    window.localStorage.clear()
+    window.location.reload()
   },
   hash(card){
     return makeHash(card)
@@ -128,6 +137,7 @@ const store = reactive({ //updates the html immediately
     hideDone: false,
     media: "",
     autoplay: false,  
+    quickAdd: false,
     thumbnail: "", // thumbnail for the media just video for now
     layout: "line", // line, circle, grid
     slice: 0,
@@ -528,6 +538,8 @@ const store = reactive({ //updates the html immediately
     this.newCard.mix = false
     this.newCard.doneOn = []
     this.newCard.madeOn = ""
+    this.newCard.toDoFirst = []
+    this.newCard.quickAdd = false
   },
   inc() {
     this.curser = this.cards.length
@@ -737,18 +749,11 @@ const store = reactive({ //updates the html immediately
   autoAdd() {
     // If the new card title end with add, then add it as a new card.
     // And select all within the text box, so you can start typing the new card title
-    const triggerArray = ['. add', '. ad' , 'full stop add', 'full stop at', ". dad", "full stop next", ". Next", ". next"]
+    const triggerArray = ['.', '. ' , 'full stop', 'full stop ']
     triggerArray.forEach(trigger => {
       if (this.newCard.title.includes(trigger) && this.newCard.title.indexOf(trigger) === this.newCard.title.length - trigger.length){
         this.newCard.title = this.newCard.title.slice(0, -trigger.length)
         this.inc() 
-      }
-    })
-    const triggerArraySub = ['. sub', 'full stop sub']
-    triggerArraySub.forEach(trigger => {
-      if (this.newCard.title.includes(trigger) && this.newCard.title.indexOf(trigger) === this.newCard.title.length - trigger.length){
-        this.newCard.title = this.newCard.title.slice(0, -trigger.length)
-        this.incSub() 
       }
     })
   },
@@ -1050,10 +1055,6 @@ function UpdateDialog(props) {
   }
 }
 
-/* 
-
 setInterval(() => {
   store.autoAdd()
 }, 1000) 
-
-*/
