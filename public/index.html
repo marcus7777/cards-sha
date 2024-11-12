@@ -24,7 +24,7 @@
             :key="root.title"
             @dragover="store.dragOver"
             @drop="store.drop(-1)"
-	    data-index="-1"
+	    data-index="-1" data-color="root.color"
           > 
             <div class="card rootCard" @click="store.curser = -1; store.toggleBig()">
               <div v-scope="Card({ card: root, i:'-1', displayMode: 'root'})"></div>
@@ -42,12 +42,12 @@
             @dragstart="store.draggingHash = store.hash(store.cards[card.index])"
             @drop="store.drop(card.index)"
             :title="card.title"
-	    :data-index="card.index"
+	    :data-index="card.index" :data-color="card.color" 
           >
             <div :key="i" class="card mainCard" v-if="!(store.hideDone && card.done)">
-              <div :data-index="card.index" class="inner small" @click="store.curser = card.index; store.layout(store.root.layout)" @dblclick="store.deeper(0)">
+              <div :data-index="card.index" :data-color="card.color" class="inner small" @click="store.curser = card.index; store.layout(store.root.layout)" @dblclick="store.deeper(0)">
                 <div class="dot"></div>
-                <button v-if="store.curser == card.index" class="top-right" @click="store.removeCard(card.index)" title="Remove Card" >-</button>
+                <button v-if="store.curser == card.index" class="top-right" @click="confirm('Delete Card') ? store.removeCard(card.index) : ''" title="Remove Card" >-</button>
                 <button v-if="store.curser == card.index" class="top-left" @click="store.deeper(card.index)" title="Load">^</button>
 		<!-- <button @click="store.openDialog(`editDialog${card.index}`)" title="Edit">✎</button> -->
 		<div class="content">
@@ -75,7 +75,7 @@
       <div v-if="!store.big">
         <div v-for="(card, ci) in store.currentlyDisplayCards">
           <div class="container" v-if="store.curser === ci" @dragover="store.dragOverSub(ci)" >
-            <div class="card subCard" tabindex="0" :key="store.curser +' '+ i" v-for="(subCard,i) in store.displayedSubCards(card)">
+            <div class="card subCard" :data-color="subCard.color" tabindex="0" :key="store.curser +' '+ i" v-for="(subCard,i) in store.displayedSubCards(card)">
               <div 
                 draggable="true"
                 @dragstart="store.draggingHash = store.hash(subCard); store.draggingSub = true"
@@ -92,7 +92,6 @@
           <button @click="store.closeDialog('menuDialog')">x</button>
           <div>
             <button @click="store.saveToFile('root')">▼</button>
-            <button @click="console.log(store.listOrphanedCards())">List</button>
 
 	    <button @click="store.openDialog('addDialog')">+</button>
 	    <h4> Sub cards </h4>
@@ -104,8 +103,15 @@
 	    <br />
 	    
 	    <button @click="store.removeAllDone" >Remove all done</button>
-	    <button @click="store.clearLocalStore" >Remove all</button>
 	    <button @click="store.openDialog('editDialog-1')">✎</button>
+	    <h3>Display Options</h3>
+            <label>
+              Mix 
+	      <input type="checkbox" v-model="store.root.mix" @change="store.layout(store.root.layout)" >
+	    </label>
+            <button v-if="store.root.layout !== 'circle'" @click="store.layout('circle')">O</button>
+            <button v-if="store.root.layout !== 'line'" @click="store.layout('line')">-</button>
+	    <button v-if="store.root.layout !== 'grid'" @click="store.layout('grid')">□</button>
 	    <h4>Only show:</h4>
             <label>
               done 
@@ -123,14 +129,9 @@
               Slice 
 	      <input type="number" v-model="store.root.slice" @change="store.layout(store.root.layout)" >
 	    </label> <br />
-	    <h3>Display Options</h3>
-            <label>
-              Mix 
-	      <input type="checkbox" v-model="store.root.mix" @change="store.layout(store.root.layout)" >
-	    </label>
-            <button v-if="store.root.layout !== 'circle'" @click="store.layout('circle')">O</button>
-            <button v-if="store.root.layout !== 'line'" @click="store.layout('line')">-</button>
-	    <button v-if="store.root.layout !== 'grid'" @click="store.layout('grid')">□</button>
+	    <pre>Powerfull tools:</pre> 
+	    <button @click="store.clearLocalStore" >Remove all</button>
+            <button @click="console.log(store.listOrphanedCards())">find root</button>
           </div>
         </dialog>
 
@@ -144,7 +145,7 @@
     </div>
 
     <template id="card">
-      <div :data-index="i" class="inner small" @click="store.layout(store.root.layout)" @dblclick="store.deeper(store.curser)">
+      <div :data-index="card.index" :data-color="card.color" class="inner small" @click="store.layout(store.root.layout)" @dblclick="store.deeper(store.curser)">
         <div class="dot"></div>
         <button v-if="store.curser == i && displayMode!='subCard'" @click="store.openDialog(`editDialog${i}`)">✎</button>
         <h1 v-if="store.big"> {{ card.title }} </h1>

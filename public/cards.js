@@ -658,12 +658,13 @@ const store = reactive({ //updates the html immediately
     const dot = rootElement.getElementsByClassName("dot")[0] 
     dot.style.backgroundColor = this.root.color
     if (rootElement === null) return
-    let cardElements = [... document.getElementsByClassName("outerMainCard")]
+    let cardElements = [ ...document.getElementsByClassName("outerMainCard"), ...document.getElementsByClassName("subCard")]
     cardElements.forEach(card => {
-      const cardIndex = +card.dataset.index
+      const color = card.dataset.color
+      if (!color) return console.log("No color")
       const dot = card.getElementsByClassName("dot")[0] 
       if (!dot || dot === null) return
-      dot.style.backgroundColor = this.cards[cardIndex].color
+      dot.style.backgroundColor = color
     })
   },
   distributeCardsGrid() {
@@ -958,7 +959,7 @@ function arrowKeysOn (e) {
     }
   }
   if (e.keyCode == 43) store.openDialog('addDialog') // plus
-  if (e.keyCode == 45) store.removeCard(store.curser) // minus
+  if (e.keyCode == 45 && confirm("Delete Card?")) store.removeCard(store.curser) // minus
   store.big = false
   store.layout(store.root.layout)
 
