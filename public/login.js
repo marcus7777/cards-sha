@@ -89,9 +89,6 @@ var signInWithPopup = function() {
 var handleSignedInUser = function(user) {
   document.getElementById('user-signed-in').style.display = 'block'
   document.getElementById('user-signed-out').style.display = 'none'
-  document.getElementById('name').textContent = user.displayName
-  document.getElementById('email').textContent = user.email
-  document.getElementById('phone').textContent = user.phoneNumber
   const fileUploadElement = document.getElementById('file-upload')
   fileUploadElement.onchange = function(event) {
     [...event.target.files].forEach((file, index) => {
@@ -153,21 +150,6 @@ var handleSignedInUser = function(user) {
   };
 
      
-  if (user.photoURL) {
-    var photoURL = user.photoURL;
-    // Append size to the photo URL for Google hosted images to avoid requesting
-    // the image with its original resolution (using more bandwidth than needed)
-    // when it is going to be presented in smaller size.
-    if ((photoURL.indexOf('googleusercontent.com') != -1) ||
-        (photoURL.indexOf('ggpht.com') != -1)) {
-      photoURL = photoURL + '?sz=' +
-          document.getElementById('photo').clientHeight;
-    }
-    document.getElementById('photo').src = photoURL;
-    document.getElementById('photo').style.display = 'block';
-  } else {
-    document.getElementById('photo').style.display = 'none';
-  }
 };
 
 

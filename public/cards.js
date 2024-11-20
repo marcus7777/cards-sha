@@ -1,10 +1,82 @@
 import { createApp, reactive } from './petite-vue.es.js'
 import QrCreator from './qr-creator.es6.min.js'
 
+const cardTemplate = {
+  title: "", 
+  body: "",
+  smBody: "",
+  source: "",       // url if from the web only save updates under the hash of the generated card 
+  subCards: [],     // array of cards
+  toDoFirst: [],    // array of cards that need to be before this card
+  done: false,
+  color: '', // dot color and background color of the page
+  hideDone: false,
+  media: "",
+  autoplay: false,  
+  quickAdd: false,
+  thumbnail: "", // thumbnail for the media just video for now
+  layout: "line", // line, circle, grid
+  slice: 0,
+  onlyShowDone: false,
+  onlyShowNotDone: false,
+  onlyShowDoable: false,
+  noEditing: false,
+  lockPosition: false,
+  mix: false,
+  doneOn: [], // list of dates
+  madeOn: "", // date
+  fav: false, // favorite
+}
+
+function UpdateDialog(props) {
+  return {
+    $template: '#updateDialog',
+    dialogName: props.dialogName,
+    card: props.card,
+  }
+}
+function diff(obj1, obj2) { 
+  var ret = {}; 
+  for(var i in obj2) { 
+    if(!obj1.hasOwnProperty(i) || obj2[i] !== obj1[i] || typeof obj2[i] === 'object') {
+      if (Array.isArray(obj2[i]) && Array.isArray(obj1[i])) {
+        if (obj2[i].length !== obj1[i].length) {
+          ret[i] = obj2[i]
+        }
+        if (obj2[i].length === obj1[i].length) { // if the arrays are the same length
+          if (!obj2[i].every((val, index) => val === obj1[i][index])) { // if the arrays are not the same
+            ret[i] = obj2[i]
+          }
+          if (!obj2[i].length) continue // both arrays are empty
+        }
+        continue
+      }
+      ret[i] = obj2[i]; 
+    } 
+  } 
+  return ret; 
+}; 
 function saveCard(hash, card) {
+  // save the diffrance between the card and generated card or template card
+
   if (!hash) return // window.alert("no hash")
   if (!card) return // window.alert("no card")
-  localStorage.setItem(hash, JSON.stringify(card))
+  if (!memCards[hash]) {
+    const toSave = diff(cardTemplate, card)
+    if (Object.keys(toSave).length === 0) return localStorage.removeItem(hash)
+    return localStorage.setItem(hash, JSON.stringify(toSave))
+  }
+  if (typeof memCards[hash] === 'object') {
+    let toSave = diff({...cardTemplate, ...memCards[hash]}, card)
+    if (card.lockPosition) {
+      delete toSave.subCards
+    }
+    if (Object.keys(toSave).length === 0) return localStorage.removeItem(hash)
+    return localStorage.setItem(hash, JSON.stringify(toSave))
+  }
+  if (typeof memCards[hash] === 'string') {
+    console.log("memCards[hash] save", memCards[hash])
+  }
 }
 function getUrlExtension( url ) {
   if (!url) return ""
@@ -15,8 +87,12 @@ function makeHash(card) {
   if (typeof card === 'string') {
     return card
   }
-  let obj = {...card}; //clones cards so that it can be manipulated without effecting the original let is a local variable
-  delete obj.subCards; //removes a property from an object: removing the subcards from each card so that the hash won't change when adding subcards
+  let obj = {...cardTemplate, ...card}; //clones cards so that it can be manipulated without effecting the original let is a local variable
+  delete obj.subCards; // removing the subcards from each card so that the hash won't change when adding subcards
+  delete obj.doneOn; // removing the doneOn from each card so that the hash won't change when adding doneOn
+  delete obj.done; // removing the done from each card so that the hash won't change when adding done
+  delete obj.fav; // removing the fav from each card so that the hash won't change when adding fav
+
   const str = JSON.stringify(obj);
   let hash = 0;
   if (str.length == 0) {
@@ -37,15 +113,83 @@ function makeHash(card) {
   // return the hash as a string at 8 characters long
   return hashAsStr.slice(0, 8);
 }
+let memCards = {} // memory cards save fetchable cards (immutable)
+
+function fetchCards(url, hash, cb = () => {}) {
+  if (!memCards[hash]) { // if the card is not in memory
+    memCards[hash] = {} // prevent multiple fetches
+    // if jsonl fetch the cards
+    if (url.indexOf(".jsonl") !== -1) {
+      fetch(url).then(response => response.text()).then(text => {
+        const lines = text.split("\n")
+        const cards = lines.filter(card => card.indexOf("}") !== -1).map(card => JSON.parse(card))
+        const forwords = lines.filter(card => card.indexOf("}") === -1)
+        if (forwords.length) {
+          console.log("Forwords", forwords)
+        }
+        console.log("cards", cards)
+        const firstCard = cards[0]
+        memCards[hash] = makeHash(firstCard)
+        cards.forEach(card => {
+          memCards[makeHash(card)] = card
+        })
+        cb(firstCard)
+      })  
+    } else {
+      fetch(url).then(response => response.text()).then(text => { // if xml/rss fetch the cards
+        const doc = new window.DOMParser().parseFromString(text, "text/xml")
+        // make card and subcards
+        if (doc.querySelectorAll("rss > channel > image > url")[0]) { // if the rss has an image
+          const media = doc.querySelectorAll("rss > channel > image > url")[0].textContent
+          const title = doc.querySelectorAll("rss > channel > title")[0].textContent
+          const body = doc.querySelectorAll("rss > channel > description")[0].textContent
+          const items = doc.querySelectorAll("rss > channel > item")
+          let subHashes = []
+          const subCards = Array.from(items).map(item => {
+            const title = item.querySelectorAll("title")[0].textContent
+            const media = item.querySelectorAll("enclosure")[0].getAttribute("url")
+            const body = item.querySelectorAll("description")[0].textContent
+            const link = item.querySelectorAll("link")[0].textContent
+            const card = {...cardTemplate, title, media, body, link}
+            const subHash = makeHash(card)
+            subHashes.push(subHash)
+            memCards[subHash] = card
+            return card
+          })
+          const make = { ...cardTemplate, title, body,
+            media, subCards: subHashes, source: url,
+            onlyShowNotDone: true, slice: -3,
+            lockPosition: true,
+          }
+          memCards[hash] = make // Do be combined with card of hash
+          cb(make)
+          console.log("cards loaded", memCards[hash])
+        } else {
+          // put the cards in page
+          console.log("doc", doc)
+        }
+      })
+   }
+  }
+  return { ...cardTemplate, title: "Loading", body: "Loading", color: "#888", hash: hash}
+}
+
 function savesToLocalStorage(file, cb) { //cb is a callback function that is called when the file is read with the first card
   const reader = new FileReader()
   reader.onload = (e) => {
     if (e.target === null || e.target.result === null || typeof e.target.result != "string" || !e.target.result) return alert("No file or file is empty")
-    const cards = e.target.result.split("\n").map(card => JSON.parse(card))
+    const lines = e.target.result.split("\n")
+    const cards = lines.filter(card => card.indexOf("}") !== -1).map(card => JSON.parse(card))
     cards.forEach(card => {
       saveCard(makeHash(card), card)
     })
-    cb({ title: "title", body: "body", ...cards[0]})
+    const forwords = lines.filter(card => card.indexOf("}") === -1)
+    if (forwords.length) {
+      console.log("Forwords", forwords)
+    }
+
+    alert(" Got " + cards.length + " cards")
+    cb({ ...cardTemplate, ...cards[0]})
   }
   reader.readAsText(file)          
 }
@@ -61,10 +205,10 @@ function saveFile(text, title) { //saves the file to the local download
 const store = reactive({ //updates the html immediately
   curser: 0,
   pageTitle: '',
+  editing: false,
   root: {
     title: '',
     color: 'white',
-    cardAddtions: [],
     layout: "line",
     slice: 0,
     onlyShowDone: false,
@@ -72,15 +216,24 @@ const store = reactive({ //updates the html immediately
     onlyShowDoable: false,
     mix: false,
     quickAdd: false,
+    noEditing: false,
+    lockPosition: false,
   },
   draggingSub: false,
   cards: [],
+  makeRoot: (hash) => {
+    console.log("Making root", hash)
+    localStorage.setItem("root", localStorage.getItem(hash))
+    //reload page
+    window.location.reload()
+  },
   displayedCards: () => {
     let cards = store.displayedSubCards({...store.root, subCards: store.cards})
     store.currentlyDisplayCards = cards
     return cards
   },
   displayedSubCards: (ofCard) => {
+    ofCard = {...cardTemplate, ...ofCard}
     let cards = ofCard.subCards.map((card, index) => ({...card, index}))
     if (!ofCard.onlyShowDone && !ofCard.onlyShowNotDone && !ofCard.onlyShowDoable && !+ofCard.slice && !ofCard.mix) {
       return cards
@@ -100,12 +253,12 @@ const store = reactive({ //updates the html immediately
         return false
       }
       if (ofCard.onlyShowDoable) {
-	// load the array of cards that need to be done first and see if they are all done
+        // load the array of cards that need to be done first and see if they are all done
         if (card.toDoFirst && card.toDoFirst.length) {
           if (!card.toDoFirst.every(hash => store.loadCard(hash).done)) {
-	    return false
-	  }
-	}
+            return false
+          }
+        }
       }
       return true
     }).reverse().slice(+ofCard.slice).reverse()
@@ -123,58 +276,111 @@ const store = reactive({ //updates the html immediately
   toggleBig(){
     this.big = !this.big
   },
-  newCard: {
-    title: "", 
-    body: "",
-    smBody: "",
-    subCards: [],     // array of cards
-    cardAditions: [], // array of card adittions (like related, weight, color, etc)
-    toDoFirst: [],    // array of cards that need to be before this card
-    doneForToday: false,
-    doneFirst: [],    // array of cards that need to be done first
-    done: false,
-    color: '', // dot color and background color of the page
-    hideDone: false,
-    media: "",
-    autoplay: false,  
-    quickAdd: false,
-    thumbnail: "", // thumbnail for the media just video for now
-    layout: "line", // line, circle, grid
-    slice: 0,
-    onlyShowDone: false,
-    onlyShowNotDone: false,
-    onlyShowDoable: false,
-    mix: false,
-    doneOn: "",
-    madeOn: "",
-  },
+  newCard: {...cardTemplate},
   currentlyDisplayCards: [],
+  loadMemPath() {
+    const path = ["root", ...window.location.hash.slice(1).split("/")]
+    console.log("Loading path", path)
+    for (let i = 0; i < path.length; i++) {
+      if (path[i] !== "") {
+        let card = this.loadCard(path[i])
+        if (card && card.source) {
+          this.loading = true
+          const loading = setInterval(() => {
+            this.loading = true
+            if (Object.keys(memCards).length !== 0) {
+              this.loading = false
+              clearTimeout(loading)
+            }
+          }, 200)
+        }
+      }
+    }
+  },
   saveRoot(rootHash = "root") {
+    console.log("Saving root")
     let rootCard = {...(this.loadCard(rootHash) || this.newCard), ...this.root}
     rootCard.subCards = this.cards.map(card => makeHash(card))
-    saveCard(rootHash, rootCard)
+    if (!rootCard.title && !rootCard.source) return console.log("No title or source", rootCard, rootHash)
+    if ( rootCard.title &&  rootCard.source) return console.log("title and source", rootCard)
+    const newHash = makeHash(rootCard)
+    if (newHash !== rootHash) {
+      console.log("new root", newHash, rootHash)
+      if (localStorage[newHash]) {
+        localStorage.setItem(rootHash, newHash)
+      }
+    }
+    saveCard(newHash, rootCard)
   },
   getAllHashesNeededFrom(hash) {
+    let card = {}
+    if (typeof hash === 'object') {
+      hash = makeHash(hash)
+      card = hash
+    }
+    if (typeof hash === 'string') {
+      card = this.loadCard(hash)
+    }
     let hashes = []
-    let card = this.loadCard(hash)
+    card = this.loadCard(hash)
     if (!card) {
       return []
     }
     hashes.push(hash) // push adds to
-    card.subCards.forEach(subCard => {
+    let needsSaving = false
+    card.subCards.forEach((subCard, i) => {
       if (!subCard) return
       if (typeof subCard === 'string') {
         if (hashes.includes(subCard)) {
           return
         }
-        hashes.push(subCard)
+        const testHash = makeHash(this.loadCard(subCard))
+        if (testHash === subCard) {
+          hashes.push(subCard)
+        } else {
+          card.subCards[i] = testHash
+          needsSaving = true
+        }
       }
       if (typeof subCard === "object") {
         hashes.push( makeHash(subCard) || "")
       }
       return hashes = hashes.concat(this.getAllHashesNeededFrom(subCard))
     })
-    return hashes
+    if (needsSaving) {
+      saveCard(hash, card)
+    }
+    return [...new Set(hashes)]
+  },
+  addMain(hash) {
+    this.cards = [ ...this.cards, this.loadCard(hash)]
+    this.save()
+  },
+  addSubCardsFrom(hash) {
+    const card = this.loadCard(hash)
+    if (!card) return
+    this.cards = this.cards.concat(card.subCards.map(subCard => this.loadCard(subCard)))
+    this.save()
+  },
+  removeCardLocal(hash) {
+    localStorage.removeItem(hash)
+  },
+  localCards() {
+    return Object.keys(localStorage).filter(key => localStorage[key].indexOf("}") !== -1).sort((a, b) => {
+      return store.getAllHashesNeededFrom(b).length - store.getAllHashesNeededFrom(a).length
+    }).map(key => {
+      return {...this.loadCard(key), key}
+    })
+  },
+  listedByCards(hash){
+    return Object.keys(localStorage).reduce((acc, key) => {
+      const card = this.loadCard(key)
+      if (!card) return acc
+      if (card.subCards && card.subCards.map(c => makeHash(c)).includes(hash)) {
+        return acc + 1
+      }
+      return acc
+    }, 0)
   },
   listOrphanedCards() {
     let mostChildren = 0
@@ -206,6 +412,21 @@ const store = reactive({ //updates the html immediately
     }
     return orphanedCards
   },
+  replaceForwordsFor(hash) {
+    // replace forwords with the card they are pointing to in sub cards
+    const card = this.loadCard(hash)
+    if (!card) return
+    card.subCards = card.subCards.map(subCard => {
+      if (typeof subCard === 'string') {
+        return this.loadCard(subCard)
+      }
+      return subCard
+    }).filter(card => !!card).map(card => makeHash(card))
+    if (hash !== makeHash(card)) {
+      saveCard(makeHash(card), card)
+    }
+    return JSON.stringify(card)
+  },
   saveToFile(root) {
     let hashes = []
     if (typeof root === 'object') {
@@ -217,12 +438,19 @@ const store = reactive({ //updates the html immediately
     hashes.forEach(hash => {
       if (!hash) return
       const card = localStorage.getItem(hash)
-      if (card != null) {
-        cards.push(card)
+      if (card == null) return console.log(hash + " not found")
+      // if the card is a forword card we need to save the hash and the hash it is pointing to
+      if (card.indexOf("}") === -1) { //this is not a card but a forword
+        console.log("Forword card", card)
+        console.log("saving ", hash + card)
+        if (hash === "root") return cards.push(JSON.stringify(this.loadCard(card)))
+        return cards.push(hash + card)
       }
-      
+      cards.push(card)
     })
-    saveFile(cards.filter(card => typeof card === "string" ).join("\n"), root.title || this.pageTitle || this.title || "Sky Cards")
+    const name = this.root.title || this.pageTitle || this.title || "Sky Cards"
+    saveFile(cards.filter(card => typeof card === "string" ).join("\n"), name + " " + cards.length + " cards")
+
   },
   uploadFileInToCard(index) {
     const input = document.createElement('input')
@@ -233,12 +461,13 @@ const store = reactive({ //updates the html immediately
       const target =  e.target
       if (target.files && target.files !== null && target.files.length) {
         savesToLocalStorage(target.files[0], (card) => {
-          if (index === -1) {
-            this.root = {...card}
-            this.cards = [].concat(card.subCards).map(subCard => this.loadCard(subCard))
+          if (index === "root" || index == -1) {
+            this.root = {...cardTemplate, ...card}
+            this.cards = [].concat(card.subCards).map(subCard => this.loadCard(subCard)).filter(card => !!card)
             this.curser = 0
             
           } else {
+//            this.cards[index] = {...cardTemplate, ...card}
             this.cards[index].subCards = (this.cards[index].subCards || []).concat([card])
           }
         })
@@ -285,33 +514,78 @@ const store = reactive({ //updates the html immediately
   uploadFileInToCardCloud(index) {
 
   },
-  loadCard(hash) {
+  loadCard(hash, cb = () => {}) { // returns the card with subcards as hashes
     if (typeof hash === 'object') {
       hash = makeHash(hash)
     }
-    if (!hash) {
+    if (!hash || hash === "" || hash.length > 8) {
       return
     }
-    if (!localStorage.getItem(hash)) {
-      return
+    if (!localStorage.getItem(hash) && !memCards[hash]) {
+      return console.log("No card found", hash)
     }
 
-    const tempCard = localStorage.getItem(hash)
-    if (tempCard === null) return
-    let card = JSON.parse(tempCard)
+    const tempCard = localStorage.getItem(hash) // get the card from local storage
     
-    if (!card.subCards) {
-      card.subCards = []
+    if (tempCard === null && memCards[hash]) {
+      let cardFormMem = {}
+      if (typeof memCards[hash] === 'object') {
+        cardFormMem = { ...cardTemplate, ...memCards[hash]}
+        cardFormMem.subCards = cardFormMem.subCards.map(sub => {
+          if (typeof sub === 'object') {
+            return sub
+          }
+          if (typeof sub === 'string') {
+            if (sub === hash) return console.log("Circular reference", hash)
+            return this.loadCard(sub)
+          }
+          console.log("Not a card", sub)
+          return false
+        }).filter(card => !!card)
+      }
+      cb(cardFormMem)
+      return cardFormMem
+    }
+    if (tempCard === null) return alert("No card found") // if the card is not found return an alert
+    if (tempCard.indexOf("}") === -1) { // not JSON
+      if (tempCard.length === 8 && tempCard.indexOf(hash) === -1) return this.loadCard(tempCard, cb) // forword
+      if (tempCard.length === 16 && tempCard.indexOf(hash) === -1) {
+        return {...this.loadCard(tempCard.slice(0, 8)), ...this.loadCard(tempCard.slice(0, 8))} // Combine
+      }
+      if (tempCard.length % 8 === 0 && tempCard.indexOf(hash) === -1) return this.loadCard(tempCard.slice(0,16)) // TODO 
+      return alert("Not a card " + tempCard)
+    }
+
+    let card = { ...cardTemplate, ...JSON.parse(tempCard)} 
+    if (card.source) {
+      if (!memCards[hash]) {
+        fetchCards(card.source, hash, (loaded) => {
+          const newCard = {...card, ...loaded}
+          if (!newCard.title) {
+            console.log("No title on loaded card", newCard)
+            return
+          }
+          // saveCard(newHash, newCard)
+  
+          memCards[hash] = newCard
+
+          cb(newCard)
+
+          console.log("loaded...", newCard, hash, card)
+        })
+      } else if (Object.keys(memCards[hash]).length) { // conbine the cards
+        // const subCards = memCards[hash].subCards
+        card = {...memCards[hash], ...diff(cardTemplate, card)}
+      }
     }
     card.subCards = card.subCards.map(subHash => {
-      if (!subHash) return
-      if (typeof subHash === 'string') {
-        const cardAsString = localStorage.getItem(subHash)
-        if (cardAsString === null) return
-        return JSON.parse(cardAsString)
+      if (hash === subHash) {
+        console.log("Circular reference", hash)
+        return false
       }
       return subHash
-    })  
+    }).filter(card => !!card)
+    cb(card)
     return card
   },
   load(cardHash, newCurser) {
@@ -320,57 +594,47 @@ const store = reactive({ //updates the html immediately
       cardHash = window.location.hash.slice(1).split("/").pop() || "root"
     } 
 
-    const tempHashCheck = window.location.hash.slice(1).split("/").pop()
-    if (tempHashCheck === undefined) return
-
-    const tempCard = localStorage.getItem(cardHash)
-    if (tempCard === null) return
-    
-    let rootCard = JSON.parse(tempCard)
-    if (!rootCard) {
-      rootCard = {...this.newCard}
-      saveCard(cardHash, rootCard)
-    }
-    if (!rootCard.subCards) {
-      rootCard.subCards = []
-    }
-    this.color = rootCard.color
-    this.title = rootCard.title
-    this.root = {...rootCard}
-    this.layout(this.root.layout)
-    this.setColor()
-    const subCards = rootCard.subCards.map(subHash => this.loadCard(subHash))
-    // rootCard.subCards = subCards ** main cards
-    subCards.forEach(subCard => {
-      if (!subCard) return
-      if (!subCard.subCards) {
-        subCard.subCards = []
+    this.loadCard(cardHash, (card) => {
+      if (!card) {
+        if (cardHash === "root") {
+          alert("No root card found")
+          // load default root card 
+        }
+        return console.log("No card found", cardHash)
       }
-      const subSubCards = subCard.subCards.map(subSubHash => this.loadCard(subSubHash))
-      subCard.subCards = subSubCards
+
+      if (!card.subCards) {
+        card.subCards = []
+      }
+
+      this.color = card.color
+      this.title = card.title
+      this.root = { ...cardTemplate, ...card} // load the root card
+      const subCards = card.subCards.map(subHash => this.loadCard(subHash, subCard => { // load main cards
+        if (!subCard) return
+        const subSubCards = subCard.subCards.map(subSubHash => this.loadCard(subSubHash)) // load sub cards
+        this.cards.push({...subCard, subCards: subSubCards})
+      }))
+      this.layout(this.root.layout)
+      this.setColor()
+      this.curser = newCurser || 0
     })
-    this.cards = subCards
-    this.curser = newCurser || 0
   },
   save() {
+    console.log("Saving")
     // save the root card to local storage
     //this.trail = window.location.hash.slice(1).split("/") //this is causing the problem!!
     this.saveRoot(window.location.hash.slice(1).split("/").pop() || "root")
     // save this.cards to local storage hash all cards and save under the hash with a list of hashs for sub cards
     this.cards.forEach(card => {
+      if (!card) return console.log("No card")
       if (typeof card === 'string') {
-        const tempCard = localStorage.getItem(card)
-        if (tempCard === null) return
-        card = JSON.parse(tempCard)
+        card = this.loadCard(card)
       }
-      if (!card.subCards) {
-        card.subCards = []
-      }
-      const subHashes = card.subCards.map(subCard => makeHash(subCard))
+      const subHashes = card.subCards.map(subCard => makeHash(subCard)).filter(hash => !!hash)
       card.subCards.forEach(subCard => {
-        if (typeof subCard !== 'string') {
+        if (typeof subCard !== 'string' && subCard !== null && subCard !== undefined) { 
           saveCard( makeHash(subCard), subCard)
-
         }
       })
       const cardHash = makeHash(card)
@@ -407,7 +671,7 @@ const store = reactive({ //updates the html immediately
     document.title = this.cards[this.curser].title
     this.title = this.cards[this.curser].title
     this.color = this.cards[this.curser].color
-    this.root = {...this.cards[this.curser]}
+    this.root = {...cardTemplate, ...this.cards[this.curser]}
 
     this.setColor()
 
@@ -521,25 +785,29 @@ const store = reactive({ //updates the html immediately
     this.save()
   },
   resetNewCard(){
-    this.newCard.title = ""
-    this.newCard.media = ""
-    this.newCard.body  = ""
-    this.newCard.smBody  = ""
-    this.newCard.color = ''
+    this.newCard.title    = ""
+    this.newCard.source   = ""
+    this.newCard.media    = ""
+    this.newCard.body     = ""
+    this.newCard.smBody   = ""
+    this.newCard.color    = ''
     this.newCard.hideDone = false
     this.newCard.subCards = []
-    this.newCard.done = false
-    this.newCard.layout = "line"
-    this.newCard.slice = 0
-    this.newCard.cardAddtions = []
+    this.newCard.done     = false
+    this.newCard.layout   = "line"
+    this.newCard.slice    = 0
     this.newCard.onlyShowDone = false
     this.newCard.onlyShowNotDone = false
     this.newCard.onlyShowDoable = false
-    this.newCard.mix = false
-    this.newCard.doneOn = []
-    this.newCard.madeOn = ""
+    this.newCard.mix      = false
+    this.newCard.doneOn   = []
+    this.newCard.madeOn   = ""
     this.newCard.toDoFirst = []
     this.newCard.quickAdd = false
+    this.newCard.autoplay = false
+    this.newCard.thumbnail = ""
+    this.newCard.noEditing = false
+    this.newCard.lockPosition = false
   },
   inc() {
     this.curser = this.cards.length
@@ -697,9 +965,9 @@ const store = reactive({ //updates the html immediately
       } else if (this.root.layout === "line"){
         this.cleanUp = this.distributeCardsLine()
       } else if (this.root.layout === "grid") {
-	this.cleanUp = this.distributeCardsGrid()
+        this.cleanUp = this.distributeCardsGrid()
       } else {
-	this.cleanUp = () => {}
+        this.cleanUp = () => {}
       }
     })
   },
@@ -742,9 +1010,7 @@ const store = reactive({ //updates the html immediately
     this.save()
   },
   setColor() {
-    if (!this.root.color) {
-      this.root.color = 'white'
-    }
+    if (!this.root.color) return
     document.body.style.backgroundColor = this.root.color
   },
   autoAdd() {
@@ -802,17 +1068,7 @@ const store = reactive({ //updates the html immediately
         let rootCard = this.loadCard(rootHash) //was a const but I changed it because it caused errors (maybe change back?)
 
         
-        const cardAddtions = this.cards.map((card,i) => {
-          return {
-            weight: i, 
-            cardIndex:i,
-            hash: makeHash(card),
-          }
-        })
         this.layout(this.root.layout)
-        //rootCard.cardAditions = this.mergeDown(rootCard.cardAddtions.concat(cardAddtions))
-        // remove duplicate settings of the same properties in the same care
-        rootCard = {...rootCard, cardAddtions}
         saveCard(rootHash, rootCard)
         this.save() 
 
@@ -878,15 +1134,19 @@ const store = reactive({ //updates the html immediately
     addDialog.showModal()
   },
   openDialog(dialog) {
-    const addDialog = document.getElementById(dialog)
+    store.editing = true
     store.disableKeys = true
-    console.log("addDialog", dialog, addDialog)
-    addDialog.showModal()
+    window.requestAnimationFrame(() => {
+      const addDialog = document.getElementById(dialog)
+      console.log("addDialog", dialog, addDialog)
+      addDialog.showModal()
+    })
   },
   closeDialog(dialog) {
     const addDialog = document.getElementById(dialog)
     store.disableKeys = false
     addDialog.close()
+    store.editing = false
   },
   endedAutoplay(card, index) {
     console.log(card, index)
@@ -968,9 +1228,9 @@ document.onkeydown = arrowKeysOn
 createApp({
   // share it with app scopes
   store,
-  Card,
   UpdateDialog,
 }).mount()
+// store.loadMemPath()
 store.load()
 setTimeout(() => {
   document.title = store.root.title
@@ -1017,7 +1277,7 @@ window.addEventListener("message", (e) => {
     }
   } else {
     if (store.getDataType(e.data.url) === "image") {
-      if (store.getDataType(store.root.media) === "video") {
+      if (store.getDataType(store.root.media) === "video" || store.getDataType(store.root.media) === "audio"){
         return store.root.thumbnail = e.data.url
       }
     }
@@ -1039,22 +1299,6 @@ window.addEventListener("message", (e) => {
   }
 })
 
-function Card(props) {
-  return {
-    $template: '#card',
-    card: props.card,
-    cardFunc: () => props.card,
-    displayMode: props.displayMode,
-    i: props.i,
-  }
-}
-function UpdateDialog(props) {
-  return {
-    $template: '#updateDialog',
-    dialogName: props.dialogName,
-    card: props.card,
-  }
-}
 
 setInterval(() => {
   store.autoAdd()

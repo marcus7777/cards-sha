@@ -427,6 +427,7 @@ audio {
     transform: rotate(360deg);
   }
 }
+#root .rootCard div.inner,
 .outerMainCard .mainCard div.inner {
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -444,28 +445,51 @@ audio {
   width: 23px;
   height: 23px;
 }
+.rootCard .top-left,
 .mainCard .top-left {
   grid-column: 1;
   grid-row: 1;
 }
 
+.rootCard .top,
+.mainCard .top {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: center;
+}
+
+.rootCard .top-right,
 .mainCard .top-right {
   grid-column: 3;
   grid-row: 1;
   justify-self: end;
 }
 
+.rootCard .bottom-left,
 .mainCard .bottom-left {
   grid-column: 1;
   grid-row: 3;
 }
 
+.rootCard .right,
+.mainCard .right {
+  grid-column: 3;
+  grid-row: 2;
+  justify-self: end;
+}
+
+.rootCard .left,
+.mainCard .left {
+  grid-column: 1;
+  grid-row: 2;
+  justify-self: end;
+}
+
+.rootCard .bottom-right,
 .mainCard .bottom-right {
   grid-column: 3;
   grid-row: 3;
   justify-self: end;
-}
-.mainCard {
 }
 
 .content {
@@ -478,4 +502,61 @@ audio {
 
 img {
   max-width:100%
+}
+.add-fav {
+  display: inline-block;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background: -webkit-linear-gradient(top, #fff, #ddd) #ddd;
+  transition: all 0.5s ease;
+  border-radius: 10px;
+  height: 23px;
+}
+ .add-fav:hover {
+  background: -webkit-linear-gradient(top, #fff, #ccc) #ddd;
+}
+.add-fav div,
+.add-fav .icon-heart {
+  font-size: 20px;
+  color: #666;
+  transition: all 0.5s ease-in-out;
+  line-height: 27px;
+}
+.add-fav .icon-tick {
+  color: #aaa;
+  width: 21px;
+}
+.add-fav .icon-load {
+  color: #000;
+}
+.add-fav .icon-remove {
+  color: default;
+  font-size: 13px;
+  width: 21px;
+}
+.add-fav input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+}
+.add-fav input[type="checkbox"]:checked + .icon-heart {
+  color: gold;
+}
+.add-fav input[type="checkbox"]:checked + .icon-tick {
+  color: #0093ff;
+}
+video {
+  max-width: 100%;
+}
+audio {
+  width: 100%;
+}
+full-page {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
 }
