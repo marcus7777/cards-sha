@@ -64,14 +64,16 @@ function saveCard(hash, card) {
   if (!memCards[hash]) {
     const toSave = diff(cardTemplate, card)
     if (Object.keys(toSave).length === 0) return localStorage.removeItem(hash)
+    console.log("toSave", toSave)
     return localStorage.setItem(hash, JSON.stringify(toSave))
   }
   if (typeof memCards[hash] === 'object') {
     let toSave = diff({...cardTemplate, ...memCards[hash]}, card)
-    if (card.lockPosition) {
+    if (card.lockPosition && card.source) {
       delete toSave.subCards
     }
     if (Object.keys(toSave).length === 0) return localStorage.removeItem(hash)
+    console.log("toSave diff mem & card", toSave)
     return localStorage.setItem(hash, JSON.stringify(toSave))
   }
   if (typeof memCards[hash] === 'string') {
@@ -114,10 +116,12 @@ function makeHash(card) {
   return hashAsStr.slice(0, 8);
 }
 let memCards = {} // memory cards save fetchable cards (immutable)
-
+let memLoading = {} 
 function fetchCards(url, hash, cb = () => {}) {
   if (!memCards[hash]) { // if the card is not in memory
-    memCards[hash] = {} // prevent multiple fetches
+    // memCards[hash] = {} // prevent multiple fetches
+    if (memLoading[hash]) return console.log("Already loading", hash)
+    memLoading[hash] = true
     // if jsonl fetch the cards
     if (url.indexOf(".jsonl") !== -1) {
       fetch(url).then(response => response.text()).then(text => {
@@ -134,6 +138,11 @@ function fetchCards(url, hash, cb = () => {}) {
           memCards[makeHash(card)] = card
         })
         cb(firstCard)
+      }).catch(() => {
+        cb({
+          title : "Can not get rhis",
+          smBody: url,
+        })
       })  
     } else {
       fetch(url).then(response => response.text()).then(text => { // if xml/rss fetch the cards
@@ -149,27 +158,33 @@ function fetchCards(url, hash, cb = () => {}) {
             const title = item.querySelectorAll("title")[0].textContent
             const media = item.querySelectorAll("enclosure")[0].getAttribute("url")
             const body = item.querySelectorAll("description")[0].textContent
-            const link = item.querySelectorAll("link")[0].textContent
-            const card = {...cardTemplate, title, media, body, link}
+            const card = {...cardTemplate, title, media, body}
             const subHash = makeHash(card)
             subHashes.push(subHash)
             memCards[subHash] = card
             return card
           })
-          const make = { ...cardTemplate, title, body,
+          const loadedCard = { ...cardTemplate, title, body,
             media, subCards: subHashes, source: url,
             onlyShowNotDone: true, slice: -3,
             lockPosition: true,
           }
-          memCards[hash] = make // Do be combined with card of hash
-          cb(make)
+          memCards[hash] = loadedCard // Do be combined with card of hash
+          cb(loadedCard)
           console.log("cards loaded", memCards[hash])
         } else {
           // put the cards in page
           console.log("doc", doc)
         }
+      }).catch(() => {
+	memLoading[hash] = false
+	cb({
+	  title : "Can not get this",
+	  smBody: url,
+	  body: url,
+	})
       })
-   }
+    }
   }
   return { ...cardTemplate, title: "Loading", body: "Loading", color: "#888", hash: hash}
 }
@@ -255,7 +270,7 @@ const store = reactive({ //updates the html immediately
       if (ofCard.onlyShowDoable) {
         // load the array of cards that need to be done first and see if they are all done
         if (card.toDoFirst && card.toDoFirst.length) {
-          if (!card.toDoFirst.every(hash => store.loadCard(hash).done)) {
+          if (!card.toDoFirst.every(hash => store.loadCard(hash).done)) { // no call back needed as done is local
             return false
           }
         }
@@ -278,33 +293,15 @@ const store = reactive({ //updates the html immediately
   },
   newCard: {...cardTemplate},
   currentlyDisplayCards: [],
-  loadMemPath() {
-    const path = ["root", ...window.location.hash.slice(1).split("/")]
-    console.log("Loading path", path)
-    for (let i = 0; i < path.length; i++) {
-      if (path[i] !== "") {
-        let card = this.loadCard(path[i])
-        if (card && card.source) {
-          this.loading = true
-          const loading = setInterval(() => {
-            this.loading = true
-            if (Object.keys(memCards).length !== 0) {
-              this.loading = false
-              clearTimeout(loading)
-            }
-          }, 200)
-        }
-      }
-    }
-  },
   saveRoot(rootHash = "root") {
     console.log("Saving root")
-    let rootCard = {...(this.loadCard(rootHash) || this.newCard), ...this.root}
+    let rootCard = { ...this.root}
     rootCard.subCards = this.cards.map(card => makeHash(card))
     if (!rootCard.title && !rootCard.source) return console.log("No title or source", rootCard, rootHash)
     if ( rootCard.title &&  rootCard.source) return console.log("title and source", rootCard)
     const newHash = makeHash(rootCard)
     if (newHash !== rootHash) {
+      
       console.log("new root", newHash, rootHash)
       if (localStorage[newHash]) {
         localStorage.setItem(rootHash, newHash)
@@ -327,29 +324,19 @@ const store = reactive({ //updates the html immediately
       return []
     }
     hashes.push(hash) // push adds to
-    let needsSaving = false
     card.subCards.forEach((subCard, i) => {
       if (!subCard) return
       if (typeof subCard === 'string') {
         if (hashes.includes(subCard)) {
           return
         }
-        const testHash = makeHash(this.loadCard(subCard))
-        if (testHash === subCard) {
-          hashes.push(subCard)
-        } else {
-          card.subCards[i] = testHash
-          needsSaving = true
-        }
+        hashes.push(subCard)
       }
       if (typeof subCard === "object") {
-        hashes.push( makeHash(subCard) || "")
+        hashes.push( makeHash(subCard) || "" )
       }
       return hashes = hashes.concat(this.getAllHashesNeededFrom(subCard))
     })
-    if (needsSaving) {
-      saveCard(hash, card)
-    }
     return [...new Set(hashes)]
   },
   addMain(hash) {
@@ -524,6 +511,7 @@ const store = reactive({ //updates the html immediately
     if (!localStorage.getItem(hash) && !memCards[hash]) {
       return console.log("No card found", hash)
     }
+    console.log("loading", hash, cb)
 
     const tempCard = localStorage.getItem(hash) // get the card from local storage
     
@@ -543,7 +531,8 @@ const store = reactive({ //updates the html immediately
           return false
         }).filter(card => !!card)
       }
-      cb(cardFormMem)
+      const returns = cb(cardFormMem)
+      if (returns) return returns
       return cardFormMem
     }
     if (tempCard === null) return alert("No card found") // if the card is not found return an alert
@@ -565,8 +554,6 @@ const store = reactive({ //updates the html immediately
             console.log("No title on loaded card", newCard)
             return
           }
-          // saveCard(newHash, newCard)
-  
           memCards[hash] = newCard
 
           cb(newCard)
@@ -576,6 +563,8 @@ const store = reactive({ //updates the html immediately
       } else if (Object.keys(memCards[hash]).length) { // conbine the cards
         // const subCards = memCards[hash].subCards
         card = {...memCards[hash], ...diff(cardTemplate, card)}
+      } else {
+	console.log("still loading ?", hash)
       }
     }
     card.subCards = card.subCards.map(subHash => {
@@ -585,7 +574,8 @@ const store = reactive({ //updates the html immediately
       }
       return subHash
     }).filter(card => !!card)
-    cb(card)
+    const returns = cb(card)
+    if (returns) return returns
     return card
   },
   load(cardHash, newCurser) {
@@ -610,18 +600,19 @@ const store = reactive({ //updates the html immediately
       this.color = card.color
       this.title = card.title
       this.root = { ...cardTemplate, ...card} // load the root card
-      const subCards = card.subCards.map(subHash => this.loadCard(subHash, subCard => { // load main cards
+      let loadedCards = []
+      card.subCards.forEach(subHash => this.loadCard(subHash, subCard => { // load main cards
         if (!subCard) return
         const subSubCards = subCard.subCards.map(subSubHash => this.loadCard(subSubHash)) // load sub cards
-        this.cards.push({...subCard, subCards: subSubCards})
+        loadedCards.push({...subCard, subCards: subSubCards})
       }))
+      this.cards = loadedCards
       this.layout(this.root.layout)
       this.setColor()
       this.curser = newCurser || 0
     })
   },
   save() {
-    console.log("Saving")
     // save the root card to local storage
     //this.trail = window.location.hash.slice(1).split("/") //this is causing the problem!!
     this.saveRoot(window.location.hash.slice(1).split("/").pop() || "root")
@@ -638,7 +629,6 @@ const store = reactive({ //updates the html immediately
         }
       })
       const cardHash = makeHash(card)
-      
       saveCard(cardHash, {...card, subCards: subHashes})
     })
   },
@@ -647,7 +637,6 @@ const store = reactive({ //updates the html immediately
     const newTrail = window.location.hash.slice(1).split("/")
     const fresh = newTrail.pop()
     window.history.pushState({}, "", "#" + newTrail.join("/"))
-    this.load()
     const newCurser = this.cards.reduce((curser, card, index) => {
       if (fresh === makeHash(card)) {
         return index
@@ -655,6 +644,9 @@ const store = reactive({ //updates the html immediately
       return curser
     }, -1) // imperfect solution (confuses if there is more than one card with the same hash)
     this.curser = newCurser
+    console.log("newCurser", newCurser)
+    console.log("newTrail", newTrail)
+    this.load()
     this.layout(this.root.layout)
     document.title = this.root.title
   },
@@ -664,32 +656,12 @@ const store = reactive({ //updates the html immediately
 
     const currentCard = this.cards[this.curser] // this is the card that is being drilled into
     if (!currentCard || currentCard === undefined) return // if null or undefined stop the function
-    trail.push(makeHash(currentCard))
+    const newHash = makeHash(currentCard)
+    trail.push(newHash)
 
     window.scrollTo(0, 0)
     window.history.pushState({}, "", "#" + trail.join("/"))
-    document.title = this.cards[this.curser].title
-    this.title = this.cards[this.curser].title
-    this.color = this.cards[this.curser].color
-    this.root = {...cardTemplate, ...this.cards[this.curser]}
-
-    this.setColor()
-
-    this.cards = this.cards[this.curser].subCards.map(card => {
-      card = this.loadCard(card)
-      if (!card.subCards) {
-        card.subCards = []
-      }
-      card.subCards = card.subCards.map(subCard => {
-        if (typeof subCard === 'string') {
-          return this.loadCard(subCard)
-        }
-        return subCard
-      })
-      return card
-    })
-    this.curser = newCurser
-    this.layout(this.root.layout)
+    this.load(newHash, newCurser)
   },
   onEnterTitle(){
     if (!this.newCard.title) return
@@ -1023,6 +995,15 @@ const store = reactive({ //updates the html immediately
         this.inc() 
       }
     })
+    if (this.newCard.title.length !== 8) return
+    const triggerArrayHash = Object.keys(localStorage).filter(key => key.length === 8).filter(key => {
+      return key !== makeHash(this.root) && key !== makeHash(this.newCard)
+    }).forEach(cardHash => {
+      if (this.newCard.title === cardHash) {
+        this.newCard = {...this.loadCard(cardHash)}
+        this.inc()
+      }
+    })
   },
   swapCards(index1, index2, withFocus = true) {
     if (this.curser === index1) {
@@ -1167,6 +1148,12 @@ const store = reactive({ //updates the html immediately
     const videoFormats = ["mp4","ogg","mpeg","mov","avi","webm"]
     const audioFormats = ["mp3", "wav", "ogg", "m4a", "flac", "aac"]
     if (!url) return ""
+    if (imageFormats.includes(url.slice(-3))) return "image"
+    if (imageFormats.includes(url.slice(-4))) return "image"
+    if (videoFormats.includes(url.slice(-3))) return "video"
+    if (videoFormats.includes(url.slice(-4))) return "video"
+    if (audioFormats.includes(url.slice(-3))) return "audio"
+    if (audioFormats.includes(url.slice(-4))) return "audio"
     const dataType = getUrlExtension(url)
     if (videoFormats.includes(dataType)) return "video"
     if (imageFormats.includes(dataType)) return "image"

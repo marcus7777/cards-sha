@@ -21,6 +21,8 @@ var config = {
   appId: "1:242787438513:web:bb5839a0a17017f93a3790"
 };
 
-firebase.initializeApp(config);
+if (navigator.onLine) {
+  firebase.initializeApp(config);
+}
   
 var CLIENT_ID = '242787438513-t3btmgc0sefc6pk5v0hvccjoce97oct1.apps.googleusercontent.com';

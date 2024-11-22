@@ -219,11 +219,13 @@
         </dialog>
         <dialog id="all" v-if="store.all">
           <button @click="store.closeDialog('all')">x</button>
-	  <input v-model="store.allSearch" placeholder="search">
+          <input v-model="store.allSearch" placeholder="search">
           <div>
             <div v-for="(card, i) in store.localCards().filter((card) => {
               return card.title.toLowerCase().includes(store.allSearch.toLowerCase())
             })">
+              <h2> {{ card.title  }} </h2>
+              <h4> {{ card.source }} </h4>
               <a :href="`#${card.key}`"># {{card.title || }}</a>
               - {{store.getAllHashesNeededFrom(card.key).length - 1}} under it
               - it is in {{store.listedByCards(card.key)}} cards
@@ -233,7 +235,6 @@
               <button @click="store.addMain(card.key)"> + card </button>
               <button @click="store.addSubCardsFrom(card.key)"> + it's sub cards </button>
               
-              <h2> {{ card.title }} </h2>
               <div style="max-width:100px;max-height:50px;">
                 <img v-if="store.getDataType(card.media)=='image'" :src="card.media" />
                 <video v-if="store.getDataType(card.media)=='video'" controls :poster="card.thumbnail">
@@ -268,7 +269,7 @@
         </div>
         <div>
           <input v-model="card.source" id="title" placeholder="/Welcome.jsonl" @blur="store.save()" >
-	  <div v-if="!card.source">
+          <div v-if="!card.source">
             <input autofocus v-model="card.title" id="title" @keyup.enter="store.onEnterTitle()" placeholder="title">
             <br />
             <textarea v-model="card.smBody" @blur="store.save" placeholder="small text"></textarea><br />
@@ -320,8 +321,8 @@
             <input type="color" name="color" v-model="card.color" @change="store.setColor()"/>
           </div>
           <iframe src="login.html" style="border:0px #ffffff none;" name="upload" frameborder="1" marginheight="0px" marginwidth="0px" height="240px" width="300px" allowfullscreen></iframe>
-	</div>
-	<div v-if="!card.source">
+        </div>
+        <div v-if="!card.source">
           <h3>Subcards</h3>
           <div v-if="card.subCards.length"> 
             <button @click="store.sortByTitle">Sort by title</button>
@@ -332,11 +333,11 @@
             <br />  
             <button @click="store.removeAllDone" >Remove all done</button>
           </div>
-	  <div v-if="store.curser == -1">
-	    <button @click="store.openDialog('addDialog')"> + </button>
-	  </div>
+          <div v-if="store.curser == -1">
+            <button @click="store.openDialog('addDialog')"> + </button>
+          </div>
           <button @click="store.deeper(card.index);store.openDialog('addDialog')">+</button>
-	</div>
+        </div>
         <button v-if="store.newCard.title && dialogName=='addDialog'" @click="store.inc()"> Add </button>
         <button v-else-if="card.source && dialogName=='addDialog'" @click="store.inc()"> Add </button>
         <form method="dialog">
