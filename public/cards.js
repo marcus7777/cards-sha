@@ -61,7 +61,7 @@ function saveCard(hash, card) {
 
   if (!hash) return // window.alert("no hash")
   if (!card) return // window.alert("no card")
-  if (!memCards[hash]) {
+  if (!memCards[hash] && !memLoading[hash]) { // if the card is not in memory or loading
     const toSave = diff(cardTemplate, card)
     if (Object.keys(toSave).length === 0) return localStorage.removeItem(hash)
     console.log("toSave", toSave)
@@ -73,7 +73,7 @@ function saveCard(hash, card) {
       delete toSave.subCards
     }
     if (Object.keys(toSave).length === 0) return localStorage.removeItem(hash)
-    console.log("toSave diff mem & card", toSave)
+    console.log("toSave diff mem & card", toSave, memCards[hash], card)
     return localStorage.setItem(hash, JSON.stringify(toSave))
   }
   if (typeof memCards[hash] === 'string') {
@@ -177,16 +177,15 @@ function fetchCards(url, hash, cb = () => {}) {
           console.log("doc", doc)
         }
       }).catch(() => {
-	memLoading[hash] = false
-	cb({
-	  title : "Can not get this",
-	  smBody: url,
-	  body: url,
-	})
+        memLoading[hash] = false
+        cb({
+          title : "Can not get this",
+          smBody: url,
+          body: url,
+        })
       })
     }
   }
-  return { ...cardTemplate, title: "Loading", body: "Loading", color: "#888", hash: hash}
 }
 
 function savesToLocalStorage(file, cb) { //cb is a callback function that is called when the file is read with the first card
@@ -218,6 +217,7 @@ function saveFile(text, title) { //saves the file to the local download
 }
 // swop the order of the cards
 const store = reactive({ //updates the html immediately
+  search: "",
   curser: 0,
   pageTitle: '',
   editing: false,
@@ -531,9 +531,13 @@ const store = reactive({ //updates the html immediately
           return false
         }).filter(card => !!card)
       }
-      const returns = cb(cardFormMem)
-      if (returns) return returns
-      return cardFormMem
+      if (cardFormMem.source || cardFormMem.title) {
+        const returns = cb(cardFormMem)
+        if (returns) return returns
+        return cardFormMem
+      } else {
+        return console.log("No card with source or title", hash)
+      }
     }
     if (tempCard === null) return alert("No card found") // if the card is not found return an alert
     if (tempCard.indexOf("}") === -1) { // not JSON
@@ -547,6 +551,7 @@ const store = reactive({ //updates the html immediately
 
     let card = { ...cardTemplate, ...JSON.parse(tempCard)} 
     if (card.source) {
+      console.log("loading...", hash, card)
       if (!memCards[hash]) {
         fetchCards(card.source, hash, (loaded) => {
           const newCard = {...card, ...loaded}
@@ -564,7 +569,7 @@ const store = reactive({ //updates the html immediately
         // const subCards = memCards[hash].subCards
         card = {...memCards[hash], ...diff(cardTemplate, card)}
       } else {
-	console.log("still loading ?", hash)
+        console.log("still loading ?", hash, memLoading)
       }
     }
     card.subCards = card.subCards.map(subHash => {
@@ -603,8 +608,12 @@ const store = reactive({ //updates the html immediately
       let loadedCards = []
       card.subCards.forEach(subHash => this.loadCard(subHash, subCard => { // load main cards
         if (!subCard) return
-        const subSubCards = subCard.subCards.map(subSubHash => this.loadCard(subSubHash)) // load sub cards
-        loadedCards.push({...subCard, subCards: subSubCards})
+        let loadedSubCards = []
+        subCard.subCards.forEach(subSubHash => this.loadCard(subSubHash, subSubCard => {
+          if (!subSubCard) return
+          loadedSubCards.push(subSubCard)
+        })) // load sub cards
+        loadedCards.push({...subCard, subCards: loadedSubCards})
       }))
       this.cards = loadedCards
       this.layout(this.root.layout)
@@ -618,16 +627,7 @@ const store = reactive({ //updates the html immediately
     this.saveRoot(window.location.hash.slice(1).split("/").pop() || "root")
     // save this.cards to local storage hash all cards and save under the hash with a list of hashs for sub cards
     this.cards.forEach(card => {
-      if (!card) return console.log("No card")
-      if (typeof card === 'string') {
-        card = this.loadCard(card)
-      }
       const subHashes = card.subCards.map(subCard => makeHash(subCard)).filter(hash => !!hash)
-      card.subCards.forEach(subCard => {
-        if (typeof subCard !== 'string' && subCard !== null && subCard !== undefined) { 
-          saveCard( makeHash(subCard), subCard)
-        }
-      })
       const cardHash = makeHash(card)
       saveCard(cardHash, {...card, subCards: subHashes})
     })
@@ -757,33 +757,12 @@ const store = reactive({ //updates the html immediately
     this.save()
   },
   resetNewCard(){
-    this.newCard.title    = ""
-    this.newCard.source   = ""
-    this.newCard.media    = ""
-    this.newCard.body     = ""
-    this.newCard.smBody   = ""
-    this.newCard.color    = ''
-    this.newCard.hideDone = false
-    this.newCard.subCards = []
-    this.newCard.done     = false
-    this.newCard.layout   = "line"
-    this.newCard.slice    = 0
-    this.newCard.onlyShowDone = false
-    this.newCard.onlyShowNotDone = false
-    this.newCard.onlyShowDoable = false
-    this.newCard.mix      = false
-    this.newCard.doneOn   = []
-    this.newCard.madeOn   = ""
-    this.newCard.toDoFirst = []
-    this.newCard.quickAdd = false
-    this.newCard.autoplay = false
-    this.newCard.thumbnail = ""
-    this.newCard.noEditing = false
-    this.newCard.lockPosition = false
+    this.newCard = {...cardTemplate}
   },
   inc() {
+    
     this.curser = this.cards.length
-    this.cards = [...this.cards, {...this.newCard}]
+    this.cards = [...this.cards, {...this.newCard, madeOn: Date()}] // added on
     this.resetNewCard()
     
     //closeDialog(mainOrSunDialog)
