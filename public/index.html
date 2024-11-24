@@ -46,8 +46,8 @@
                 <div class="dot" v-else></div>
                 <div class="content">
                   <h2> {{ card.title }} </h2>
-                  <p v-if="!store.big" > {{ card.smBody }} </p>
-                  <p v-else v-html="card.body" ></p>
+                  <p v-if="!store.big" v-html="card.smBody || ''"></p>
+                  <p v-else v-html="card.body || ''"></p>
                   <img v-if="store.getDataType(card.media)=='image'" :src="card.media" />
                   <img v-if="store.getDataType(card.media)=='qrCode'" :src="store.makeQrCode(card.media)"/>
                   <img v-if="store.getDataType(card.media)=='audio' && card.thumbnail" :src="card.thumbnail" />
@@ -96,8 +96,8 @@
                 <!-- <button @click="store.openDialog(`editDialog${card.index}`)" title="Edit">✎</button> -->
                 <div class="content">
                   <h2> {{ card.title }} </h2>
-                  <p v-if="!store.big" > {{ card.smBody }} </p>
-                  <p v-else > {{card.body }} </p>
+                  <p v-if="!store.big" v-html="card.smBody"></p>
+                  <p v-else v-html="card.body"></p>
                   <img v-if="store.getDataType(card.media)=='image'" :src="card.media" />
                   <img v-if="store.getDataType(card.media)=='qrCode'" :src="store.makeQrCode(card.media)"/>
                   <img v-if="store.getDataType(card.media)=='audio' && card.thumbnail" :src="card.thumbnail" />
@@ -115,7 +115,7 @@
                   <div class="icon-tick"> ✓ </div>
                 </label>
                 <div class="add-fav top" v-if="store.curser == card.index && !store.root.mix">
-                  <div class="icon-edit" title="Edit" @click="store.openDialog(`editDialog${card.index}`)">✎</div>
+                  <button class="icon-edit" title="Edit" @click="store.openDialog(`editDialog${card.index}`)">✎</button>
                 </div>
               </div>
             </div>
@@ -147,7 +147,7 @@
                 <div :data-index="subCard.index" :data-color="subCard.color" class="inner small" @click="store.layout(store.root.layout)" @dblclick="store.deeper(store.curser)">
                   <div class="dot"></div>
                   <h2 > {{ subCard.title }} </h2>
-                  <p> {{ subCard.smBody }} </p>
+                  <p v-html="subCard.smBody || ''" />
 
                   <img v-if="store.getDataType(subCard.media)=='image'" :src="subCard.media" />
                   <video v-if="store.getDataType(subCard.media)=='video'" controls :poster="subCard.thumbnail">

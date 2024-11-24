@@ -760,12 +760,13 @@ const store = reactive({ //updates the html immediately
     this.newCard = {...cardTemplate}
   },
   inc() {
-    
-    this.curser = this.cards.length
-    this.cards = [...this.cards, {...this.newCard, madeOn: Date()}] // added on
+    const card = {...this.newCard, madeOn: Math.round(Date.now() / 1000)} // make a new card
     this.resetNewCard()
+    this.curser = this.cards.length
+    this.cards = [...this.cards, {...card}]
+    this.big = false
     
-    //closeDialog(mainOrSunDialog)
+    this.closeDialog("addDialog")
     this.save()
     setTimeout(() => {
       this.layout(this.root.layout)
@@ -1163,6 +1164,7 @@ function arrowKeysOn (e) {
   e = e || window.event;
   const currentIndex = store.currentlyDisplayCards.map(card => card.index)
   // use e.keyCode
+  
   if (e.keyCode == 38 || e.keyCode == 87 || e.keyCode == 75) store.shallower()
   if (e.keyCode == 40 || e.keyCode == 83 || e.keyCode == 74 || e.keyCode == 13) {
     if (store.curser == -1) store.curser = 0
