@@ -106,11 +106,11 @@
                   </video>
                 </div>
                 <label class="add-fav bottom-left" v-if="store.curser == card.index" @click="store.favSave(card, !card.fav)">
-                  <input type="checkbox" :checkbox="card.fav" />
+                  <input type="checkbox" :checked="card.fav" />
                   <div class="icon-heart"> ★ </div>
                 </label>
                 <label class="add-fav bottom-right" v-if="store.curser == card.index" @click="store.doneSave(card, !card.done)">
-                  <input type="checkbox" v-model="card.done" />
+                  <input type="checkbox" :checked="card.done" />
                   <div class="icon-tick"> ✓ </div>
                 </label>
                 <div class="add-fav top" v-if="store.curser == card.index && !store.root.mix">

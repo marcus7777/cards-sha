@@ -1169,15 +1169,22 @@ const store = reactive({ //updates the html immediately
     })
   },
   dialogSave(){
+    console.log("dialog save")
     if (this.editingHash) {
-      this.cards = this.cards.map(card => {
-        if (makeHash(card) === this.editingHash) {
-          return this.editCard
+      if (makeHash(this.editCard) !== this.editingHash) {
+        this.cards = this.cards.map(card => {
+          if (makeHash(card) === this.editingHash) {
+            return this.editCard
+          }
+          return card
+        })
+        localStorage.setItem(this.editingHash, makeHash(this.editCard))
+        saveCard(this.editingHash, this.editCard)
+        if (this.editingHash === makeHash(this.root)) {
+          this.root = {...this.root, ...this.editCard}
+          this.saveRoot(makeHash(this.root))
         }
-        return card
-      })
-      localStorage.setItem(this.editingHash, makeHash(this.editCard))
-      saveCard(this.editingHash, this.editCard)
+      }
     } else {
       this.cards = [...this.cards, {...this.editCard}]
     }
