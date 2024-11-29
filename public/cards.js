@@ -94,6 +94,12 @@ function makeHash(card) {
   delete obj.doneOn; // removing the doneOn from each card so that the hash won't change when adding doneOn
   delete obj.done; // removing the done from each card so that the hash won't change when adding done
   delete obj.fav; // removing the fav from each card so that the hash won't change when adding fav
+  // this are for display only
+  delete obj.table;
+  delete obj.index;
+  delete obj.hash;
+  delete obj.key;
+  obj.toDoFirst = [] // delete in next version
 
   const str = JSON.stringify(obj);
   let hash = 0;
@@ -248,12 +254,9 @@ const store = reactive({ //updates the html immediately
     return cards
   },
   displayedSubCards: (ofCard) => {
-    ofCard = {...cardTemplate, ...ofCard}
-    
+    // Nedded? ofCard = {...cardTemplate, ...ofCard}
+    const parentCard = makeHash(ofCard)
     let cards = ofCard.subCards.map((card, index) => ({...card, index, hash: makeHash(card)}))
-    if (!ofCard.onlyShowDone && !ofCard.onlyShowNotDone && !ofCard.onlyShowDoable && !+ofCard.slice && !ofCard.mix) {
-      return cards
-    }
     if (ofCard.mix) {
       for (let i = cards.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -282,7 +285,13 @@ const store = reactive({ //updates the html immediately
       }
       return true
     }).reverse().slice(+ofCard.slice).reverse()
-    return cards.map((card, index) => ({...card, table: {index,}})
+    const siblings = cards.map((card, i) => {
+      const next = cards[i + 1]?.hash
+      const prev = cards[i - 1]?.hash
+      return {next, prev}
+    })
+
+    return cards.map((card, index) => ({...card, table: {index, parentCard, siblings}}))
   },
   clearLocalStore() {
     window.localStorage.clear()
@@ -306,8 +315,6 @@ const store = reactive({ //updates the html immediately
     if ( rootCard.title &&  rootCard.source) return console.log("title and source", rootCard)
     const newHash = makeHash(rootCard)
     if (newHash !== rootHash) {
-      
-      console.log("new root", newHash, rootHash)
       if (localStorage[newHash]) {
         localStorage.setItem(rootHash, newHash)
       }
@@ -620,7 +627,6 @@ const store = reactive({ //updates the html immediately
     const path = window.location.pathname
     const regex = /[a-zA-Z0-9]{8}/g;
     const segments = path.match(regex);
-    console.log("segments", segments)
     if (segments) {
       return this.path = [...segments]
     }
@@ -1150,16 +1156,16 @@ const store = reactive({ //updates the html immediately
     store.editing = true
     store.disableKeys = true
     if (cardToEdit) {
-      this.editCard = cardToEdit
+      this.editCard = {...cardToEdit}
       this.editingHash = makeHash(cardToEdit)
     } else {
       this.editCard = {...this.newCard}
       this.editingHash = ""
     }
     window.requestAnimationFrame(() => {
-      const addDialog = document.getElementById(dialog)
-      console.log("addDialog", dialog, addDialog)
-      addDialog.showModal()
+      const openDialog = document.getElementById(dialog)
+      console.log("addDialog", dialog, openDialog)
+      openDialog.showModal()
     })
   },
   dialogSave(){
@@ -1177,9 +1183,23 @@ const store = reactive({ //updates the html immediately
     }
     this.save()
     this.closeDialog("addDialog")
+    this.closeDialog("editDialog")
+    const theCards = this.displayedCards()
+    console.log("the cards", theCards)
   },
   dialogSaveNew(){
     this.editingHash = ""
+    this.editCard.madeOn = Math.round(Date.now() / 1000)
+    this.dialogSave()
+  },
+  doneSave(card, done) {
+    this.editingHash = makeHash(card)
+    this.editCard = {...card, done, doneOn: [...(card.doneOn || []), Math.round(Date.now() / 1000)]}
+    this.dialogSave()
+  },
+  favSave(card, fav) {
+    this.editingHash = makeHash(card)
+    this.editCard = {...card, fav}
     this.dialogSave()
   },
   closeDialog(dialog) {

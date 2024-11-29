@@ -56,12 +56,12 @@
                     <source :src="card.media" type="video/mp4">
                   </video>
                 </div>
-                <label class="add-fav bottom-left" v-if="store.curser == -1">
-                  <input type="checkbox" v-model="store.root.fav" />
+                <label class="add-fav bottom-left" v-if="store.curser == -1" @click="store.favSave(store.root, !store.root.fav)">
+                  <input type="checkbox" :checked="store.root.fav" />
                   <div class="icon-heart"> ★ </div>
                 </label>
-                <label class="add-fav bottom-right" v-if="store.curser == -1">
-                  <input type="checkbox" v-model="store.root.done" @change="store.save" />
+                <label class="add-fav bottom-right" v-if="store.curser == -1" @click="store.doneSave(store.root, !store.root.done)">
+                  <input type="checkbox" :checked="store.root.done" />
                   <div class="icon-tick"> ✓ </div>
                 </label>
                 <div class="add-fav top" v-if="store.curser == -1 && !store.root.noEditing">
@@ -105,16 +105,16 @@
                     <source :src="card.media" type="video/mp4">
                   </video>
                 </div>
-                <label class="add-fav bottom-left" v-if="store.curser == card.index">
-                  <input type="checkbox" v-model="store.cards[card.index].fav" />
+                <label class="add-fav bottom-left" v-if="store.curser == card.index" @click="store.favSave(card, !card.fav)">
+                  <input type="checkbox" :checkbox="card.fav" />
                   <div class="icon-heart"> ★ </div>
                 </label>
-                <label class="add-fav bottom-right" v-if="store.curser == card.index">
-                  <input type="checkbox" v-model="store.cards[card.index].done" @change="store.save" />
+                <label class="add-fav bottom-right" v-if="store.curser == card.index" @click="store.doneSave(card, !card.done)">
+                  <input type="checkbox" v-model="card.done" />
                   <div class="icon-tick"> ✓ </div>
                 </label>
                 <div class="add-fav top" v-if="store.curser == card.index && !store.root.mix">
-                  <button class="icon-edit" title="Edit" @click="store.openDialog(`editDialog`, store.cards[card.index])">✎</button>
+                  <button class="icon-edit" title="Edit" @click="store.openDialog(`editDialog`, card)">✎</button>
                 </div>
               </div>
             </div>
@@ -233,7 +233,7 @@
               <a :href="`#${card.key}`"># {{card.title || }}</a>
               - {{store.getAllHashesNeededFrom(card.key).length - 1}} under it
               - it is in {{store.listedByCards(card.key)}} cards
-              <button @click="store.openDialog(`editDialog`, store.loadCard(card.key)">✎</button>
+              <button @click="store.openDialog(`editDialog`, card)">✎</button>
               <button @click="store.removeCardLocal(card.key)">🗑</button>
               <button @click="store.makeRoot(card.key)"> make start card </button>
               <button @click="store.addMain(card.key)"> + card </button>
@@ -365,7 +365,7 @@
         <form method="dialog">
           <button @click="store.closeDialog(dialogName)">close</button>
         </form>
-	<button @click="store.dialogSaveNew()"> Save as new </button>
+        <button v-if="store.editingHash" @click="store.dialogSaveNew()"> Save as new </button>
         <button @click="store.dialogSave()"> Save </button>
       </dialog>
     </template>
