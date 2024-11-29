@@ -62,7 +62,12 @@ function saveCard(hash, card) {
   if (!hash) return // window.alert("no hash")
   if (!card) return // window.alert("no card")
   if (!memCards[hash] && !memLoading[hash]) { // if the card is not in memory or loading
-    const toSave = diff(cardTemplate, card)
+    let toSave = diff(cardTemplate, card)
+    delete toSave.table
+    delete toSave.index
+    delete toSave.hash
+    delete toSave.key
+
     if (Object.keys(toSave).length === 0) return localStorage.removeItem(hash)
     // console.log("toSave", toSave)
     return localStorage.setItem(hash, JSON.stringify(toSave))
@@ -249,6 +254,7 @@ const store = reactive({ //updates the html immediately
     window.location.reload()
   },
   displayedCards: () => {
+    console.log("displayedCards")
     let cards = store.displayedSubCards({...store.root, subCards: store.cards})
     store.currentlyDisplayCards = cards
     return cards
@@ -311,6 +317,12 @@ const store = reactive({ //updates the html immediately
     console.log("Saving root")
     let rootCard = { ...this.root}
     rootCard.subCards = this.cards.map(card => makeHash(card))
+    let toSave = diff(cardTemplate, rootCard)
+    delete toSave.table
+    delete toSave.index
+    delete toSave.hash
+    delete toSave.key
+    if (Object.keys(toSave).length === 0) return localStorage.removeItem(rootHash) // if there nothing to save, remove the card
     if (!rootCard.title && !rootCard.source) return console.log("No title or source", rootCard, rootHash)
     if ( rootCard.title &&  rootCard.source) return console.log("title and source", rootCard)
     const newHash = makeHash(rootCard)
@@ -1171,19 +1183,18 @@ const store = reactive({ //updates the html immediately
   dialogSave(){
     console.log("dialog save")
     if (this.editingHash) {
-      if (makeHash(this.editCard) !== this.editingHash) {
-        this.cards = this.cards.map(card => {
-          if (makeHash(card) === this.editingHash) {
-            return this.editCard
-          }
-          return card
-        })
-        localStorage.setItem(this.editingHash, makeHash(this.editCard))
-        saveCard(this.editingHash, this.editCard)
-        if (this.editingHash === makeHash(this.root)) {
-          this.root = {...this.root, ...this.editCard}
-          this.saveRoot(makeHash(this.root))
+      this.cards = this.cards.map(card => {
+        if (makeHash(card) === this.editingHash) {
+          return this.editCard
         }
+        return card
+      })
+      localStorage.setItem(this.editingHash, makeHash(this.editCard))
+      saveCard(this.editingHash, this.editCard)
+      const rootHash = makeHash(this.root)
+      if (this.editingHash === rootHash) {
+        this.root = {...this.root, ...this.editCard}
+        this.saveRoot(rootHash)
       }
     } else {
       this.cards = [...this.cards, {...this.editCard}]
