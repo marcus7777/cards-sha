@@ -118,7 +118,7 @@
                 </div>
               </div>
             </div>
-            <a :href="`/${[...store.path, card.hash].join('/')}`" style="margin: 0 -121px;display: block;height: 21px;">
+            <a :href="`/${[...store.path, card.hash].join('/')}`" style="margin: 29px -40px;display: block;height: 21px;">
               load
             </a>
           </div>
@@ -164,18 +164,6 @@
         <dialog id="menuDialog">
           <button @click="store.closeDialog('menuDialog')">x</button>
           <div>
-            <button @click="store.saveToFile('root')">Download all</button>
-
-            <button @click="store.openDialog('addDialog')">+</button>
-            <h4> Sub cards </h4>
-            <button @click="store.sortByTitle">Sort</button>
-            <button @click="store.shuffle">Shuffle</button>
-            <h4> Mark all: </h4>
-            <button @click="store.markAllDone()">done ✔</button>
-            <button @click="store.markAllNotDone()">undone</button>
-            <br />
-            
-            <button @click="store.removeAllDone" >Remove all done</button>
             <pre>Powerfull tools:</pre> 
             <button @click="store.clearLocalStore" >Remove all</button>
             <button @click="store.all = true;store.openDialog('all')" >Show all</button>
@@ -287,7 +275,7 @@
           <iframe src="/login.html" style="border:0px #ffffff none;" name="upload" frameborder="1" marginheight="0px" marginwidth="0px" height="240px" width="300px" allowfullscreen></iframe>
         </div>
         <div v-if="!store.editCard.source">
-          <h3>Subcards</h3>
+          <h3>Sub Cards</h3>
           <div v-if="store.editCard.subCards.length"> 
             <button @click="store.sortByTitle">Sort by title</button>
             <button @click="store.shuffle">Shuffle</button>
