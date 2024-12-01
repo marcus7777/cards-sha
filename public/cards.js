@@ -27,7 +27,9 @@ const cardTemplate = {
   madeOn: "", // date
   fav: false, // favorite
 }
-
+function template() {
+  return JSON.parse(JSON.stringify(cardTemplate))
+}
 function UpdateDialog(props) {
   return {
     $template: '#updateDialog',
@@ -62,7 +64,7 @@ function saveCard(hash, card) {
   if (!hash) return // window.alert("no hash")
   if (!card) return // window.alert("no card")
   if (!memCards[hash] && !memLoading[hash]) { // if the card is not in memory or loading
-    let toSave = diff(cardTemplate, card)
+    let toSave = diff(template(), card)
     delete toSave.table
     delete toSave.index
     delete toSave.hash
@@ -73,7 +75,7 @@ function saveCard(hash, card) {
     return localStorage.setItem(hash, JSON.stringify(toSave))
   }
   if (typeof memCards[hash] === 'object') {
-    let toSave = diff({...cardTemplate, ...memCards[hash]}, card)
+    let toSave = diff({...template(), ...memCards[hash]}, card)
     if (card.lockPosition && card.source) {
       delete toSave.subCards
     }
@@ -94,7 +96,7 @@ function makeHash(card) {
   if (typeof card === 'string') {
     return card
   }
-  let obj = {...cardTemplate, ...card}; // clones cards so that it can be manipulated without effecting the original let is a local variable
+  let obj = {...template(), ...card}; // clones cards so that it can be manipulated without effecting the original let is a local variable
   delete obj.subCards; // removing the subcards from each card so that the hash won't change when adding subcards
   delete obj.doneOn; // removing the doneOn from each card so that the hash won't change when adding doneOn
   delete obj.done; // removing the done from each card so that the hash won't change when adding done
@@ -169,13 +171,13 @@ function fetchCards(url, hash, cb = () => {}) {
             const title = item.querySelectorAll("title")[0].textContent
             const media = item.querySelectorAll("enclosure")[0].getAttribute("url")
             const body = item.querySelectorAll("description")[0].textContent
-            const card = {...cardTemplate, title, media, body}
+            const card = {...template(), title, media, body}
             const subHash = makeHash(card)
             subHashes.push(subHash)
             memCards[subHash] = card
             return card
           })
-          const loadedCard = { ...cardTemplate, title, body,
+          const loadedCard = { ...template(), title, body,
             media, subCards: subHashes, source: url,
             onlyShowNotDone: true, slice: -3,
             lockPosition: true,
@@ -214,7 +216,7 @@ function savesToLocalStorage(file, cb) { //cb is a callback function that is cal
     }
 
     alert(" Got " + cards.length + " cards")
-    cb({ ...cardTemplate, ...cards[0]})
+    cb({ ...template(), ...cards[0]})
   }
   reader.readAsText(file)          
 }
@@ -260,7 +262,7 @@ const store = reactive({ //updates the html immediately
     return cards
   },
   displayedSubCards: (ofCard) => {
-    // Nedded? ofCard = {...cardTemplate, ...ofCard}
+    // Nedded? ofCard = {...template(), ...ofCard}
     const parentCard = makeHash(ofCard)
     let cards = ofCard.subCards.map((card, index) => ({...card, index, hash: makeHash(card)}))
     if (ofCard.mix) {
@@ -310,14 +312,14 @@ const store = reactive({ //updates the html immediately
   toggleBig(){
     this.big = !this.big
   },
-  newCard: {...cardTemplate},
-  editCard: {...cardTemplate},
+  newCard: {...template()},
+  editCard: {...template()},
   currentlyDisplayCards: [],
   saveRoot(rootHash = "root") {
     console.log("Saving root")
     let rootCard = { ...this.root}
     rootCard.subCards = this.cards.map(card => makeHash(card))
-    let toSave = diff(cardTemplate, rootCard)
+    let toSave = diff({...template()}, rootCard)
     delete toSave.table
     delete toSave.index
     delete toSave.hash
@@ -500,12 +502,12 @@ const store = reactive({ //updates the html immediately
       if (target.files && target.files !== null && target.files.length) {
         savesToLocalStorage(target.files[0], (card) => {
           if (index === "root" || index == -1) {
-            this.root = {...cardTemplate, ...card}
+            this.root = {...template(), ...card}
             this.cards = [].concat(card.subCards).map(subCard => this.loadCard(subCard)).filter(card => !!card)
             this.curser = 0
             
           } else {
-//            this.cards[index] = {...cardTemplate, ...card}
+            // this.cards[index] = {...template(), ...card}
             this.cards[index].subCards = (this.cards[index].subCards || []).concat([card])
           }
         })
@@ -569,7 +571,7 @@ const store = reactive({ //updates the html immediately
     if (tempCard === null && memCards[hash]) {
       let cardFormMem = {}
       if (typeof memCards[hash] === 'object') {
-        cardFormMem = { ...cardTemplate, ...memCards[hash]}
+        cardFormMem = { ...template(), ...memCards[hash]}
         cardFormMem.subCards = cardFormMem.subCards.map(sub => {
           if (typeof sub === 'object') {
             return sub
@@ -600,7 +602,7 @@ const store = reactive({ //updates the html immediately
       return alert("Not a card " + tempCard)
     }
 
-    let card = { ...cardTemplate, ...JSON.parse(tempCard)} 
+    let card = { ...template(), ...JSON.parse(tempCard)} 
     if (card.source) {
       // console.log("loading...", hash, card)
       if (!memCards[hash]) {
@@ -618,7 +620,7 @@ const store = reactive({ //updates the html immediately
         })
       } else if (Object.keys(memCards[hash]).length) { // conbine the cards
         // const subCards = memCards[hash].subCards
-        card = {...memCards[hash], ...diff(cardTemplate, card)}
+        card = {...memCards[hash], ...diff({...template()}, card)}
       } else {
         console.log("still loading ?", hash, memLoading)
       }
@@ -669,7 +671,7 @@ const store = reactive({ //updates the html immediately
 
       this.color = card.color
       this.title = card.title
-      this.root = { ...cardTemplate, ...card} // load the root card
+      this.root = { ...template(), ...card} // load the root card
       document.title = this.root.title
       let link = document.querySelector("link[rel~='icon']");
       if (!link) {
@@ -827,7 +829,7 @@ const store = reactive({ //updates the html immediately
     this.save()
   },
   resetNewCard(){
-    this.newCard = {...cardTemplate}
+    this.newCard = {...template()}
   },
   inc() {
     const card = {...this.newCard, madeOn: Math.round(Date.now() / 1000)} // make a new card
@@ -1165,8 +1167,8 @@ const store = reactive({ //updates the html immediately
     addDialog.showModal()
   },
   openDialog(dialog, cardToEdit) {
-    store.editing = true
-    store.disableKeys = true
+    this.editing = true
+    this.disableKeys = true
     if (cardToEdit) {
       this.editCard = {...cardToEdit}
       this.editingHash = makeHash(cardToEdit)
@@ -1175,6 +1177,7 @@ const store = reactive({ //updates the html immediately
       this.editingHash = ""
     }
     window.requestAnimationFrame(() => {
+      this.big = false
       const openDialog = document.getElementById(dialog)
       console.log("addDialog", dialog, openDialog)
       openDialog.showModal()
@@ -1183,13 +1186,16 @@ const store = reactive({ //updates the html immediately
   dialogSave(){
     console.log("dialog save")
     if (this.editingHash) {
-      this.cards = this.cards.map(card => {
-        if (makeHash(card) === this.editingHash) {
-          return this.editCard
+      this.currentlyDisplayCards = this.currentlyDisplayCards.map(card => {
+        if (card.hash === this.editingHash) {
+          this.cards[card.index] = {...this.editCard}
+          return {...this.editCard}
         }
         return card
       })
-      localStorage.setItem(this.editingHash, makeHash(this.editCard))
+      if (this.editingHash !== makeHash(this.root)) { 
+        localStorage.setItem(this.editingHash, makeHash(this.editCard))
+      }
       saveCard(this.editingHash, this.editCard)
       const rootHash = makeHash(this.root)
       if (this.editingHash === rootHash) {

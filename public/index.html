@@ -118,12 +118,9 @@
                 </div>
               </div>
             </div>
-          <a 
-            :href="`/${[...store.path, card.hash].join('/')}`"
-            style="margin: 0 -121px;display: block;height: 21px;"
-          >
-            load
-          </a>
+            <a :href="`/${[...store.path, card.hash].join('/')}`" style="margin: 0 -121px;display: block;height: 21px;">
+              load
+            </a>
           </div>
           <div v-for="i in (store.root.layout == 'grid' ? 10 : 0)" class="gridItem"></div>
         </div>  
@@ -142,12 +139,9 @@
                 @drop="store.drop(i)"
                 @click="store.deeper(ci)"
               >
-              <a 
-                :href="`/${[...store.path, card.hash, subCard.hash].join('/')}`"
-                style="margin: 0 -121px;display: block;height: 21px;"
-              >
-                load
-             </a>
+                <a :href="`/${[...store.path, card.hash, subCard.hash].join('/')}`" style="margin: 0 -121px;display: block;height: 21px;">
+                  load
+                </a>
                 <div :data-index="subCard.index" :data-color="subCard.color" class="inner small" @click="store.layout(store.root.layout)" @dblclick="store.deeper(store.curser)">
                   <div class="dot"></div>
                   <h2 > {{ subCard.title }} </h2>
@@ -182,43 +176,9 @@
             <br />
             
             <button @click="store.removeAllDone" >Remove all done</button>
-            <h3>Display Options</h3>
-            <label> 
-              <input type="checkbox" v-model="store.root.mix" @change="store.layout(store.root.layout)" >
-              Mix
-            </label>
-            <label>
-              <input type="checkbox" v-model="store.root.lockPosition" @change="store.layout(store.root.layout)" >
-              Lock position
-            </label>
-            <label>
-              <input type="checkbox" v-model="store.root.noEditing" @change="store.layout(store.root.layout)" >
-              No editing
-            </label>
-            <button v-if="store.root.layout !== 'circle'" @click="store.layout('circle')">O</button>
-            <button v-if="store.root.layout !== 'line'" @click="store.layout('line')">-</button>
-            <button v-if="store.root.layout !== 'grid'" @click="store.layout('grid')">□</button>
-            <h4>Only show:</h4>
-            <label>
-              done 
-              <input type="checkbox" v-model="store.root.onlyShowDone" @change="store.layout(store.root.layout)" >
-            </label> <br />
-            <label>
-              undone 
-              <input type="checkbox" v-model="store.root.onlyShowNotDone" @change="store.layout(store.root.layout)" >
-            </label> <br />
-            <label>
-              doable 
-              <input type="checkbox" v-model="store.root.onlyShowDoable" @change="store.layout(store.root.layout)" >
-            </label> <br />
-            <label>
-              Slice 
-              <input type="number" v-model="store.root.slice" @change="store.layout(store.root.layout)" >
-            </label> <br />
             <pre>Powerfull tools:</pre> 
             <button @click="store.clearLocalStore" >Remove all</button>
             <button @click="store.all = true;store.openDialog('all')" >Show all</button>
-            <button @click="console.log(store.listOrphanedCards())">find root</button>
           </div>
         </dialog>
         <dialog id="all" v-if="store.all">
@@ -336,6 +296,39 @@
             <button @click="store.markAllNotDone()">Undone</button>
             <br />  
             <button @click="store.removeAllDone" >Remove all done</button>
+            <h3>Display Options</h3>
+            <label> 
+              <input type="checkbox" v-model="store.editCard.mix">
+              Mix
+            </label>
+            <label>
+              <input type="checkbox" v-model="store.editCard.lockPosition">
+              Lock position
+            </label>
+            <label>
+              <input type="checkbox" v-model="store.editCard.noEditing" >
+              No editing
+            </label>
+            <button v-if="store.editCard.layout !== 'circle'" @click="store.layout('circle')">O</button>
+            <button v-if="store.editCard.layout !== 'line'" @click="store.layout('line')">-</button>
+            <button v-if="store.editCard.layout !== 'grid'" @click="store.layout('grid')">□</button>
+            <h4>Only show:</h4>
+            <label>
+              done 
+              <input type="checkbox" v-model="store.editCard.onlyShowDone">
+            </label> <br />
+            <label>
+              undone 
+              <input type="checkbox" v-model="store.editCard.onlyShowNotDone">
+            </label> <br />
+            <label>
+              doable 
+              <input type="checkbox" v-model="store.editCard.onlyShowDoable">
+            </label> <br />
+            <label>
+              Slice 
+              <input type="number" v-model="store.editCard.slice" >
+            </label> <br />
           </div>
           <div v-if="store.curser == -1">
             <button @click="store.openDialog('addDialog')"> + </button>
@@ -343,22 +336,18 @@
           <button @click="store.deeper(store.editCard.index);store.openDialog('addDialog')">+</button>
         </div>
         <div v-if="store.curser !== -1">
-          <h3>Need to do first</h3>
+          <h3>Need to do before {{store.editCard.title}}</h3>
 	  <div v-for="(needed, i) in store.cards">
-            <div v-if="i !== store.curser && !store.editCard.toDoFirst.includes(store.hash(needed))" @click="store.editCard = store.addToDoFirst(store.editCard, needed)">
+            <button v-if="i !== store.curser && !store.editCard.toDoFirst.includes(store.hash(needed))" @click="store.editCard = store.addToDoFirst(store.editCard, needed)">
               {{needed.title}} is needed
-            </div>
-            <div v-if="i !== store.curser && store.editCard.toDoFirst.includes(needed.hash)" @click="store.editCard = store.removeToDoFirst(store.editCard, needed)">
-              {{ needed.title }} is not needed
-            </div>
+	    </button>
           </div>
-          <h4>Need to do first</h4>
+          <h4>In 'to do first'</h4>
           <div v-for="(needed) in store.editCard.toDoFirst">
             <button @click="store.editCard = store.removeToDoFirst(store.editCard, needed)">
               {{ store.loadCard(needed).title }} is not needed
             </button>
           </div>
-          {{store.editCard.toDoFirst}}
         </div>
         <button v-if="store.newCard.title && dialogName=='addDialog'" @click="store.inc()"> Add </button>
         <button v-else-if="store.editCard.source && dialogName=='addDialog'" @click="store.inc()"> Add </button>
