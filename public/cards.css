@@ -286,6 +286,7 @@ dialog {
 }
 #addCardInput {
   float:right;
+  padding-right: 100px;
 }
 #table>.top-right {
   position: fixed;
@@ -425,6 +426,9 @@ audio {
   to {
     transform: rotate(360deg);
   }
+}
+#root .rootCard div.inner {
+  max-width: 100%;
 }
 #root .rootCard div.inner,
 .outerMainCard .mainCard div.inner {
@@ -654,4 +658,16 @@ b[data-rate]::before {
 textarea {
   width: 100%;
   min-height: 200px;
+}
+dialog button.top-right {
+  position: fixed;right: 10px;top: 10px;height:45px;width:45px;
+}
+dialog button.bottom-right {
+  position: fixed;right: 10px;bottom: 10px;height:45px;width:45px;
+}
+input[type="number"] {
+  max-width: 40px;
+}
+input[type="date"] {
+  max-width: 100px;
 }

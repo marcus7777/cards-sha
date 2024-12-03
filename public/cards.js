@@ -1,34 +1,34 @@
 import { createApp, reactive } from './petite-vue.es.js'
 import QrCreator from './qr-creator.es6.min.js'
 
-const cardTemplate = {
-  title: "", 
-  body: "",
-  smBody: "",
-  source: "",       // url if from the web only save updates under the hash of the generated card 
-  subCards: [],     // array of cards
-  toDoFirst: [],    // array of cards that need to be before this card
-  done: false,
-  color: '', // dot color and background color of the page
-  hideDone: false,
-  media: "",
-  autoplay: false,  
-  quickAdd: false,
-  thumbnail: "", // thumbnail for the media just video for now
-  layout: "line", // line, circle, grid
-  slice: 0,
-  onlyShowDone: false,
-  onlyShowNotDone: false,
-  onlyShowDoable: false,
-  noEditing: false,
-  lockPosition: false,
-  mix: false,
-  doneOn: [], // list of dates
-  madeOn: "", // date
-  fav: false, // favorite
-}
 function template() {
-  return JSON.parse(JSON.stringify(cardTemplate))
+  return {
+    title: "", 
+    body: "",
+    smBody: "",
+    source: "",       // url if from the web only save updates under the hash of the generated card 
+    subCards: [],     // array of cards
+    toDoFirst: [],    // array of cards that need to be before this card
+    done: false,
+    color: '', // dot color and background color of the page
+    hideDone: false,
+    media: "",
+    autoplay: false,  
+    quickAdd: false,
+    thumbnail: "", // thumbnail for the media just video for now
+    layout: "line", // line, circle, grid
+    slice: 0,
+    onlyShowDone: false,
+    onlyShowNotDone: false,
+    onlyShowDoable: false,
+    noEditing: false,
+    lockPosition: false,
+    mix: false,
+    doneOn: [], // list of dates
+    madeOn: "", // date
+    fav: false, // favorite
+    search: false,
+  }
 }
 function UpdateDialog(props) {
   return {
@@ -101,6 +101,7 @@ function makeHash(card) {
   delete obj.doneOn; // removing the doneOn from each card so that the hash won't change when adding doneOn
   delete obj.done; // removing the done from each card so that the hash won't change when adding done
   delete obj.fav; // removing the fav from each card so that the hash won't change when adding fav
+  delete obj.search
   // this are for display only
   delete obj.table;
   delete obj.index;
@@ -246,6 +247,7 @@ const store = reactive({ //updates the html immediately
     quickAdd: false,
     noEditing: false,
     lockPosition: false,
+    search: false,
   },
   draggingSub: false,
   cards: [],
@@ -514,6 +516,7 @@ const store = reactive({ //updates the html immediately
       }
     }  
     input.click()
+    this.dialogSave()
   },
   saveToFileCloud(root) { //copied from saveToFile
     /*let hashes : string[] = [];
@@ -714,26 +717,35 @@ const store = reactive({ //updates the html immediately
   },
   shallower() {
     this.big = false
-    const fresh = this.getPathTop()
-    window.history.pushState({curser: this.curser}, "", "/" + this.path.slice(0, -1).join("/"))
-    this.setPath()
+    const fresh = this.path.pop()
+    window.history.pushState({curser: this.curser}, "", "/" + this.path.join("/"))
+
     this.load()
-    this.curser = this.cards.reduce((curser, card, index) => {
-      if (fresh === makeHash(card)) {
-        return index
-      } 
-      return curser
-    }, -1) // imperfect solution (confuses if there is more than one card with the same hash)
-    this.layout(this.root.layout)
+    window.requestAnimationFrame(() => {
+      this.curser = this.cards.reduce((curser, card, index) => {
+        if (fresh === makeHash(card)) {
+          return index
+        } 
+        return curser
+      }, -1) // imperfect solution (confuses if there is more than one card with the same hash)
+      this.layout(this.root.layout)
+    })
   },
   deeper(curser) {
     this.big = false
     const currentCard = this.cards[this.curser] // this is the card that is being drilled into
     if (!currentCard || currentCard === undefined) return // if null or undefined stop the function
     const newHash = makeHash(currentCard)
-    this.path.push(newHash)
-    window.history.pushState({curser}, "", "/" + this.path.join("/"))
-    this.load(newHash, curser)
+    window.requestAnimationFrame(() => {
+      this.path.push(newHash)
+      window.history.pushState({curser}, "", "/" + this.path.join("/"))
+      this.load(newHash, curser)
+    })
+  },
+  cd(hash) {	
+    this.path.push(hash)
+    window.history.pushState({curser: this.curser}, "", "/" + this.path.join("/"))
+    this.load(hash)
   },
   onEnterTitle(){
     if (!this.newCard.title) return
@@ -918,7 +930,6 @@ const store = reactive({ //updates the html immediately
       angle += step
     })
     
-    this.save()
     this.colorDots()
     let rootElement = document.getElementById("root")
     if (rootElement === null) return
@@ -940,7 +951,6 @@ const store = reactive({ //updates the html immediately
     }
   },
   distributeCardsLine() {
-    this.save()
     this.colorDots()
     return () => {
     }
@@ -960,7 +970,6 @@ const store = reactive({ //updates the html immediately
     })
   },
   distributeCardsGrid() {
-    this.save()
     this.colorDots()
     const rootElement = document.getElementById("root")
     rootElement.classList.add("grid")
@@ -1288,25 +1297,43 @@ function arrowKeysOn (e) {
   const currentIndex = store.currentlyDisplayCards.map(card => card.index)
   // use e.keyCode
   
-  if (e.keyCode == 38 || e.keyCode == 87 || e.keyCode == 75) store.shallower()
-  if (e.keyCode == 40 || e.keyCode == 83 || e.keyCode == 74 || e.keyCode == 13) {
-    if (store.curser == -1) store.curser = 0
-    else {
-      store.deeper(0)
+  if (e.keyCode == 38 || e.keyCode == 87 || e.keyCode == 75) {
+    store.shallower()
+  }
+  if (e.keyCode == 40 || e.keyCode == 83 || e.keyCode == 74) { // down
+    if (store.curser == -1) {
+      store.curser = 0
+    } else {
+      store.cd(store.currentlyDisplayCards[currentIndex[store.curser]].hash)
     }
   }
-  if (e.keyCode == 37 || e.keyCode == 65 || e.keyCode == 72) { //left
+  if (e.keyCode == 13) { // enter
+    if (store.curser == -1) {
+      store.shallower()
+    } else {
+      store.cd(store.currentlyDisplayCards[currentIndex[store.curser]].hash)
+    }
+  }
+  if (e.keyCode == 37 || e.keyCode == 65 || e.keyCode == 72) { // left
     if (e.shiftKey) {
       store.swapCards(currentIndex[store.curser], currentIndex[store.curser -1])
     } else {
-      store.curser = Math.max(currentIndex[store.curser -1],-1)
+      if (currentIndex[store.curser - 1] === undefined) {
+        store.curser = -1
+      } else {
+        store.curser = Math.max(currentIndex[store.curser -1], -1)
+      }
     }
   }
-  if (e.keyCode == 39 || e.keyCode == 68 || e.keyCode == 76) { //right
+  if (e.keyCode == 39 || e.keyCode == 68 || e.keyCode == 76) { // right
     if (e.shiftKey) {
       store.swapCards(currentIndex[store.curser], currentIndex[store.curser + 1])
-    } else { 
-      store.curser = Math.min(store.curser + 1, store.currentlyDisplayCards.length - 1)
+    } else {
+      if (currentIndex[store.curser + 1] === undefined) {
+        store.curser = currentIndex[currentIndex.length - 1]
+      } else {
+        store.curser = Math.min(currentIndex[store.curser + 1], currentIndex[currentIndex.length - 1])
+      }
     }
   }
   if (e.keyCode == 43) store.openDialog('addDialog') // plus
@@ -1337,6 +1364,8 @@ window.onpopstate = function(e) {
 }
 window.addEventListener("error", (e) => {
   console.log("add error", e)
+  // reload the page
+	// window.location.reload()
 })
 window.onerror = (e) => {
   console.log("on error", e)
