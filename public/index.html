@@ -23,6 +23,7 @@
           title="Title a card followed by a full stop to add it"
           @focus="store.disableKeys = true"
           @blur="store.disableKeys = false"
+          @keydown="store.disableKeys = true"
         />
 
       </div>
