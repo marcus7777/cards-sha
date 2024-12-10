@@ -670,7 +670,7 @@ const store = reactive({ //updates the html immediately
     this.setPath()
     return this.path[this.path.length - 1] || "root"
   },
-  load(cardHash, newCurser, cb = () => {}) {
+  load(cardHash, newCurser, cb = () => {}, cardsOnTable = {}) {
     // load cards from local storage
     if (!cardHash) {
       cardHash = this.getPathTop()
@@ -719,7 +719,20 @@ const store = reactive({ //updates the html immediately
         loadedCards.push({...subCard, subCards: loadedSubCards})
       }))
       this.cards = loadedCards
-      this.displayedCards()
+      if (cardsOnTable.cards) {
+        this.currentlyDisplayCards = cardsOnTable.cards.map(card => {
+          console.log("card on table", card)
+          return { ...this.loadCard(card), hash: card, index: loadedCards.reduce((index, loadedCard, i) => {
+            if (makeHash(loadedCard) === card) {
+              return i
+            }
+            return index
+          }, -1)}
+        })
+      } else {
+        this.displayedCards()
+      }
+
       this.curser = newCurser || 0
       this.layout(this.root.layout)
       console.log("loaded", cardHash, this.root, this.cards)
@@ -744,11 +757,12 @@ const store = reactive({ //updates the html immediately
     const fresh = this.path.pop()
     window.history.pushState({curser: this.curser}, "", "/" + this.path.join("/"))
 
-    this.load()
     console.log("shallower", this.currentlyDisplayCards)
     const tableCards = historyTable.pop()
-    if (tableCards && tableCards.length) {
-      this.currentlyDisplayCards = tableCards.map(card => this.loadCard(card))
+    if (tableCards && tableCards.cards) {
+      this.load(this.path[this.path.length - 1], this.curser, () => {}, tableCards)
+    } else {
+      this.load(this.path[this.path.length - 1], this.curser)
     }
     console.log("historyTable", historyTable)
     window.requestAnimationFrame(() => {
@@ -766,9 +780,13 @@ const store = reactive({ //updates the html immediately
     this.big = true
     const currentCard = this.cards[this.curser] // this is the card that is being drilled into
     if (!currentCard || currentCard === undefined) return // if null or undefined stop the function
-    console.log("deeper", this.currentlyDisplayCards)
-    historyTable.push({cards: this.currentlyDisplayCards.map(card => card.hash), curser: this.curser})
     const newHash = makeHash(currentCard)
+    historyTable.push({cards: this.currentlyDisplayCards.map(card => card.hash), curser: this.currentlyDisplayCards.reduce((curser, card, index) => {
+      if (newHash === card.hash) {
+        return index
+      }
+      return curser
+    }, -1)})
     window.requestAnimationFrame(() => {
       this.big = false
       this.path.push(newHash)
@@ -791,9 +809,9 @@ const store = reactive({ //updates the html immediately
     //find the card that is being dragged over and the card that is being dragged
     const to = e.target.getAttribute("data-index")
     if (to === null) return
-    const from = this.cards.reduce((index, card, currentIndex) => {
+    const from = this.cards.reduce((index, card, cardsIndex) => {
       if (makeHash(card) == this.draggingHash) {
-        return currentIndex
+        return cardsIndex
       }
       return index
     }, -1)
@@ -1373,6 +1391,7 @@ const store = reactive({ //updates the html immediately
   },
 })
 function arrowKeysOn (e) {
+  if (e.target.tagName === "TEXTAREA" || e.target.tagName === "INPUT") return
   if (e.keyCode == 27) {
     store.disableKeys = false //introduces some awkwardness when escape is hit and then typing in a text box
     e.target.blur()
@@ -1380,7 +1399,7 @@ function arrowKeysOn (e) {
   if (store.disableKeys) return
   e = e || window.event;
   const currentIndex = store.currentlyDisplayCards.map(card => card.index)
-  // use e.keyCode
+  const currentCard = currentIndex.indexOf(store.curser)
   
   if (e.keyCode == 38 || e.keyCode == 87 || e.keyCode == 75) { // up
     if (store.curser === -1) {
@@ -1395,7 +1414,7 @@ function arrowKeysOn (e) {
   }
   if (e.keyCode == 40 || e.keyCode == 83 || e.keyCode == 74) { // down
     if (store.curser == -1) {
-      store.curser = 0
+      store.curser = currentIndex[0]
     } else {
       store.deeper(-1)
     }
@@ -1408,12 +1427,12 @@ function arrowKeysOn (e) {
         store.toggleBig()
       }
     } else {
-      store.deeper(currentIndex[store.curser])
+      store.deeper(currentIndex[currentCard])
     }
   }
   if (e.keyCode == 37 || e.keyCode == 65 || e.keyCode == 72) { // left
     if (e.shiftKey) {
-      store.swapCards(currentIndex[store.curser], currentIndex[store.curser -1])
+      store.swapCards(currentIndex[currentCard], currentIndex[currentCard - 1])
     } else {
       if (store.curser === -1) {
         let table = historyTable[historyTable.length - 1]
@@ -1424,15 +1443,15 @@ function arrowKeysOn (e) {
           window.history.pushState({}, "", "/" + store.path.join("/"))
           historyTable[historyTable.length - 1].curser--
         }
-      } else if (currentIndex[store.curser - 1] === undefined) {
+      } else if (currentIndex[currentCard - 1] === undefined) {
       } else {
-        store.curser = Math.max(currentIndex[store.curser -1], -1)
+        store.curser = Math.max(currentIndex[currentCard - 1], -1)
       }
     }
   }
   if (e.keyCode == 39 || e.keyCode == 68 || e.keyCode == 76) { // right
     if (e.shiftKey) {
-      store.swapCards(currentIndex[store.curser], currentIndex[store.curser + 1])
+      store.swapCards(currentIndex[currentCard], currentIndex[currentCard + 1])
     } else {
       if (store.curser === -1) {
         let table = historyTable[historyTable.length - 1]
@@ -1443,9 +1462,9 @@ function arrowKeysOn (e) {
           window.history.pushState({}, "", "/" + store.path.join("/"))
           historyTable[historyTable.length - 1].curser++
         }
-      } else if (currentIndex[store.curser + 1] === undefined) {
+      } else if (currentIndex[currentCard + 1] === undefined) {
       } else {
-        store.curser = Math.min(currentIndex[store.curser + 1], currentIndex[currentIndex.length - 1])
+        store.curser = Math.min(currentIndex[currentCard + 1], currentIndex[currentIndex.length - 1])
       }
     }
   }
@@ -1579,4 +1598,39 @@ setTimeout(() => {
     })
   }
 }, 60000) // wait a minute before registering the service worker
+let swipy = new Swipy(document.getElementById('root'));
+
+swipy.on('swipeleft', function(event, touches) {
+  const currentIndex = store.currentlyDisplayCards.map(card => card.index)
+  const currentCard = currentIndex.indexOf(store.curser)
+  let table = historyTable[historyTable.length - 1]
+  if (table && table.cards[table.curser - 1]) {
+    store.load(table.cards[table.curser - 1], -1)
+    store.path.pop()
+    store.path.push(table.cards[table.curser - 1])
+    window.history.pushState({}, "", "/" + store.path.join("/"))
+    historyTable[historyTable.length - 1].curser--
+  }
+  store.layout(store.root.layout)
+})
+swipy.on('swiperight', function(event, touches) {
+  const currentIndex = store.currentlyDisplayCards.map(card => card.index)
+  const currentCard = currentIndex.indexOf(store.curser)
+  let table = historyTable[historyTable.length - 1]
+  if (table && table.cards[table.curser + 1]) {
+    store.load(table.cards[table.curser + 1], -1)
+    store.path.pop()
+    store.path.push(table.cards[table.curser + 1])
+    window.history.pushState({}, "", "/" + store.path.join("/"))
+    historyTable[historyTable.length - 1].curser++
+  }
+  store.layout(store.root.layout)
+})
+swipy.on('swipetop', function(event, touches) {
+  store.toggleBig()
+})
+swipy.on('swipebottom', function(event, touches) {
+  store.shallower()
+  store.layout(store.root.layout)
+})
 
