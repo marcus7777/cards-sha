@@ -58,25 +58,39 @@ function diff(obj1, obj2) {
   } 
   return ret; 
 }; 
+
+let historyTable = [] // history of cards layer by layer just the hash of the cards
+function saveCardToLocal(hash, card) {
+  // save the diffrance between the card and generated card or template card
+
+  if (!hash) return // window.alert("no hash")
+  if (!card) return // window.alert("no card")
+  let toSave = diff(template(), card)
+  // drop the table, index, hash, key as we can compute them
+  delete toSave.table
+  delete toSave.index
+  delete toSave.hash
+  delete toSave.key
+
+  if (Object.keys(toSave).length === 0) return localStorage.removeItem(hash)
+  // console.log("toSave", toSave)
+  return localStorage.setItem(hash, JSON.stringify(toSave))
+}
 function saveCard(hash, card) {
   // save the diffrance between the card and generated card or template card
 
   if (!hash) return // window.alert("no hash")
   if (!card) return // window.alert("no card")
   if (!memCards[hash] && !memLoading[hash]) { // if the card is not in memory or loading
-    let toSave = diff(template(), card)
+    saveCardToLocal(hash, card)
+  }
+  if (typeof memCards[hash] === 'object') {
+    let toSave = diff({...template(), ...memCards[hash]}, card)
     delete toSave.table
     delete toSave.index
     delete toSave.hash
     delete toSave.key
-
-    if (Object.keys(toSave).length === 0) return localStorage.removeItem(hash)
-    // console.log("toSave", toSave)
-    return localStorage.setItem(hash, JSON.stringify(toSave))
-  }
-  if (typeof memCards[hash] === 'object') {
-    let toSave = diff({...template(), ...memCards[hash]}, card)
-    if (card.lockPosition && card.source) {
+    if (card.lockPosition || card.source) {
       delete toSave.subCards
     }
     if (Object.keys(toSave).length === 0) return localStorage.removeItem(hash)
@@ -140,21 +154,26 @@ function fetchCards(url, hash, cb = () => {}) {
     if (url.indexOf(".jsonl") !== -1) {
       fetch(url).then(response => response.text()).then(text => {
         const lines = text.split("\n")
-        const cards = lines.filter(card => card.indexOf("}") !== -1).map(card => JSON.parse(card))
+        const cards = lines.filter(card => card.indexOf("}") !== -1).map(card => {
+          let hash = card.slice(0, card.indexOf("{")) || makeHash(card)
+          return { ...JSON.parse(card.slice(card.indexOf("{"))), hash }
+        })
         const forwords = lines.filter(card => card.indexOf("}") === -1)
         if (forwords.length) {
           console.log("Forwords", forwords)
         }
         console.log("cards", cards)
         const firstCard = cards[0]
-        memCards[hash] = makeHash(firstCard)
-        cards.forEach(card => {
-          memCards[makeHash(card)] = card
+        memCards[hash] = cards[0]
+        cards.forEach((card, i) => {
+          memCards[card.hash] = card
         })
         cb(firstCard)
-      }).catch(() => {
+      }).catch(error => {
+        memLoading[hash] = false
+        console.error("error", error)
         cb({
-          title : "Can not get rhis",
+          title : "Can not get this",
           smBody: url,
         })
       })  
@@ -199,18 +218,26 @@ function fetchCards(url, hash, cb = () => {}) {
         })
       })
     }
+  } else {
+    console.log("loading ", url)
+    cb(memCards[hash])
   }
 }
 
-function savesToLocalStorage(file, cb) { //cb is a callback function that is called when the file is read with the first card
+function saveToLocalStorage(file, cb) { //cb is a callback function that is called when the file is read with the first card
   const reader = new FileReader()
   reader.onload = (e) => {
     if (e.target === null || e.target.result === null || typeof e.target.result != "string" || !e.target.result) return alert("No file or file is empty")
     const lines = e.target.result.split("\n")
-    const cards = lines.filter(card => card.indexOf("}") !== -1).map(card => JSON.parse(card))
-    cards.forEach(card => {
-      saveCard(makeHash(card), card)
+    const cards = lines.filter(card => card.indexOf("}") !== -1)
+      .map(card => JSON.parse(card.slice(card.indexOf("{"))))
+    const hashs = lines.filter(card => card.indexOf("}") !== -1)
+      .map(card => card.slice(0, card.indexOf("{")))
+
+    cards.forEach((card, i) => {
+      saveCardToLocal(hashs[i] || makeHash(card), card)
     })
+
     const forwords = lines.filter(card => card.indexOf("}") === -1)
     if (forwords.length) {
       console.log("Forwords", forwords)
@@ -229,25 +256,15 @@ function saveFile(text, title) { //saves the file to the local download
   link.click();
   URL.revokeObjectURL(link.href);
 }
-// swop the order of the cards
 const store = reactive({ //updates the html immediately
+  loading: true,
   search: "",
   curser: 0,
   pageTitle: '',
   editing: false,
+  allSearch: "",
   root: {
-    title: '',
-    color: 'white',
-    layout: "line",
-    slice: 0,
-    onlyShowDone: false,
-    onlyShowNotDone: false,
-    onlyShowDoable: false,
-    mix: false,
-    quickAdd: false,
-    noEditing: false,
-    lockPosition: false,
-    search: false,
+    ...template(),
   },
   draggingSub: false,
   cards: [],
@@ -328,14 +345,13 @@ const store = reactive({ //updates the html immediately
     delete toSave.key
     if (Object.keys(toSave).length === 0) return localStorage.removeItem(rootHash) // if there nothing to save, remove the card
     if (!rootCard.title && !rootCard.source) return console.log("No title or source", rootCard, rootHash)
-    if ( rootCard.title &&  rootCard.source) return console.log("title and source", rootCard)
     const newHash = makeHash(rootCard)
+    saveCard(newHash, rootCard)
     if (newHash !== rootHash) {
       if (localStorage[newHash]) {
         localStorage.setItem(rootHash, newHash)
       }
     }
-    saveCard(newHash, rootCard)
   },
   getAllHashesNeededFrom(hash) {
     let card = {}
@@ -380,11 +396,30 @@ const store = reactive({ //updates the html immediately
   removeCardLocal(hash) {
     localStorage.removeItem(hash)
   },
+
   localCards() {
-    return Object.keys(localStorage).filter(key => localStorage[key].indexOf("}") !== -1).sort((a, b) => {
-      return store.getAllHashesNeededFrom(b).length - store.getAllHashesNeededFrom(a).length
-    }).map(key => {
-      return {...this.loadCard(key), key}
+    if (this.cacheCards.length) {
+      return this.cacheCards
+    }
+    this.cacheCards = this.setLocalCards()
+    return this.cacheCards
+  },
+  cacheCards: [],
+  setLocalCards() {
+    return Object.keys(localStorage)
+      .filter(key => localStorage[key].indexOf("}") !== -1)
+      .map(key => {
+         return { ...this.loadCard(key), 
+           key,
+           listedByCards: this.listedByCards(key), 
+           allHashesNeededFrom: this.getAllHashesNeededFrom(key).length - 1
+         }
+      })
+      .sort((a, b) => {
+      if (a.allHashesNeededFrom === b.allHashesNeededFrom) {
+        return a.listedByCards - b.listedByCards
+      }
+      return b.allHashesNeededFrom - a.allHashesNeededFrom
     })
   },
   listedByCards(hash){
@@ -483,15 +518,13 @@ const store = reactive({ //updates the html immediately
       if (card == null) return console.log(hash + " not found")
       // if the card is a forword card we need to save the hash and the hash it is pointing to
       if (card.indexOf("}") === -1) { //this is not a card but a forword
-        console.log("Forword card", card)
-        console.log("saving ", hash + card)
         if (hash === "root") return cards.push(JSON.stringify(this.loadCard(card)))
         return cards.push(hash + card)
       }
-      cards.push(card)
+      cards.push(hash + card)
     })
     const name = this.root.title || this.pageTitle || this.title || "Sky Cards"
-    saveFile(cards.filter(card => typeof card === "string" ).join("\n"), name + " " + cards.length + " cards")
+    saveFile(cards.filter(card => typeof card === "string" ).join("\n"), name + " " + cards.length + " cards + key")
 
   },
   uploadFileInToCard(index) {
@@ -502,14 +535,14 @@ const store = reactive({ //updates the html immediately
       if (e.target === null) return
       const target =  e.target
       if (target.files && target.files !== null && target.files.length) {
-        savesToLocalStorage(target.files[0], (card) => {
+        saveToLocalStorage(target.files[0], (card) => {
           if (index === "root" || index == -1) {
             this.root = {...template(), ...card}
             this.cards = [].concat(card.subCards).map(subCard => this.loadCard(subCard)).filter(card => !!card)
             this.curser = 0
-            
+            this.saveRoot("root")
           } else {
-            // this.cards[index] = {...template(), ...card}
+            this.cards[index] = {...template(), ...card}
             this.cards[index].subCards = (this.cards[index].subCards || []).concat([card])
           }
         })
@@ -518,56 +551,23 @@ const store = reactive({ //updates the html immediately
     input.click()
     this.dialogSave()
   },
-  saveToFileCloud(root) { //copied from saveToFile
-    /*let hashes : string[] = [];
-    if (typeof root === 'object') {
-      hashes = this.getAllHashesNeededFrom(makeHash(root))
-    } else {
-      hashes = this.getAllHashesNeededFrom(root)
-    }
-    let cards : string[] = [];
-    hashes.forEach(hash => {
-      if (!hash) return
-      const card = localStorage.getItem(hash)
-      if (card != null) {
-        cards.push(card)
-      }
-    })
-    const stringToStore = cards.filter(card => typeof card === "string" ).join("\n")
-    const fileName = root.title || this.pageTitle || this.title || "Sky Cards"
-
-    //storageRef.putString(stringToStore, fileName).then(snapshot => {*/
-
-    /*const storageRef = firebase.storage().ref();
-
-    document.getElementById('fileInput').addEventListener('change', event => {
-    const file = event.target.files[0];
-    const storageRef = firebase.storage().ref('path/to/file');
-   const task = storageRef.put(file);
-
-    task.on('state_changed', progress => {
-      console.log('Upload is ' + progress.snapshot.bytesTransferred / progress.snapshot.totalBytes * 100 + '% complete');
-    }, error => {
-      console.log(error.message);
-    }, complete => {
-      console.log('Upload complete!');
-    });
-  });*///doesn't work
-  },
-  uploadFileInToCardCloud(index) {
-
-  },
   loadCard(hash, cb = () => {}) { // returns the card with subcards as hashes
     if (typeof hash === 'object') {
       hash = makeHash(hash)
     }
     if (!hash || hash === "" || hash.length > 8) {
-      return
+      return cb()
     }
     if (!localStorage.getItem(hash) && !memCards[hash]) {
-      return console.log("No card found", hash)
+      if (hash !== "root") {
+                
+        console.log("No card found", hash)
+        return cb()
+      }
+      
+      console.log("No root card found", hash)
+      return cb()
     }
-    console.log("loading", hash, cb)
 
     const tempCard = localStorage.getItem(hash) // get the card from local storage
     
@@ -597,7 +597,9 @@ const store = reactive({ //updates the html immediately
     }
     if (tempCard === null) return alert("No card found") // if the card is not found return an alert
     if (tempCard.indexOf("}") === -1) { // not JSON
-      if (tempCard.length === 8 && tempCard.indexOf(hash) === -1) return this.loadCard(tempCard, cb) // forword
+      if (tempCard.length === 8 && tempCard.indexOf(hash) === -1) {
+        return this.loadCard(tempCard, cb) // forword
+      }
       if (tempCard.length === 16 && tempCard.indexOf(hash) === -1) {
         return {...this.loadCard(tempCard.slice(0, 8)), ...this.loadCard(tempCard.slice(0, 8))} // Combine
       }
@@ -605,7 +607,8 @@ const store = reactive({ //updates the html immediately
       return alert("Not a card " + tempCard)
     }
 
-    let card = { ...template(), ...JSON.parse(tempCard)} 
+    let card = { ...template(), ...(memCards[hash] || {}), ...JSON.parse(tempCard)} 
+
     if (card.source) {
       // console.log("loading...", hash, card)
       if (!memCards[hash]) {
@@ -640,6 +643,20 @@ const store = reactive({ //updates the html immediately
     return card
   },
   path:[],
+  setHistoryTable() {
+    this.setPath()
+    historyTable = ["root", ...this.path.slice(0, -1)].map((hash, pathIndex) => {
+      return this.loadCard(hash, (rootCard) => {
+        if (!rootCard) {
+          return console.log("No card found", hash)
+        }
+        const loadedRoot = {...rootCard, subCards: rootCard.subCards.map(subCard => this.loadCard(subCard))}
+        const cards = this.displayedSubCards(loadedRoot).map(card => card.hash)
+        const curser = cards.indexOf(this.path[pathIndex])
+        return {cards, curser}
+      })
+    })
+  },  
   setPath() {
     const path = window.location.pathname
     const regex = /[a-zA-Z0-9]{8}/g;
@@ -653,7 +670,7 @@ const store = reactive({ //updates the html immediately
     this.setPath()
     return this.path[this.path.length - 1] || "root"
   },
-  load(cardHash, newCurser) {
+  load(cardHash, newCurser, cb = () => {}) {
     // load cards from local storage
     if (!cardHash) {
       cardHash = this.getPathTop()
@@ -662,8 +679,11 @@ const store = reactive({ //updates the html immediately
     this.loadCard(cardHash, (card) => {
       if (!card) {
         if (cardHash === "root") {
-          alert("No root card found")
+          // alert("No root card found")
           // load default root card 
+          this.root = { ...template(), title: "Sky Cards", body: "A place to keep your cards", source: "/Welcome.jsonl"}
+          this.save()
+          this.load("root", -1, cb)
         }
         return console.log("No card found", cardHash)
       }
@@ -699,12 +719,15 @@ const store = reactive({ //updates the html immediately
         loadedCards.push({...subCard, subCards: loadedSubCards})
       }))
       this.cards = loadedCards
-      this.layout(this.root.layout)
-      this.setColor()
+      this.displayedCards()
       this.curser = newCurser || 0
+      this.layout(this.root.layout)
+      console.log("loaded", cardHash, this.root, this.cards)
+      this.setColor()
+      cb()
     })
   },
-  save() {
+  save(cb = () => {}) {
     // save the root card to local storage
     //this.trail = window.location.hash.slice(1).split("/") //this is causing the problem!!
     this.saveRoot(this.getPathTop())
@@ -714,14 +737,22 @@ const store = reactive({ //updates the html immediately
       const cardHash = makeHash(card)
       saveCard(cardHash, {...card, subCards: subHashes})
     })
+    cb()
   },
   shallower() {
-    this.big = false
+    this.big = true
     const fresh = this.path.pop()
     window.history.pushState({curser: this.curser}, "", "/" + this.path.join("/"))
 
     this.load()
+    console.log("shallower", this.currentlyDisplayCards)
+    const tableCards = historyTable.pop()
+    if (tableCards && tableCards.length) {
+      this.currentlyDisplayCards = tableCards.map(card => this.loadCard(card))
+    }
+    console.log("historyTable", historyTable)
     window.requestAnimationFrame(() => {
+      this.big = false
       this.curser = this.cards.reduce((curser, card, index) => {
         if (fresh === makeHash(card)) {
           return index
@@ -732,28 +763,25 @@ const store = reactive({ //updates the html immediately
     })
   },
   deeper(curser) {
-    this.big = false
+    this.big = true
     const currentCard = this.cards[this.curser] // this is the card that is being drilled into
     if (!currentCard || currentCard === undefined) return // if null or undefined stop the function
+    console.log("deeper", this.currentlyDisplayCards)
+    historyTable.push({cards: this.currentlyDisplayCards.map(card => card.hash), curser: this.curser})
     const newHash = makeHash(currentCard)
     window.requestAnimationFrame(() => {
+      this.big = false
       this.path.push(newHash)
-      window.history.pushState({curser}, "", "/" + this.path.join("/"))
+      window.history.pushState({}, "", "/" + this.path.join("/"))
       this.load(newHash, curser)
+      console.log("historyTable", historyTable)
     })
-  },
-  cd(hash) {	
-    this.path.push(hash)
-    window.history.pushState({curser: this.curser}, "", "/" + this.path.join("/"))
-    this.load(hash)
   },
   onEnterTitle(){
     if (!this.newCard.title) return
     else return this.inc()
-    /*const addDialog = document.getElementById("mainOrSunDialog")
     addDialog.showModal()
-    store.disableKeys = true*/
-
+    store.disableKeys = true
   },
   lastSwap: 0,
   draggingHash: "",
@@ -843,14 +871,14 @@ const store = reactive({ //updates the html immediately
   resetNewCard(){
     this.newCard = {...template()}
   },
-  inc() {
-    const card = {...this.newCard, madeOn: Math.round(Date.now() / 1000)} // make a new card
+  inc(close = true) {
+    const card = {...this.editCard, madeOn: Math.round(Date.now() / 1000)} // make a new card
     this.resetNewCard()
     this.curser = this.cards.length
     this.cards = [...this.cards, {...card}]
     this.big = false
     
-    this.closeDialog("addDialog")
+    if (close) this.closeDialog("addDialog")
     this.save()
     setTimeout(() => {
       this.layout(this.root.layout)
@@ -952,14 +980,21 @@ const store = reactive({ //updates the html immediately
   },
   distributeCardsLine() {
     this.colorDots()
+    let containers = [ ...document.getElementsByClassName("container")]
+    containers.forEach(container => {
+      container.classList.add("line")
+    })
+
     return () => {
+      containers.forEach(container => {
+        container.classList.remove("line")
+      })
     }
   },
   colorDots() {
     let rootElement = document.getElementById("root")
     const dot = rootElement.getElementsByClassName("dot")[0] 
-    dot.style.backgroundColor = this.root.color
-    if (rootElement === null) return
+    if (dot && dot !== null) dot.style.backgroundColor = this.root.color
     let cardElements = [ ...document.getElementsByClassName("outerMainCard"), ...document.getElementsByClassName("subCard")]
     cardElements.forEach(card => {
       const color = card.dataset.color
@@ -1003,6 +1038,20 @@ const store = reactive({ //updates the html immediately
         this.cleanUp = () => {}
       }
     })
+    setTimeout(() => {
+      if (store.curser !== -1) {
+        const currentIndex = store.currentlyDisplayCards.map(card => card.index)
+        const card = document.getElementsByClassName("outerMainCard")[currentIndex.indexOf(store.curser)]
+        if (card) {
+          card.scrollIntoView({behavior: "smooth", block: "center", inline: "nearest"});
+        }
+      } else {
+        const root = document.getElementById("root");
+        if (root) {
+          root.scrollIntoView({behavior: "smooth", block: "start", inline: "start"});
+        }
+      }
+    }, 400)
   },
   sortByTitle() {
     this.cards.sort((a,b) => {
@@ -1052,7 +1101,7 @@ const store = reactive({ //updates the html immediately
     const triggerArray = ['.', '. ' , 'full stop', 'full stop ']
     triggerArray.forEach(trigger => {
       if (this.newCard.title.includes(trigger) && this.newCard.title.indexOf(trigger) === this.newCard.title.length - trigger.length){
-        this.newCard.title = this.newCard.title.slice(0, -trigger.length)
+        this.editCard.title = this.newCard.title.slice(0, -trigger.length)
         this.inc() 
       }
     })
@@ -1061,7 +1110,7 @@ const store = reactive({ //updates the html immediately
       return key !== makeHash(this.root) && key !== makeHash(this.newCard)
     }).forEach(cardHash => {
       if (this.newCard.title === cardHash) {
-        this.newCard = {...this.loadCard(cardHash)}
+        this.editCard = {...this.loadCard(cardHash)}
         this.inc()
       }
     })
@@ -1077,6 +1126,7 @@ const store = reactive({ //updates the html immediately
       this.cards[index1] = this.cards[index2]
       this.cards[index2] = temp
       this.cards = [...this.cards]    
+      this.currentlyDisplayCards = this.displayedCards()
       this.save()
     }
     /*if (withFocus) {
@@ -1160,8 +1210,8 @@ const store = reactive({ //updates the html immediately
   },
   removeCard(index) {
     this.cards.splice(index, 1)
-    this.curser = Math.max(0, this.curser -1)
     this.save()
+    this.load()
     this.layout(this.root.layout)
   },
   duplicateCard(index) {
@@ -1192,7 +1242,7 @@ const store = reactive({ //updates the html immediately
       openDialog.showModal()
     })
   },
-  dialogSave(){
+  dialogSave(close = true){
     console.log("dialog save")
     if (this.editingHash) {
       this.currentlyDisplayCards = this.currentlyDisplayCards.map(card => {
@@ -1215,8 +1265,10 @@ const store = reactive({ //updates the html immediately
       this.cards = [...this.cards, {...this.editCard}]
     }
     this.save()
-    this.closeDialog("addDialog")
-    this.closeDialog("editDialog")
+    if (close) {
+      this.closeDialog("addDialog")
+      this.closeDialog("editDialog")
+    }
     const theCards = this.displayedCards()
     console.log("the cards", theCards)
   },
@@ -1227,7 +1279,11 @@ const store = reactive({ //updates the html immediately
   },
   doneSave(card, done) {
     this.editingHash = makeHash(card)
-    this.editCard = {...card, done, doneOn: [...(card.doneOn || []), Math.round(Date.now() / 1000)]}
+    if (done) {
+      this.editCard = {...card, done, doneOn: [...(card.doneOn || []), Math.round(Date.now() / 1000)]}
+    } else {
+      this.editCard = {...card, done}
+    }
     this.dialogSave()
   },
   favSave(card, fav) {
@@ -1243,6 +1299,7 @@ const store = reactive({ //updates the html immediately
   },
   endedAutoplay(card, index) {
     console.log(card, index)
+    this.doneSave(card, true)
     if (!card.autoplay) return
     const nextCard = this.cards[index+1]
     if (!nextCard) return
@@ -1253,12 +1310,11 @@ const store = reactive({ //updates the html immediately
       console.log(mediaCard)
       mediaCard.querySelector(dataType).play()
     }
-    
   },
   getDataType(url) {
-    const imageFormats = ["jpg", "jpeg","svg","webp","png","gif"]
-    const videoFormats = ["mp4","ogg","mpeg","mov","avi","webm"]
-    const audioFormats = ["mp3", "wav", "ogg", "m4a", "flac", "aac"]
+    const imageFormats = ["jpg", "jpeg", "svg", "webp","png",  "gif"]
+    const videoFormats = ["mp4", "ogg",  "mpeg","mov", "avi", "webm"]
+    const audioFormats = ["mp3", "wav",  "ogg", "m4a", "flac", "aac"]
     if (!url) return ""
     if (imageFormats.includes(url.slice(-3))) return "image"
     if (imageFormats.includes(url.slice(-4))) return "image"
@@ -1286,6 +1342,35 @@ const store = reactive({ //updates the html immediately
     }, div)
     return div.children[0].toDataURL()
   },
+  loadMemPath(cb = () => {}) {
+    let path = ["root", ...this.setPath()]
+    if (path.length > 1) {
+      const getCard = (pathIndex) => { // load the cards in the path one by one
+        if (path[pathIndex]) {
+          this.loadCard(path[pathIndex], (card) => {
+            if (pathIndex === 0 && !card) {
+              const bace = { ...template(), title: "Sky Cards", body: "A place to keep your cards", source: "/Welcome.jsonl"}
+              const hash = makeHash(bace)
+              saveCard(hash, bace)
+              localStorage.setItem("root", hash)
+              return getCard(0) // now that the root card is saved, try again
+            }
+            if (!card) return console.log("No card found", path[pathIndex])
+            getCard(pathIndex + 1)
+          })
+        } else {
+          cb()
+        }
+      }
+      getCard(0) // start the loop
+    } else {
+      cb()
+    }
+  },
+  unlock() {
+    localStorage.setItem("root", '{"title":"Sky Cards","body":"A place to keep your cards"}')
+    window.location.reload("/")
+  },
 })
 function arrowKeysOn (e) {
   if (e.keyCode == 27) {
@@ -1297,29 +1382,49 @@ function arrowKeysOn (e) {
   const currentIndex = store.currentlyDisplayCards.map(card => card.index)
   // use e.keyCode
   
-  if (e.keyCode == 38 || e.keyCode == 87 || e.keyCode == 75) {
-    store.shallower()
+  if (e.keyCode == 38 || e.keyCode == 87 || e.keyCode == 75) { // up
+    if (store.curser === -1) {
+      store.shallower()
+    } else {
+      store.curser = -1
+      const root = document.getElementById("root");
+      if (root) {
+        root.scrollIntoView({behavior: "smooth", block: "start", inline: "start"});
+      }
+    }
   }
   if (e.keyCode == 40 || e.keyCode == 83 || e.keyCode == 74) { // down
     if (store.curser == -1) {
       store.curser = 0
     } else {
-      store.cd(store.currentlyDisplayCards[currentIndex[store.curser]].hash)
+      store.deeper(-1)
     }
   }
   if (e.keyCode == 13) { // enter
     if (store.curser == -1) {
-      store.shallower()
+      if (store.path.length) {
+        store.shallower()
+      } else {
+        store.toggleBig()
+      }
     } else {
-      store.cd(store.currentlyDisplayCards[currentIndex[store.curser]].hash)
+      store.deeper(currentIndex[store.curser])
     }
   }
   if (e.keyCode == 37 || e.keyCode == 65 || e.keyCode == 72) { // left
     if (e.shiftKey) {
       store.swapCards(currentIndex[store.curser], currentIndex[store.curser -1])
     } else {
-      if (currentIndex[store.curser - 1] === undefined) {
-        store.curser = -1
+      if (store.curser === -1) {
+        let table = historyTable[historyTable.length - 1]
+        if (table && table.cards[table.curser - 1]) {
+          store.load(table.cards[table.curser - 1], -1)
+          store.path.pop()
+          store.path.push(table.cards[table.curser - 1])
+          window.history.pushState({}, "", "/" + store.path.join("/"))
+          historyTable[historyTable.length - 1].curser--
+        }
+      } else if (currentIndex[store.curser - 1] === undefined) {
       } else {
         store.curser = Math.max(currentIndex[store.curser -1], -1)
       }
@@ -1329,8 +1434,16 @@ function arrowKeysOn (e) {
     if (e.shiftKey) {
       store.swapCards(currentIndex[store.curser], currentIndex[store.curser + 1])
     } else {
-      if (currentIndex[store.curser + 1] === undefined) {
-        store.curser = currentIndex[currentIndex.length - 1]
+      if (store.curser === -1) {
+        let table = historyTable[historyTable.length - 1]
+        if (table && table.cards[table.curser + 1]) {
+          store.load(table.cards[table.curser + 1], -1)
+          store.path.pop()
+          store.path.push(table.cards[table.curser + 1])
+          window.history.pushState({}, "", "/" + store.path.join("/"))
+          historyTable[historyTable.length - 1].curser++
+        }
+      } else if (currentIndex[store.curser + 1] === undefined) {
       } else {
         store.curser = Math.min(currentIndex[store.curser + 1], currentIndex[currentIndex.length - 1])
       }
@@ -1340,7 +1453,6 @@ function arrowKeysOn (e) {
   if (e.keyCode == 45 && confirm("Delete Card?")) store.removeCard(store.curser) // minus
   store.big = false
   store.layout(store.root.layout)
-
 }
 document.onkeydown = arrowKeysOn
 createApp({
@@ -1348,8 +1460,13 @@ createApp({
   store,
   UpdateDialog,
 }).mount()
-// store.loadMemPath()
-store.load()
+store.loadMemPath(() => {
+  store.loading = true
+  store.load("", -1, () => {
+    store.setHistoryTable()
+    store.loading = false
+  })
+})
 setTimeout(() => {
   document.title = store.root.title
   document.body.style.display = "block"
@@ -1365,7 +1482,7 @@ window.onpopstate = function(e) {
 window.addEventListener("error", (e) => {
   console.log("add error", e)
   // reload the page
-	// window.location.reload()
+  // window.location.reload()
 })
 window.onerror = (e) => {
   console.log("on error", e)
@@ -1375,50 +1492,63 @@ window.addEventListener("message", (e) => {
   if (document.getElementById("addDialog").open || e.data.number != 1) {
     if (e.data.file.type.indexOf('image') !== -1) {
       if (store.getDataType(store.newCard.media) === "video") {
-        return store.newCard.thumbnail = e.data.url
+        return store.editCard.thumbnail = e.data.url
       }
     }
     if (store.getDataType(e.data.url) === "video") {
-      store.newCard.media = e.data.url
+      store.editCard.media = e.data.url
+      store.editCard.thumbnail = e.data.thumbnail
     }
     if (store.getDataType(e.data.url) === "image") {
-      store.newCard.media = e.data.url
+      store.editCard.media = e.data.url
     }
     if (store.getDataType(e.data.url) === "audio") {
-      store.newCard.media = e.data.url
+      store.editCard.media = e.data.url
     }
-    console.log("deck title",e.data.file, store.newCard)
-    if (e.data.file && !store.newCard.title) {
+    if (e.data.file && !store.editCard.title) {
       const dataType = getUrlExtension(e.data.file.name)
-      store.newCard.title = e.data.file.name.replace("." + dataType, "")
+      if (e.data.file.name.indexOf("_") !== -1) {
+        store.editCard.title = e.data.file.name.split("_")[0]
+      } else {
+        store.editCard.title = e.data.file.name.replace("." + dataType, "")
+      }
     }
-    if (!store.newCard.color) {
-      store.newCard.color = e.data.dotColor
+    if (!store.editCard.color) {
+      store.editCard.color = e.data.dotColor
     }
     if (e.data.number > 1) { // auto add
       console.log("auto add", e.data.index)
       const dataType = getUrlExtension(e.data.file.name)
-      store.newCard.title = e.data.file.name.replace("." + dataType, "")
-      store.cards = [...store.cards, {...store.newCard}]
-      console.log([...store.cards])
-      store.save()
-      store.resetNewCard()
-      store.layout(store.root.layout)
+
+      if (e.data.file.name.indexOf("_") !== -1) {
+        store.editCard.title = e.data.file.name.split("_")[0]
+      } else {
+        store.editCard.title = e.data.file.name.replace("." + dataType, "")
+      }
+      store.editCard.media = e.data.url
+      store.editCard.thumbnail = e.data.thumbnail
+      store.editCard.color = e.data.dotColor
+      store.editCard.madeOn = Math.round(Date.now() / 1000)
+      store.cards = [...store.cards, {...store.editCard}]
+      store.saveRoot(makeHash(store.root))
+      store.openDialog("addDialog", store.editCard)
+      store.dialogSave(false)
+      
     }
   } else {
     if (store.getDataType(e.data.url) === "image") {
       if (store.getDataType(store.root.media) === "video" || store.getDataType(store.root.media) === "audio"){
-        return store.root.thumbnail = e.data.url
+        return store.editCard.thumbnail = e.data.url
       }
     }
     if (store.getDataType(e.data.url) === "video") {
-      store.root.media = e.data.url
+      store.editCard.media = e.data.url
     }
     if (store.getDataType(e.data.url) === "image") {
-      store.root.media = e.data.url
+      store.editCard.media = e.data.url
     }
     if (store.getDataType(e.data.url) === "audio") {
-      store.root.media = e.data.url
+      store.editCard.media = e.data.url
     }
     if (e.data.file && !store.root.title) {
       console.log(e.data.file)
@@ -1433,3 +1563,8 @@ window.addEventListener("message", (e) => {
 setInterval(() => {
   store.autoAdd()
 }, 1000) 
+// check if user is selecting text
+store.isSelecting = false
+document.addEventListener('selectionchange', () => {
+  store.isSelecting = document.getSelection().type === 'Range'
+})

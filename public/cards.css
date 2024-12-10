@@ -454,6 +454,14 @@ audio {
   grid-row: 1;
 }
 
+.rootCard .bottom,
+.mainCard .bottom {
+  grid-column: 2;
+  grid-row: 3;
+  align-self: flex-end;
+  min-width: 120px;
+}
+
 .rootCard .top,
 .mainCard .top {
   grid-column: 2;
@@ -472,6 +480,7 @@ audio {
 .mainCard .bottom-left {
   grid-column: 1;
   grid-row: 3;
+  margin-top: 100%;
 }
 
 .rootCard .right,
@@ -493,6 +502,7 @@ audio {
   grid-column: 3;
   grid-row: 3;
   justify-self: end;
+  margin-top: 100%;
 }
 
 .content {
@@ -504,7 +514,7 @@ audio {
 }
 
 img {
-  max-width:100%
+  max-height: 50vw;max-width:100%
 }
 .add-fav {
   display: inline-block;
@@ -660,14 +670,49 @@ textarea {
   min-height: 200px;
 }
 dialog button.top-right {
-  position: fixed;right: 10px;top: 10px;height:45px;width:45px;
+  position: fixed;right: 10px;top: 10px;height:45px;width:45px;border-radius: 11px;
 }
 dialog button.bottom-right {
-  position: fixed;right: 10px;bottom: 10px;height:45px;width:45px;
+  position: fixed;right: 10px;bottom: 10px;height:45px;width:45%;border-radius: 11px;
 }
 input[type="number"] {
   max-width: 40px;
 }
 input[type="date"] {
   max-width: 100px;
+}
+.line:first-child {
+  margin-left: 0;
+}
+#loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 110vw;
+  height: 110vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  margin:-5vh -5vw;
+  padding:0;
+}
+.loader {
+  position: absolute;
+  top: calc(50% - 60px);
+  left: calc(50% - 60px);
+  background: #f3f3f3;
+  border-radius: 50%;
+  width: 120px;
+  height: 120px;
+  animation: pulse 6s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.5);
+        opacity: 0.5;
+    }
 }

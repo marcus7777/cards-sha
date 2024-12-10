@@ -81,6 +81,41 @@ var signInWithPopup = function() {
   window.open(getWidgetUrl(), 'Sign In', 'width=985,height=735');
 };
 
+function captureAThumbnail(src, cb, name){
+  let canvas = document.createElement('canvas');
+  let video = document.createElement('video');
+  document.body.appendChild(video);
+  video.src = src;
+  video.controls = true;
+  video.addEventListener('loadedmetadata', function(e) {
+    const midTime = e.target.duration / 2
+    this.currentTime = midTime;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const addBtn = document.createElement('button');
+    const preview = document.createElement('img');
+    addBtn.textContent = 'Upload ' + name;
+    video.addEventListener('seeked', function() {
+      canvas.getContext('2d').drawImage(video, 0, 0, video.videoWidth, video.videoHeight)
+      if (document.body.contains(preview)) document.body.removeChild(preview);
+      if (document.body.contains(addBtn)) document.body.removeChild(addBtn);
+      setTimeout(() => {
+        document.body.insertBefore(preview, video);
+        document.body.insertBefore(addBtn, preview);
+        let data = canvas.toDataURL('image/png');
+        preview.setAttribute('src', data);
+        colorjs.prominent(preview, { amount: 1, format: 'hex' }).then(color => {
+          addBtn.onclick = () => {
+            cb(canvas, color)
+            document.body.removeChild(preview);
+            document.body.removeChild(video);
+            document.body.removeChild(addBtn);
+          }
+        })
+      })
+    }, 500);
+  });
+}
 
 /**
  * Displays the UI for a signed in user.
@@ -105,7 +140,7 @@ var handleSignedInUser = function(user) {
       // if image then resize image
       if (file.type.indexOf('image') !== -1) {
         const msg = {file, index, number: event.target.files.length} 
-	let dotColor = ""
+        let dotColor = ""
         const fileReader = new FileReader();
         const preview = document.getElementById('file-preview');
         fileReader.onload = event => {
@@ -123,8 +158,8 @@ var handleSignedInUser = function(user) {
             outputType: 'blob'
             
           }).then(b => {
-	    const toUpload = b.size < file.size ? b : file // if resized image is bigger than original, upload original
-            fileRef.put(toUpload, metadata).then(function(snapshot) {
+            const toUpload = b.size < file.size ? b : file // if resized image is bigger than original, upload original
+            fileRef.put(toUpload, metadata).then(() => {
               document.getElementById('uploading').style.display = 'none'
               fileRef.getDownloadURL().then((url) => {
                 window.parent.postMessage({...msg, url, dotColor})
@@ -134,7 +169,30 @@ var handleSignedInUser = function(user) {
               console.error('Uploading image failed:', error);
             });
           })
-        }, 50+index*300) // delay resizing & upload
+        }, 50+index*200) // delay resizing & upload
+      } else if (file.type.indexOf('video') !== -1) {
+        const msg = {file, index, number: event.target.files.length} 
+        captureAThumbnail(URL.createObjectURL(file), (canvas, color) => {
+          canvas.toBlob(thumbnailBlob => {
+            fileRef.put(file, metadata).then(() => {
+              document.getElementById('uploading').style.display = 'none'
+              fileRef.getDownloadURL().then((url) => {
+                const fileRefThumbnail = storageRef.child('userUploads/' + file.name + '_thumbnail.png')
+
+                fileRefThumbnail.put(thumbnailBlob).then(() => {
+                  fileRefThumbnail.getDownloadURL().then((thumbnail) => {
+                    window.parent.postMessage({...msg, url, thumbnail, color, number: event.target.files.length})
+                    fileUploadElement.value = ''
+                  })
+                }).catch(function(error) {
+                  console.error('Uploading thumbnail failed:', error);
+                })
+              }).catch(function(error) {
+                console.error('Uploading video failed:', error);
+              });
+            },'image/png');
+          })
+        }, file.name);
       } else {
         fileRef.put(file, metadata).then(function(snapshot) {
           document.getElementById('uploading').style.display = 'none'
@@ -148,8 +206,6 @@ var handleSignedInUser = function(user) {
       }
     })
   };
-
-     
 };
 
 
@@ -170,10 +226,8 @@ firebase.auth().onAuthStateChanged(function(user) {
   document.getElementById('loaded').style.display = 'block';
   user ? handleSignedInUser(user) : handleSignedOutUser();
   if (!user) return
-  console.log(firebase)
   
   var storageRef = firebase.storage().ref();
-  console.log(storageRef)
   var imagesRef = storageRef.child('images');
 });
 
