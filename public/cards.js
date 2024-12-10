@@ -1568,3 +1568,15 @@ store.isSelecting = false
 document.addEventListener('selectionchange', () => {
   store.isSelecting = document.getSelection().type === 'Range'
 })
+setTimeout(() => {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').then((registration) => {
+        console.log('Service Worker registered with scope:', registration.scope)
+      }).catch((error) => {
+        console.error('Service Worker registration failed:', error)
+      })
+    })
+  }
+}, 60000) // wait a minute before registering the service worker
+
