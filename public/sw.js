@@ -1,6 +1,5 @@
 const CACHE_NAME = 'sha-library-cache-v1';
 const CACHE_ASSETS = [
-  '/',
   '/index.html',
   '/card.js',
   '/404.html',

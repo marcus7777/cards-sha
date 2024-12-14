@@ -20,6 +20,7 @@ body {
 }
 .rootCard {
   text-align: center;
+  padding-top: 7px;
 }
 .outerCard {
   transition: transform 0.5s;
@@ -27,6 +28,7 @@ body {
 .rootContainer {
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 #root.ellipse {
   display: inline-block;
@@ -306,9 +308,6 @@ video {
 audio {
   width: 140px;
 }
-.inner.small{
-  max-width: 100px
-}
 /*.dropDownElements {
   position: relative;
   bottom: 100%; 
@@ -532,11 +531,14 @@ img {
 .add-fav .icon-heart {
   font-size: 20px;
   color: #666;
-  transition: all 0.5s ease-in-out;
   line-height: 27px;
 }
+.add-fav .icon-heart.gold {
+  color: gold;
+}
+
 .add-fav .icon-tick {
-  color: #aaa;
+  color: #269dff;
   width: 21px;
 }
 .add-fav .icon-load {
@@ -715,4 +717,37 @@ input[type="date"] {
         transform: scale(1.5);
         opacity: 0.5;
     }
+}
+.arrow-top,
+.arrow-right,
+.arrow-left {
+  display: block;
+  width: 25px;
+  height: 25px;
+  border-top:  2px solid #000;
+  border-left: 2px solid #000;
+  border-radius: 4px;
+  opacity: 0.5;
+  position: fixed;
+  cursor: pointer;
+  transition: all 2s;
+}
+.arrow-right:hover,
+.arrow-left:hover {
+  opacity: 1;
+  transition: all 0.5s;
+
+}
+.arrow-right {
+  transform: rotate(135deg);
+  right: 0;
+}
+
+.arrow-left {
+  transform: rotate(-45deg);
+  left: 0;
+}
+.arrow-top {
+  transform: rotate(45deg);
+  top: 0;
 }

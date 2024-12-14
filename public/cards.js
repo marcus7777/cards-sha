@@ -145,32 +145,42 @@ function makeHash(card) {
 }
 let memCards = {} // memory cards save fetchable cards (immutable)
 let memLoading = {} 
-function fetchCards(url, hash, cb = () => {}) {
-  if (!memCards[hash]) { // if the card is nxt in memory
+function fetchCards(url, hashGetting, cb = () => {}) {
+  if (!memCards[hashGetting]) { // if the card is nxt in memory
     // memCards[hash] = {} // prevent multiple fetches
-    if (memLoading[hash]) return console.log("Already loading", hash)
-    memLoading[hash] = true
+    if (memLoading[hashGetting]) return console.log("Already loading", hashGetting)
+    memLoading[hashGetting] = true
     // if jsonl fetch the cards
     if (url.indexOf(".jsonl") !== -1) {
       fetch(url).then(response => response.text()).then(text => {
         const lines = text.split("\n")
         const cards = lines.filter(card => card.indexOf("}") !== -1).map(card => {
-          let hash = card.slice(0, card.indexOf("{")) || makeHash(card)
-          return { ...JSON.parse(card.slice(card.indexOf("{"))), hash }
+          let hash = card.slice(0, card.indexOf("{"))
+          if (hash.length !== 8) {
+            hash = makeHash(card)
+          }
+          return { ...JSON.parse(card.slice(card.indexOf("{"))), hash, fromMemory: true }
         })
-        const forwords = lines.filter(card => card.indexOf("}") === -1)
-        if (forwords.length) {
-          console.log("Forwords", forwords)
+        const forwards = lines.filter(card => card.indexOf("}") === -1)
+        
+        if (forwards.length) {
+          forwards.forEach(forward => {
+            if (forward.indexOf("root") === -1) {
+              memCards[forward.slice(0, 8)] = forward.slice(8)
+            } else {
+              memCards[forward.slice(0, 4)] = forward.slice(4)
+            }
+          })
         }
         console.log("cards", cards)
         const firstCard = cards[0]
-        memCards[hash] = cards[0]
+        memCards[hashGetting] = cards[0]
         cards.forEach((card, i) => {
           memCards[card.hash] = card
         })
         cb(firstCard)
       }).catch(error => {
-        memLoading[hash] = false
+        memLoading[hashGetting] = false
         console.error("error", error)
         cb({
           title : "Can not get this",
@@ -201,8 +211,9 @@ function fetchCards(url, hash, cb = () => {}) {
             media, subCards: subHashes, source: url,
             onlyShowNotDone: true, slice: -3,
             lockPosition: true,
+            fromMemory: true,
           }
-          memCards[hash] = loadedCard // Do be combined with card of hash
+          memCards[hashGetting] = loadedCard // Do be combined with card of hash
           cb(loadedCard)
           console.log("cards loaded", memCards[hash])
         } else {
@@ -210,7 +221,7 @@ function fetchCards(url, hash, cb = () => {}) {
           console.log("doc", doc)
         }
       }).catch(() => {
-        memLoading[hash] = false
+        memLoading[hashGetting] = false
         cb({
           title : "Can not get this",
           smBody: url,
@@ -312,13 +323,22 @@ const store = reactive({ //updates the html immediately
       }
       return true
     }).reverse().slice(+ofCard.slice).reverse()
+
     const siblings = cards.map((card, i) => {
-      const next = cards[i + 1]?.hash
-      const prev = cards[i - 1]?.hash
+      const next = cards[i + 1]?.index
+      const prev = cards[i - 1]?.index
       return {next, prev}
     })
 
-    return cards.map((card, index) => ({...card, table: {index, parentCard, siblings}}))
+    return cards.map((card, index) => ({
+      ...card, 
+      table: {
+        index, 
+        parentCard, 
+        next: siblings[index].next, 
+        prev: siblings[index].prev,
+      }
+    }))
   },
   clearLocalStore() {
     window.localStorage.clear()
@@ -330,6 +350,38 @@ const store = reactive({ //updates the html immediately
   big: false,
   toggleBig(){
     this.big = !this.big
+  },
+  tableLeft: false,
+  tableRight: false,
+  setTable() {
+    if (this.path.length === 0) {
+      this.tableRight = false
+      this.tableLeft = false
+      return
+    }
+    let table = historyTable[historyTable.length - 1] || false
+    if (table && table.cards[table.curser + 1]) {
+      this.tableRight = () => {
+        store.load(table.cards[table.curser + 1], -1)
+        store.path.pop()
+        store.path.push(table.cards[table.curser + 1])
+        window.history.pushState({}, "", "/" + store.path.join("/"))
+        historyTable[historyTable.length - 1].curser++
+      }
+    } else {
+      this.tableRight = false
+    }
+    if (table && table.cards[table.curser - 1]) {
+      this.tableLeft = () => {
+        store.load(table.cards[table.curser - 1], -1)
+        store.path.pop()
+        store.path.push(table.cards[table.curser - 1])
+        window.history.pushState({}, "", "/" + store.path.join("/"))
+        historyTable[historyTable.length - 1].curser--
+      }
+    } else {
+      this.tableLeft = false
+    }
   },
   newCard: {...template()},
   editCard: {...template()},
@@ -391,6 +443,7 @@ const store = reactive({ //updates the html immediately
     const card = this.loadCard(hash)
     if (!card) return
     this.cards = this.cards.concat(card.subCards.map(subCard => this.loadCard(subCard)))
+    this.displayedCards()
     this.save()
   },
   removeCardLocal(hash) {
@@ -504,6 +557,16 @@ const store = reactive({ //updates the html immediately
     }
     return JSON.stringify(card)
   },
+  export() {
+    let cards = []
+    const locals = Object.keys(localStorage)
+    locals.forEach(key => {
+      const line = key + localStorage.getItem(key)
+      cards.push(line)
+    })
+    const name = this.root.title || this.pageTitle || this.title || "Sky Cards"
+    saveFile(cards.join("\n"), name + " all " + cards.length + " lines")
+  },
   saveToFile(root) {
     let hashes = []
     if (typeof root === 'object') {
@@ -525,7 +588,38 @@ const store = reactive({ //updates the html immediately
     })
     const name = this.root.title || this.pageTitle || this.title || "Sky Cards"
     saveFile(cards.filter(card => typeof card === "string" ).join("\n"), name + " " + cards.length + " cards + key")
-
+  },
+  import() {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.jsonl'
+    input.onchange = (e) => {
+      if (e.target === null) return
+      const target =  e.target
+      if (target.files && target.files !== null && target.files.length) {
+        const file = target.files[0]
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          if (e.target === null || e.target.result === null || typeof e.target.result != "string" || !e.target.result) return alert("No file or file is empty")
+          const lines = e.target.result.split("\n")
+          lines.forEach(line => {
+            if (line.indexOf("root") === -1) {
+              const hash = line.slice(0, 8)
+              const card = line.slice(8)
+              localStorage.setItem(hash, card)
+            } else {
+              const hash = line.slice(0, 4)
+              const card = line.slice(4)
+              localStorage.setItem(hash, card)
+            }
+          })
+          alert(" Got " + lines.length + " cards")
+          window.location.reload()
+        }
+        reader.readAsText(file)          
+      }
+    }  
+    input.click()
   },
   uploadFileInToCard(index) {
     const input = document.createElement('input')
@@ -551,6 +645,13 @@ const store = reactive({ //updates the html immediately
     input.click()
     this.dialogSave()
   },
+  mainCardTap(card, i){
+    if (this.curser === card.index) {
+      this.deeper(-1, i)
+    } else {
+      this.curser = card.index
+    }
+  },
   loadCard(hash, cb = () => {}) { // returns the card with subcards as hashes
     if (typeof hash === 'object') {
       hash = makeHash(hash)
@@ -569,12 +670,25 @@ const store = reactive({ //updates the html immediately
       return cb()
     }
 
-    const tempCard = localStorage.getItem(hash) // get the card from local storage
+    let tempCard = localStorage.getItem(hash) // get the card from local storage
+
+    if (tempCard === null) tempCard = memCards[hash]
+    if (!tempCard) return alert("No card found")
+    if (tempCard.indexOf("}") === -1) { // not JSON
+      if (tempCard.length === 8 && tempCard.indexOf(hash) === -1) {
+        return this.loadCard(tempCard, cb) // forword
+      }
+      if (tempCard.length === 16 && tempCard.indexOf(hash) === -1) {
+        return {...this.loadCard(tempCard.slice(0, 8)), ...this.loadCard(tempCard.slice(0, 8))} // Combine
+      }
+      if (tempCard.length % 8 === 0 && tempCard.indexOf(hash) === -1) return this.loadCard(tempCard.slice(0,16)) // TODO 
+      return alert("Not a card " + tempCard)
+    }
     
     if (tempCard === null && memCards[hash]) {
       let cardFormMem = {}
       if (typeof memCards[hash] === 'object') {
-        cardFormMem = { ...template(), ...memCards[hash]}
+        cardFormMem = { ...template(), ...memCards[hash], fromMemory: true}
         cardFormMem.subCards = cardFormMem.subCards.map(sub => {
           if (typeof sub === 'object') {
             return sub
@@ -595,38 +709,35 @@ const store = reactive({ //updates the html immediately
         return console.log("No card with source or title", hash)
       }
     }
-    if (tempCard === null) return alert("No card found") // if the card is not found return an alert
-    if (tempCard.indexOf("}") === -1) { // not JSON
-      if (tempCard.length === 8 && tempCard.indexOf(hash) === -1) {
-        return this.loadCard(tempCard, cb) // forword
-      }
-      if (tempCard.length === 16 && tempCard.indexOf(hash) === -1) {
-        return {...this.loadCard(tempCard.slice(0, 8)), ...this.loadCard(tempCard.slice(0, 8))} // Combine
-      }
-      if (tempCard.length % 8 === 0 && tempCard.indexOf(hash) === -1) return this.loadCard(tempCard.slice(0,16)) // TODO 
-      return alert("Not a card " + tempCard)
-    }
 
     let card = { ...template(), ...(memCards[hash] || {}), ...JSON.parse(tempCard)} 
-
     if (card.source) {
-      // console.log("loading...", hash, card)
+      // overwrite the card with the memory card but not display options
+      let overWriteCard = {...(memCards[hash] || {})}
+      delete overWriteCard.onlyShowDone
+      delete overWriteCard.onlyShowNotDone
+      delete overWriteCard.onlyShowDoable
+      delete overWriteCard.noEditing
+      delete overWriteCard.lockPosition
+      delete overWriteCard.mix
+      delete overWriteCard.doneOn
+      delete overWriteCard.slice
+      delete overWriteCard.search
+      delete overWriteCard.layout
+      delete overWriteCard.done
+      delete overWriteCard.fav
+      card = {...card, ...overWriteCard}
       if (!memCards[hash]) {
-        fetchCards(card.source, hash, (loaded) => {
-          const newCard = {...card, ...loaded}
-          if (!newCard.title) {
-            console.log("No title on loaded card", newCard)
-            return
-          }
-          memCards[hash] = newCard
-
+        return fetchCards(card.source, hash, (loaded) => {
+          // combine the cards alouding the display options
+          const {mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout} = card
+          const newCard = {...card, ...loaded, mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout}
           cb(newCard)
-
-          // console.log("loaded...", newCard, hash, card)
         })
       } else if (Object.keys(memCards[hash]).length) { // conbine the cards
         // const subCards = memCards[hash].subCards
-        card = {...memCards[hash], ...diff({...template()}, card)}
+        card = {...memCards[hash], ...overWriteCard}
+        return cb(card)
       } else {
         console.log("still loading ?", hash, memLoading)
       }
@@ -645,6 +756,7 @@ const store = reactive({ //updates the html immediately
   path:[],
   setHistoryTable() {
     this.setPath()
+
     historyTable = ["root", ...this.path.slice(0, -1)].map((hash, pathIndex) => {
       return this.loadCard(hash, (rootCard) => {
         if (!rootCard) {
@@ -653,6 +765,10 @@ const store = reactive({ //updates the html immediately
         const loadedRoot = {...rootCard, subCards: rootCard.subCards.map(subCard => this.loadCard(subCard))}
         const cards = this.displayedSubCards(loadedRoot).map(card => card.hash)
         const curser = cards.indexOf(this.path[pathIndex])
+        if (curser === -1) {
+          console.log("Curser not found", this.path[pathIndex], cards)
+          return {cards, curser: 0}
+        }
         return {cards, curser}
       })
     })
@@ -709,30 +825,43 @@ const store = reactive({ //updates the html immediately
       }
 
       let loadedCards = []
-      card.subCards.forEach(subHash => this.loadCard(subHash, subCard => { // load main cards
-        if (!subCard) return
-        let loadedSubCards = []
-        subCard.subCards.forEach(subSubHash => this.loadCard(subSubHash, subSubCard => {
-          if (!subSubCard) return
-          loadedSubCards.push(subSubCard)
-        })) // load sub cards
-        loadedCards.push({...subCard, subCards: loadedSubCards})
-      }))
-      this.cards = loadedCards
-      if (cardsOnTable.cards) {
-        this.currentlyDisplayCards = cardsOnTable.cards.map(card => {
-          console.log("card on table", card)
-          return { ...this.loadCard(card), hash: card, index: loadedCards.reduce((index, loadedCard, i) => {
-            if (makeHash(loadedCard) === card) {
-              return i
-            }
-            return index
-          }, -1)}
-        })
-      } else {
-        this.displayedCards()
+      const getCard = (i) => {
+        if (i >= card.subCards.length) {
+          this.cards = loadedCards
+          if (cardsOnTable.cards) {
+            this.currentlyDisplayCards = cardsOnTable.cards.map((card, placed) => {
+              console.log("card on table", card)
+              return { 
+                ...this.loadCard(card),
+                hash: card, 
+                index: loadedCards.reduce((index, loadedCard, i) => {
+                  if (makeHash(loadedCard) === card) {
+                    return i
+                  }
+                  return index
+                }, -1),
+                cardOnTheLeft: cardsOnTable.cards[placed - 1],
+                cardOnTheRight: cardsOnTable.cards[placed + 1],
+              }
+            })
+          } else {
+            this.displayedCards()
+          }
+        } else {
+          this.loadCard(card.subCards[i], subCard => { // load main cards
+            if (!subCard) return
+        // let loadedSubCards = []
+        // subCard.subCards.forEach(subSubHash => this.loadCard(subSubHash, subSubCard => {
+        //   if (!subSubCard) return
+        //   loadedSubCards.push(subSubCard)
+        // })) // load sub cards
+        // loadedCards[i] = {...subCard, subCards: loadedSubCards}
+            loadedCards[i] = subCard
+            getCard(i + 1)
+          })
+        }
       }
-
+      getCard(0)
       this.curser = newCurser || 0
       this.layout(this.root.layout)
       console.log("loaded", cardHash, this.root, this.cards)
@@ -757,7 +886,6 @@ const store = reactive({ //updates the html immediately
     const fresh = this.path.pop()
     window.history.pushState({curser: this.curser}, "", "/" + this.path.join("/"))
 
-    console.log("shallower", this.currentlyDisplayCards)
     const tableCards = historyTable.pop()
     if (tableCards && tableCards.cards) {
       this.load(this.path[this.path.length - 1], this.curser, () => {}, tableCards)
@@ -776,24 +904,25 @@ const store = reactive({ //updates the html immediately
       this.layout(this.root.layout)
     })
   },
-  deeper(curser) {
+  deeper(curser, i = -1) {
     this.big = true
     const currentCard = this.cards[this.curser] // this is the card that is being drilled into
     if (!currentCard || currentCard === undefined) return // if null or undefined stop the function
     const newHash = makeHash(currentCard)
-    historyTable.push({cards: this.currentlyDisplayCards.map(card => card.hash), curser: this.currentlyDisplayCards.reduce((curser, card, index) => {
-      if (newHash === card.hash) {
-        return index
-      }
-      return curser
-    }, -1)})
-    window.requestAnimationFrame(() => {
-      this.big = false
-      this.path.push(newHash)
-      window.history.pushState({}, "", "/" + this.path.join("/"))
-      this.load(newHash, curser)
-      console.log("historyTable", historyTable)
+    historyTable.push({
+      cards: this.currentlyDisplayCards.map(card => card.hash), 
+      curser: this.currentlyDisplayCards.reduce((curser, card, index) => {
+        if (newHash === card.hash) {
+          return index
+        }
+        return curser
+      }, i)
     })
+    this.big = false
+    this.path.push(newHash)
+    window.history.pushState({}, "", "/" + this.path.join("/"))
+    this.load(newHash, curser)
+    console.log("historyTable", historyTable)
   },
   onEnterTitle(){
     if (!this.newCard.title) return
@@ -1056,7 +1185,10 @@ const store = reactive({ //updates the html immediately
         this.cleanUp = () => {}
       }
     })
+    this.tableLeft = false
+    this.tableRight = false
     setTimeout(() => {
+      this.setTable()
       if (store.curser !== -1) {
         const currentIndex = store.currentlyDisplayCards.map(card => card.index)
         const card = document.getElementsByClassName("outerMainCard")[currentIndex.indexOf(store.curser)]
@@ -1106,6 +1238,11 @@ const store = reactive({ //updates the html immediately
   },
   removeAllDone() {
     this.cards = this.cards.filter(card => !card.done)
+    if (this.root.slice) {
+      this.displayedCards()
+    } else {
+      this.currentlyDisplayCards = this.currentlyDisplayCards.filter(card => !card.done)
+    }
     this.layout(this.root.layout)
     this.save()
   },
@@ -1144,7 +1281,7 @@ const store = reactive({ //updates the html immediately
       this.cards[index1] = this.cards[index2]
       this.cards[index2] = temp
       this.cards = [...this.cards]    
-      this.currentlyDisplayCards = this.displayedCards()
+      this.displayedCards()
       this.save()
     }
     /*if (withFocus) {
@@ -1281,14 +1418,14 @@ const store = reactive({ //updates the html immediately
       }
     } else {
       this.cards = [...this.cards, {...this.editCard}]
+      this.currentlyDisplayCards = this.currentlyDisplayCards.concat([{...this.editCard}])
     }
     this.save()
+    this.layout(this.root.layout)
     if (close) {
       this.closeDialog("addDialog")
       this.closeDialog("editDialog")
     }
-    const theCards = this.displayedCards()
-    console.log("the cards", theCards)
   },
   dialogSaveNew(){
     this.editingHash = ""
@@ -1361,7 +1498,9 @@ const store = reactive({ //updates the html immediately
     return div.children[0].toDataURL()
   },
   loadMemPath(cb = () => {}) {
-    let path = ["root", ...this.setPath()]
+    this.setPath()
+    memCards = {path: this.path} // save the path in memory
+    let path = ["root", ...this.path]
     if (path.length > 1) {
       const getCard = (pathIndex) => { // load the cards in the path one by one
         if (path[pathIndex]) {
@@ -1373,9 +1512,9 @@ const store = reactive({ //updates the html immediately
               localStorage.setItem("root", hash)
               return getCard(0) // now that the root card is saved, try again
             }
-            if (!card) return console.log("No card found", path[pathIndex])
+            if (!card) console.log("No card found", path[pathIndex])
             getCard(pathIndex + 1)
-          })
+          }, true)
         } else {
           cb()
         }
@@ -1390,7 +1529,7 @@ const store = reactive({ //updates the html immediately
     window.location.reload("/")
   },
 })
-function arrowKeysOn (e) {
+function arrowKeysOn(e) {
   if (e.target.tagName === "TEXTAREA" || e.target.tagName === "INPUT") return
   if (e.keyCode == 27) {
     store.disableKeys = false //introduces some awkwardness when escape is hit and then typing in a text box
@@ -1416,7 +1555,7 @@ function arrowKeysOn (e) {
     if (store.curser == -1) {
       store.curser = currentIndex[0]
     } else {
-      store.deeper(-1)
+      store.deeper(-1, currentCard)
     }
   }
   if (e.keyCode == 13) { // enter
@@ -1427,7 +1566,7 @@ function arrowKeysOn (e) {
         store.toggleBig()
       }
     } else {
-      store.deeper(currentIndex[currentCard])
+      store.deeper(currentIndex[currentCard], currentCard)
     }
   }
   if (e.keyCode == 37 || e.keyCode == 65 || e.keyCode == 72) { // left
@@ -1480,6 +1619,11 @@ createApp({
   UpdateDialog,
 }).mount()
 store.loadMemPath(() => {
+
+  console.log(store.path)
+  console.log(memCards)
+  console.log("loaded", store.root, store.cards)
+
   store.loading = true
   store.load("", -1, () => {
     store.setHistoryTable()
@@ -1498,18 +1642,10 @@ window.onpopstate = function(e) {
   console.log("pop state", e)
   store.load()
 }
-window.addEventListener("error", (e) => {
-  console.log("add error", e)
-  // reload the page
-  // window.location.reload()
-})
-window.onerror = (e) => {
-  console.log("on error", e)
-}
 
 window.addEventListener("message", (e) => {
   if (document.getElementById("addDialog").open || e.data.number != 1) {
-    if (e.data.file.type.indexOf('image') !== -1) {
+    if (e.data.file?.type.indexOf('image') !== -1) {
       if (store.getDataType(store.newCard.media) === "video") {
         return store.editCard.thumbnail = e.data.url
       }
@@ -1598,39 +1734,3 @@ setTimeout(() => {
     })
   }
 }, 60000) // wait a minute before registering the service worker
-let swipy = new Swipy(document.getElementById('root'));
-
-swipy.on('swipeleft', function(event, touches) {
-  const currentIndex = store.currentlyDisplayCards.map(card => card.index)
-  const currentCard = currentIndex.indexOf(store.curser)
-  let table = historyTable[historyTable.length - 1]
-  if (table && table.cards[table.curser - 1]) {
-    store.load(table.cards[table.curser - 1], -1)
-    store.path.pop()
-    store.path.push(table.cards[table.curser - 1])
-    window.history.pushState({}, "", "/" + store.path.join("/"))
-    historyTable[historyTable.length - 1].curser--
-  }
-  store.layout(store.root.layout)
-})
-swipy.on('swiperight', function(event, touches) {
-  const currentIndex = store.currentlyDisplayCards.map(card => card.index)
-  const currentCard = currentIndex.indexOf(store.curser)
-  let table = historyTable[historyTable.length - 1]
-  if (table && table.cards[table.curser + 1]) {
-    store.load(table.cards[table.curser + 1], -1)
-    store.path.pop()
-    store.path.push(table.cards[table.curser + 1])
-    window.history.pushState({}, "", "/" + store.path.join("/"))
-    historyTable[historyTable.length - 1].curser++
-  }
-  store.layout(store.root.layout)
-})
-swipy.on('swipetop', function(event, touches) {
-  store.toggleBig()
-})
-swipy.on('swipebottom', function(event, touches) {
-  store.shallower()
-  store.layout(store.root.layout)
-})
-
