@@ -674,7 +674,7 @@ const store = reactive({ //updates the html immediately
 
     if (tempCard === null) tempCard = memCards[hash]
     if (!tempCard) return alert("No card found")
-    if (tempCard.indexOf("}") === -1) { // not JSON
+    if (typeof tempCard === "string" && tempCard.indexOf("}") === -1) { // not JSON
       if (tempCard.length === 8 && tempCard.indexOf(hash) === -1) {
         return this.loadCard(tempCard, cb) // forword
       }
@@ -709,8 +709,12 @@ const store = reactive({ //updates the html immediately
         return console.log("No card with source or title", hash)
       }
     }
-
-    let card = { ...template(), ...(memCards[hash] || {}), ...JSON.parse(tempCard)} 
+    let card
+    if (typeof tempCard === 'string') {
+      card = { ...template(), ...JSON.parse(tempCard), fromMemory: true}
+    } else {
+      card = { ...template(), ...tempCard, fromMemory: true}
+    }
     if (card.source) {
       // overwrite the card with the memory card but not display options
       let overWriteCard = {...(memCards[hash] || {})}
@@ -847,26 +851,20 @@ const store = reactive({ //updates the html immediately
           } else {
             this.displayedCards()
           }
+          this.curser = newCurser || 0
+          this.layout(this.root.layout)
+          console.log("loaded", cardHash, this.root, this.cards)
+          this.setColor()
+          cb()
         } else {
           this.loadCard(card.subCards[i], subCard => { // load main cards
-            if (!subCard) return
-        // let loadedSubCards = []
-        // subCard.subCards.forEach(subSubHash => this.loadCard(subSubHash, subSubCard => {
-        //   if (!subSubCard) return
-        //   loadedSubCards.push(subSubCard)
-        // })) // load sub cards
-        // loadedCards[i] = {...subCard, subCards: loadedSubCards}
-            loadedCards[i] = subCard
+            if (!subCard) console.log("No card found on load()", card.subCards[i])
+            loadedCards[i] = subCard || {...template(), title: "No card found", smBody: card.subCards[i]}
             getCard(i + 1)
           })
         }
       }
       getCard(0)
-      this.curser = newCurser || 0
-      this.layout(this.root.layout)
-      console.log("loaded", cardHash, this.root, this.cards)
-      this.setColor()
-      cb()
     })
   },
   save(cb = () => {}) {
