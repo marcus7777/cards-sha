@@ -62,7 +62,7 @@
                 <div class="add-fav top-left" v-if="store.curser == -1" @click="store.shallower()">
                   <div class="dot"></div>
                 </div>
-                <div class="add-fav top-right" v-if="store.curser == -1 && !card.fromMemory" @click="store.openDialog('addDialog')">
+                <div class="add-fav top-right" v-if="store.curser == -1" @click="store.openDialog('addDialog')">
                   <div class="icon-remove" title="Add Card" >+</div>
                 </div>
                 <div class="add-fav bottom-left" v-if="store.curser == -1" >
@@ -73,7 +73,7 @@
                   <div class="icon-tick" v-if="card.done" @click="store.doneSave(card, false)"> ✓ </div>
                   <div class="icon-tick" v-if="!card.done" @click="store.doneSave(card, true)"> ☐ </div>
                 </div>
-                <div class="add-fav top" v-if="store.curser == -1 && !store.root.noEditing && !store.root.fromMemory">
+                <div class="add-fav top" v-if="store.curser == -1 && !store.root.noEditing">
                   <div class="icon-edit" title="Edit" @click="store.openDialog(`editDialog`, store.root)">✎</div>
                 </div>
               </div>

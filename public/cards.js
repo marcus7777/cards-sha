@@ -90,6 +90,7 @@ function saveCard(hash, card) {
     delete toSave.index
     delete toSave.hash
     delete toSave.key
+    delete card.fromMemory
     if (card.lockPosition || card.source) {
       delete toSave.subCards
     }
@@ -121,6 +122,8 @@ function makeHash(card) {
   delete obj.index;
   delete obj.hash;
   delete obj.key;
+  delete obj.fromMemory;
+
   obj.toDoFirst = [] // delete in next version
 
   const str = JSON.stringify(obj);
@@ -157,24 +160,26 @@ function fetchCards(url, hashGetting, cb = () => {}) {
         const cards = lines.filter(card => card.indexOf("}") !== -1).map(card => {
           let hash = card.slice(0, card.indexOf("{"))
           if (hash.length !== 8) {
-            hash = makeHash(card)
+            hash = makeHash(JSON.parse(card.slice(card.indexOf("{"))))
           }
           return { ...JSON.parse(card.slice(card.indexOf("{"))), hash, fromMemory: true }
         })
+        let firstCard = cards[0]
         const forwards = lines.filter(card => card.indexOf("}") === -1)
-        
+        let rootIndex = forwards.findIndex(forward => forward.indexOf("root") !== -1) 
         if (forwards.length) {
           forwards.forEach(forward => {
             if (forward.indexOf("root") === -1) {
               memCards[forward.slice(0, 8)] = forward.slice(8)
             } else {
               memCards[forward.slice(0, 4)] = forward.slice(4)
+              firstCard = forward.slice(4)
             }
           })
         }
         console.log("cards", cards)
-        const firstCard = cards[0]
-        memCards[hashGetting] = cards[0]
+        memCards[hashGetting] = firstCard
+	saveCard(hashGetting, firstCard)
         cards.forEach((card, i) => {
           memCards[card.hash] = card
         })
@@ -183,7 +188,7 @@ function fetchCards(url, hashGetting, cb = () => {}) {
         memLoading[hashGetting] = false
         console.error("error", error)
         cb({
-          title : "Can not get this",
+          title : error.message || "Can not get this, try again later",
           smBody: url,
         })
       })  
@@ -212,26 +217,27 @@ function fetchCards(url, hashGetting, cb = () => {}) {
             onlyShowNotDone: true, slice: -3,
             lockPosition: true,
             fromMemory: true,
+            hash: hashGetting,
           }
           memCards[hashGetting] = loadedCard // Do be combined with card of hash
           cb(loadedCard)
-          console.log("cards loaded", memCards[hash])
         } else {
           // put the cards in page
           console.log("doc", doc)
         }
-      }).catch(() => {
+      }).catch(error => {
         memLoading[hashGetting] = false
+        console.error("error", error)
         cb({
           title : "Can not get this",
           smBody: url,
-          body: url,
+          body: error.message || "Can not get this, try again later"
         })
       })
     }
   } else {
     console.log("loading ", url)
-    cb(memCards[hash])
+    // cb(memCards[hash])
   }
 }
 
@@ -257,7 +263,7 @@ function saveToLocalStorage(file, cb) { //cb is a callback function that is call
     alert(" Got " + cards.length + " cards")
     cb({ ...template(), ...cards[0]})
   }
-  reader.readAsText(file)          
+  reader.readAsText(file)
 }
 function saveFile(text, title) { //saves the file to the local download
   const link = document.createElement("a");
@@ -730,18 +736,23 @@ const store = reactive({ //updates the html immediately
       delete overWriteCard.layout
       delete overWriteCard.done
       delete overWriteCard.fav
-      card = {...card, ...overWriteCard}
+
+      const {mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout} = card // display options load from local storage
+
+      card = {...template() ,...card, ...overWriteCard}
       if (!memCards[hash]) {
         return fetchCards(card.source, hash, (loaded) => {
+          if (typeof loaded === 'string') {
+            loaded = this.loadCard(loaded)
+          }
           // combine the cards alouding the display options
-          const {mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout} = card
           const newCard = {...card, ...loaded, mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout}
           cb(newCard)
         })
       } else if (Object.keys(memCards[hash]).length) { // conbine the cards
         // const subCards = memCards[hash].subCards
-        card = {...memCards[hash], ...overWriteCard}
-        return cb(card)
+        const newCard = {...card, ...memCards[hash], mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout}
+        return cb(newCard)
       } else {
         console.log("still loading ?", hash, memLoading)
       }
