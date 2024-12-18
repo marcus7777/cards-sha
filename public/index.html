@@ -127,7 +127,7 @@
                   <div class="dot"></div>
                 </div>
                 <div class="dot" v-else></div>
-                <div class="add-fav top-right" v-if="store.curser == card.index && !card.fromMemory" @click="confirm('Delete Card') ? store.removeCard(card.index) : ''">
+                <div class="add-fav top-right" v-if="store.curser == card.index" @click="confirm('Delete Card') ? store.removeCard(card.index) : ''">
                   <div class="icon-remove" title="Remove Card" >🗑 </div>
                 </div>
                 <div class="add-fav bottom-right" v-if="store.curser == card.index" >
@@ -170,7 +170,7 @@
             <div v-for="(card, i) in store.localCards().filter((card) => (Object.values(card).join()).toLowerCase().includes(store.allSearch.toLowerCase()))">
               <h2> {{ card.title  }} </h2>
               <h4> {{ card.source }} </h4>
-              <a :href="`#${card.key}`"># {{card.title || card.source }}</a>
+              <a :href="`/${card.key}`" target="all"># {{card.title || card.source }}</a>
               - {{card.allHashesNeededFrom}} under it
               - it is in {{card.listedByCards}} cards
               <button v-if="!card.fromMemory" @click="store.openDialog(`editDialog`, card)">✎</button>

@@ -81,6 +81,7 @@ function saveCard(hash, card) {
 
   if (!hash) return // window.alert("no hash")
   if (!card) return // window.alert("no card")
+  if (card.fromMemory) console.log("fromMemory saving", card)
   if (!memCards[hash] && !memLoading[hash]) { // if the card is not in memory or loading
     saveCardToLocal(hash, card)
   }
@@ -179,7 +180,6 @@ function fetchCards(url, hashGetting, cb = () => {}) {
         }
         console.log("cards", cards)
         memCards[hashGetting] = firstCard
-	saveCard(hashGetting, firstCard)
         cards.forEach((card, i) => {
           memCards[card.hash] = card
         })
@@ -682,6 +682,21 @@ const store = reactive({ //updates the html immediately
     if (!tempCard) return alert("No card found")
     if (typeof tempCard === "string" && tempCard.indexOf("}") === -1) { // not JSON
       if (tempCard.length === 8 && tempCard.indexOf(hash) === -1) {
+        // if the card is a forword card we need to save the hash and the hash it is pointing to
+        // so we need to update the it's parent card and the store.path and the url
+        if (store.path.includes(hash)) {
+          this.path = this.path.map(segment => {
+            if (segment == hash) return tempCard
+            return segment
+	  })
+	  window.history.replaceState({},"","/"+this.path.join('/'))
+	}
+        console.log(this.root)
+        if (this.root.subCards.length) {
+	  if (this.root.subCards[0]) {
+	  }
+	}
+	
         return this.loadCard(tempCard, cb) // forword
       }
       if (tempCard.length === 16 && tempCard.indexOf(hash) === -1) {
@@ -717,7 +732,7 @@ const store = reactive({ //updates the html immediately
     }
     let card
     if (typeof tempCard === 'string') {
-      card = { ...template(), ...JSON.parse(tempCard), fromMemory: true}
+      card = { ...template(), ...(memCards[hash] || {}), ...JSON.parse(tempCard), fromMemory: true}
     } else {
       card = { ...template(), ...tempCard, fromMemory: true}
     }
@@ -870,7 +885,7 @@ const store = reactive({ //updates the html immediately
         } else {
           this.loadCard(card.subCards[i], subCard => { // load main cards
             if (!subCard) console.log("No card found on load()", card.subCards[i])
-            loadedCards[i] = subCard || {...template(), title: "No card found", smBody: card.subCards[i]}
+            loadedCards[i] = subCard || {...template(), title: "No card found on load()", smBody: card.subCards[i], fromMemory: true}
             getCard(i + 1)
           })
         }
@@ -918,6 +933,10 @@ const store = reactive({ //updates the html immediately
     const currentCard = this.cards[this.curser] // this is the card that is being drilled into
     if (!currentCard || currentCard === undefined) return // if null or undefined stop the function
     const newHash = makeHash(currentCard)
+    if (this.path[this.path.length - 1] === newHash) return // if the card is already on the path stop the function
+    this.path.push(newHash)
+    window.history.pushState({}, "", "/" + this.path.join("/"))
+    this.load(newHash, curser)
     historyTable.push({
       cards: this.currentlyDisplayCards.map(card => card.hash), 
       curser: this.currentlyDisplayCards.reduce((curser, card, index) => {
@@ -928,9 +947,6 @@ const store = reactive({ //updates the html immediately
       }, i)
     })
     this.big = false
-    this.path.push(newHash)
-    window.history.pushState({}, "", "/" + this.path.join("/"))
-    this.load(newHash, curser)
     console.log("historyTable", historyTable)
   },
   onEnterTitle(){
@@ -1510,10 +1526,36 @@ const store = reactive({ //updates the html immediately
     this.setPath()
     memCards = {path: this.path} // save the path in memory
     let path = ["root", ...this.path]
+    let fetchList = []
     if (path.length > 1) {
       const getCard = (pathIndex) => { // load the cards in the path one by one
         if (path[pathIndex]) {
           this.loadCard(path[pathIndex], (card) => {
+            if (!card) {
+              console.log("No card found on loadMemPath", path[pathIndex])
+              return getCard(pathIndex + 1)
+            }
+            //load sub cards
+            if (card.source) {
+              fetchList.push(card.source)
+              fetchCards(card.source, (newCard) => {
+                console.log("fetched", newCard, memCards)
+                fetchList = fetchList.filter(url => url !== card.source)
+                getCard(pathIndex)
+              })
+            }
+            card.subCards.forEach(subCard => this.loadCard(subCard, (subCard) => {
+              if (subCard?.source) {
+                fetchList.push(subCard.source)
+                fetchCards(subCard.source, (newCard) => {
+                  console.log("fetched", newCard, memCards)
+                  fetchList = fetchList.filter(url => url !== subCard.source)
+                  getCard(pathIndex)
+                })
+              }
+            }))
+
+            
             if (pathIndex === 0 && !card) {
               const bace = { ...template(), title: "Sky Cards", body: "A place to keep your cards", source: "/Welcome.jsonl"}
               const hash = makeHash(bace)
@@ -1522,10 +1564,16 @@ const store = reactive({ //updates the html immediately
               return getCard(0) // now that the root card is saved, try again
             }
             if (!card) console.log("No card found", path[pathIndex])
-            getCard(pathIndex + 1)
           }, true)
         } else {
-          cb()
+          console.log("asked for", path, "got", memCards)
+          if (!path[pathIndex+1]) {
+            console.log(memCards, fetchList)
+          //    if (fetchList.length === 0) return
+            cb()
+          } else {
+            getCard(pathIndex + 1)
+          }
         }
       }
       getCard(0) // start the loop
@@ -1616,8 +1664,8 @@ function arrowKeysOn(e) {
       }
     }
   }
-  if (e.keyCode == 43) store.openDialog('addDialog') // plus
-  if (e.keyCode == 45 && confirm("Delete Card?")) store.removeCard(store.curser) // minus
+  if (e.key === "+") store.openDialog('addDialog') // plus
+  if (store.curser > -1 && e.key === "-" && confirm("Delete Card?")) store.removeCard(store.curser) // minus
   store.big = false
   store.layout(store.root.layout)
 }
@@ -1633,7 +1681,7 @@ store.loadMemPath(() => {
   console.log(memCards)
   console.log("loaded", store.root, store.cards)
 
-  store.loading = true
+  store.loading = false
   store.load("", -1, () => {
     store.setHistoryTable()
     store.loading = false
@@ -1642,6 +1690,7 @@ store.loadMemPath(() => {
 setTimeout(() => {
   document.title = store.root.title
   document.body.style.display = "block"
+  store.loading = false
 }, 200)
 window.onhashchange = function(e) {
   console.log("hash change", e)

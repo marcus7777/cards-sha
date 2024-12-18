@@ -171,6 +171,7 @@ p,h3,h2,h1 {
   transition: all 0.5s ease-in-out; 
   margin: 0 0 0 0;
 }
+.card .inner:has(.bottom-left),
 .card .inner:has(button) {
   background-color: #fff777;
   max-width:200px;
@@ -220,6 +221,7 @@ p,h3,h2,h1 {
   margin-left:0%;   
   box-shadow: 10px 10px 20px;
 }
+.outerMainCard:has(.bottom-left),
 .outerMainCard:hover,
 .outerMainCard:has(button) {
   z-index: 1;
@@ -731,6 +733,7 @@ input[type="date"] {
   position: fixed;
   cursor: pointer;
   transition: all 2s;
+  clip-path: polygon(0% 100%, 0% 0%, 100% 0%);
 }
 .arrow-right:hover,
 .arrow-left:hover {
