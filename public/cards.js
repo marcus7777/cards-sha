@@ -209,12 +209,12 @@ function fetchCards(url, hashGetting, cb = () => {}) {
             const card = {...template(), title, media, body}
             const subHash = makeHash(card)
             subHashes.push(subHash)
-            memCards[subHash] = card
+            memCards[subHash] = { ...card, fromMemory: true, hash: subHash }
             return card
           })
           const loadedCard = { ...template(), title, body,
-            media, subCards: subHashes, source: url,
-            onlyShowNotDone: true, slice: -3,
+            media, subCards: subHashes,//  source: url, TODO do we need this?
+            onlyShowNotDone: true, slice: -5,
             lockPosition: true,
             fromMemory: true,
             hash: hashGetting,
@@ -237,7 +237,7 @@ function fetchCards(url, hashGetting, cb = () => {}) {
     }
   } else {
     console.log("loading ", url)
-    // cb(memCards[hash])
+    cb(memCards[hashGetting])
   }
 }
 
@@ -688,19 +688,22 @@ const store = reactive({ //updates the html immediately
           this.path = this.path.map(segment => {
             if (segment == hash) return tempCard
             return segment
-	  })
-	  window.history.replaceState({},"","/"+this.path.join('/'))
-	}
+          })
+          window.history.replaceState({},"","/"+this.path.join('/'))
+        }
         console.log(this.root)
         if (this.root.subCards.length) {
-	  if (this.root.subCards[0]) {
-	  }
-	}
-	
+          this.root.subCards.forEach((subCard, i) => {
+            if (subCard === hash) {
+              this.root.subCards[i] = tempCard
+            }
+          })
+        }
+        
         return this.loadCard(tempCard, cb) // forword
       }
       if (tempCard.length === 16 && tempCard.indexOf(hash) === -1) {
-        return {...this.loadCard(tempCard.slice(0, 8)), ...this.loadCard(tempCard.slice(0, 8))} // Combine
+        return {...this.loadCard(tempCard.slice(0, 8)), ...this.loadCard(tempCard.slice(8))} // Combine
       }
       if (tempCard.length % 8 === 0 && tempCard.indexOf(hash) === -1) return this.loadCard(tempCard.slice(0,16)) // TODO 
       return alert("Not a card " + tempCard)
@@ -1524,8 +1527,7 @@ const store = reactive({ //updates the html immediately
   },
   loadMemPath(cb = () => {}) {
     this.setPath()
-    memCards = {path: this.path} // save the path in memory
-    let path = ["root", ...this.path]
+    let path = ["root", ...this.path] // add root to the path
     let fetchList = []
     if (path.length > 1) {
       const getCard = (pathIndex) => { // load the cards in the path one by one
@@ -1538,19 +1540,20 @@ const store = reactive({ //updates the html immediately
             //load sub cards
             if (card.source) {
               fetchList.push(card.source)
-              fetchCards(card.source, (newCard) => {
+              console.log(fetchList)
+              fetchCards(card.source, path[pathIndex], (newCard) => {
                 console.log("fetched", newCard, memCards)
                 fetchList = fetchList.filter(url => url !== card.source)
                 getCard(pathIndex)
               })
             }
-            card.subCards.forEach(subCard => this.loadCard(subCard, (subCard) => {
+            card.subCards.forEach(subCardHash => this.loadCard(subCardHash, (subCard) => {
               if (subCard?.source) {
                 fetchList.push(subCard.source)
-                fetchCards(subCard.source, (newCard) => {
+                fetchCards(subCard.source, subCardHash, (newCard) => {
                   console.log("fetched", newCard, memCards)
                   fetchList = fetchList.filter(url => url !== subCard.source)
-                  getCard(pathIndex)
+                  if (fetchList.length === 0) getCard(pathIndex + 1)
                 })
               }
             }))
@@ -1564,12 +1567,12 @@ const store = reactive({ //updates the html immediately
               return getCard(0) // now that the root card is saved, try again
             }
             if (!card) console.log("No card found", path[pathIndex])
-          }, true)
+            if (fetchList.length === 0) return getCard(pathIndex + 1)
+          })
         } else {
           console.log("asked for", path, "got", memCards)
           if (!path[pathIndex+1]) {
             console.log(memCards, fetchList)
-          //    if (fetchList.length === 0) return
             cb()
           } else {
             getCard(pathIndex + 1)
@@ -1597,7 +1600,7 @@ function arrowKeysOn(e) {
   const currentIndex = store.currentlyDisplayCards.map(card => card.index)
   const currentCard = currentIndex.indexOf(store.curser)
   
-  if (e.keyCode == 38 || e.keyCode == 87 || e.keyCode == 75) { // up
+  if (e.key == "ArrowUp" || e.key == "w" || e.key == "k") {
     if (store.curser === -1) {
       store.shallower()
     } else {
@@ -1608,7 +1611,7 @@ function arrowKeysOn(e) {
       }
     }
   }
-  if (e.keyCode == 40 || e.keyCode == 83 || e.keyCode == 74) { // down
+  if (e.key == "ArrowDown" || e.key == "s" || e.key == "j") {
     if (store.curser == -1) {
       store.curser = currentIndex[0]
     } else {
@@ -1626,7 +1629,7 @@ function arrowKeysOn(e) {
       store.deeper(currentIndex[currentCard], currentCard)
     }
   }
-  if (e.keyCode == 37 || e.keyCode == 65 || e.keyCode == 72) { // left
+  if (e.key == "ArrowLeft" || e.key == "a" || e.key == "h" || e.key == "A" || e.key == "H") {
     if (e.shiftKey) {
       store.swapCards(currentIndex[currentCard], currentIndex[currentCard - 1])
     } else {
@@ -1645,7 +1648,7 @@ function arrowKeysOn(e) {
       }
     }
   }
-  if (e.keyCode == 39 || e.keyCode == 68 || e.keyCode == 76) { // right
+  if (e.keyCode == 39 || e.key == "d" || e.key == "l" || e.key == "D" || e.key == "L") { // right
     if (e.shiftKey) {
       store.swapCards(currentIndex[currentCard], currentIndex[currentCard + 1])
     } else {
