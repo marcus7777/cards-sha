@@ -512,6 +512,7 @@ audio {
   overflow: auto;
   margin-bottom: -5px;
   border-radius: 0 0 10px 10px;
+  height: 100%;
 }
 
 img {

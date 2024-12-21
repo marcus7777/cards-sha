@@ -42,12 +42,12 @@
           > 
             <div class="card rootCard">
               <div 
-		:data-index="-1"
-		:data-color="card.color"
-		class="inner" 
-		@dblclick="store.shallower()"
+                :data-index="-1"
+                :data-color="card.color"
+                class="inner" 
+                @dblclick="store.shallower()"
               >
-	        <div class="content" @click="if (!store.isSelecting) {store.curser = -1;store.toggleBig()}">
+                <div class="content" @click="if (!store.isSelecting) {store.curser = -1;store.toggleBig()}">
                   <h2> {{ card.title }} </h2>
                   <img v-if="store.getDataType(card.media)=='image'" :src="card.media" />
                   <img v-if="store.getDataType(card.media)=='qrCode'" :src="store.makeQrCode(card.media)"/>
@@ -113,8 +113,6 @@
                   <h2> {{ card.title }} </h2>
                   <p v-if="!store.big" v-html="card.smBody"></p>
                   <p v-else v-html="card.body"></p>
-                </div>
-                <span class="bottom" @click="store.mainCardTap(card, i)">
                   <img v-if="store.getDataType(card.media)=='image'" :src="card.media" />
                   <img v-if="store.getDataType(card.media)=='qrCode'" :src="store.makeQrCode(card.media)"/>
                   <img v-if="store.getDataType(card.media)=='audio' && card.thumbnail" :src="card.thumbnail" />
@@ -122,7 +120,9 @@
                   <video v-if="store.getDataType(card.media)=='video'" controls class="media" @ended="store.endedAutoplay(card,card.index)" :poster="card.thumbnail" >
                     <source :src="card.media" type="video/mp4">
                   </video>
-                </span>
+                </div>
+                <div class="bottom" @click="store.mainCardTap(card, i)">
+                </div>
                 <div class="add-fav top-left" v-if="store.curser == card.index">
                   <div class="dot"></div>
                 </div>
@@ -158,9 +158,9 @@
             <pre>Powerfull tools:</pre> 
             <button @click="store.clearLocalStore" >Remove all</button>
             <button @click="store.export" >Export</button>
-	    <button @click="store.import" >Import</button>
+            <button @click="store.import" >Import</button>
             <button @click="store.all = true;store.openDialog('all')" >Show all</button>
-	    <button @click="store.unlock"> unlock </button>
+            <button @click="store.unlock"> unlock </button>
           </div>
         </dialog>
         <dialog id="all" v-if="store.all">

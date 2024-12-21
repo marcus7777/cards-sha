@@ -149,6 +149,8 @@ function makeHash(card) {
 }
 let memCards = {} // memory cards save fetchable cards (immutable)
 let memLoading = {} 
+let combinedCards = {} // combined cards save the combined cards (immutable)
+
 function fetchCards(url, hashGetting, cb = () => {}) {
   if (!memCards[hashGetting]) { // if the card is nxt in memory
     // memCards[hash] = {} // prevent multiple fetches
@@ -180,6 +182,7 @@ function fetchCards(url, hashGetting, cb = () => {}) {
         }
         console.log("cards", cards)
         memCards[hashGetting] = firstCard
+        console.log("memCards adding ", hashGetting, firstCard)
         cards.forEach((card, i) => {
           memCards[card.hash] = card
         })
@@ -220,6 +223,7 @@ function fetchCards(url, hashGetting, cb = () => {}) {
             hash: hashGetting,
           }
           memCards[hashGetting] = loadedCard // Do be combined with card of hash
+          memCards[makeHash(loadedCard)] = loadedCard // Just in case TODO 
           cb(loadedCard)
         } else {
           // put the cards in page
@@ -295,6 +299,8 @@ const store = reactive({ //updates the html immediately
     console.log("displayedCards")
     let cards = store.displayedSubCards({...store.root, subCards: store.cards})
     store.currentlyDisplayCards = cards
+          // set Table history
+    historyTable[store.path.length] = {cards: cards.map(card => card.hash), curser: store.curser}
     return cards
   },
   displayedSubCards: (ofCard) => {
@@ -365,14 +371,14 @@ const store = reactive({ //updates the html immediately
       this.tableLeft = false
       return
     }
-    let table = historyTable[historyTable.length - 1] || false
+    let table = historyTable[store.path.length - 1] || false
     if (table && table.cards[table.curser + 1]) {
       this.tableRight = () => {
         store.load(table.cards[table.curser + 1], -1)
         store.path.pop()
         store.path.push(table.cards[table.curser + 1])
         window.history.pushState({}, "", "/" + store.path.join("/"))
-        historyTable[historyTable.length - 1].curser++
+        historyTable[store.path.length - 1].curser++
       }
     } else {
       this.tableRight = false
@@ -383,7 +389,7 @@ const store = reactive({ //updates the html immediately
         store.path.pop()
         store.path.push(table.cards[table.curser - 1])
         window.history.pushState({}, "", "/" + store.path.join("/"))
-        historyTable[historyTable.length - 1].curser--
+        historyTable[store.path.length - 1].curser--
       }
     } else {
       this.tableLeft = false
@@ -658,7 +664,7 @@ const store = reactive({ //updates the html immediately
       this.curser = card.index
     }
   },
-  loadCard(hash, cb = () => {}) { // returns the card with subcards as hashes
+  loadCard(hash, cb = c => c) { // returns the card with subcards as hashes
     if (typeof hash === 'object') {
       hash = makeHash(hash)
     }
@@ -666,8 +672,14 @@ const store = reactive({ //updates the html immediately
       return cb()
     }
     if (!localStorage.getItem(hash) && !memCards[hash]) {
+      if (combinedCards[hash]) {
+        return cb(combinedCards[hash])
+      }
       if (hash !== "root") {
-                
+        const cardFormloaded = this.cards.find(card => (card.hash === hash || makeHash(card) === hash))
+        if (cardFormloaded) {
+          return cb(cardFormloaded)
+        }
         console.log("No card found", hash)
         return cb()
       }
@@ -736,6 +748,7 @@ const store = reactive({ //updates the html immediately
     let card
     if (typeof tempCard === 'string') {
       card = { ...template(), ...(memCards[hash] || {}), ...JSON.parse(tempCard), fromMemory: true}
+      // maybe combine the cards
     } else {
       card = { ...template(), ...tempCard, fromMemory: true}
     }
@@ -764,12 +777,16 @@ const store = reactive({ //updates the html immediately
             loaded = this.loadCard(loaded)
           }
           // combine the cards alouding the display options
-          const newCard = {...card, ...loaded, mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout}
+          const newCard = {...card, ...loaded, hash, mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout}
+          combinedCards[hash] = newCard
+          combinedCards[makeHash(newCard)] = newCard
+
           cb(newCard)
         })
       } else if (Object.keys(memCards[hash]).length) { // conbine the cards
         // const subCards = memCards[hash].subCards
-        const newCard = {...card, ...memCards[hash], mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout}
+        const newCard = {...card, ...memCards[hash], hash, mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout}
+        combinedCards[hash] = newCard
         return cb(newCard)
       } else {
         console.log("still loading ?", hash, memLoading)
@@ -790,7 +807,7 @@ const store = reactive({ //updates the html immediately
   setHistoryTable() {
     this.setPath()
 
-    historyTable = ["root", ...this.path.slice(0, -1)].map((hash, pathIndex) => {
+    historyTable = ["root", ...this.path].map((hash, pathIndex) => {
       return this.loadCard(hash, (rootCard) => {
         if (!rootCard) {
           return console.log("No card found", hash)
@@ -865,7 +882,7 @@ const store = reactive({ //updates the html immediately
             this.currentlyDisplayCards = cardsOnTable.cards.map((card, placed) => {
               console.log("card on table", card)
               return { 
-                ...this.loadCard(card),
+                ...this.loadCard(card, c => c),
                 hash: card, 
                 index: loadedCards.reduce((index, loadedCard, i) => {
                   if (makeHash(loadedCard) === card) {
@@ -913,8 +930,8 @@ const store = reactive({ //updates the html immediately
     const fresh = this.path.pop()
     window.history.pushState({curser: this.curser}, "", "/" + this.path.join("/"))
 
-    const tableCards = historyTable.pop()
-    if (tableCards && tableCards.cards) {
+    const tableCards = historyTable[this.path.length]
+    if (tableCards && tableCards.cards && tableCards.cards.length) {
       this.load(this.path[this.path.length - 1], this.curser, () => {}, tableCards)
     } else {
       this.load(this.path[this.path.length - 1], this.curser)
@@ -937,10 +954,7 @@ const store = reactive({ //updates the html immediately
     if (!currentCard || currentCard === undefined) return // if null or undefined stop the function
     const newHash = makeHash(currentCard)
     if (this.path[this.path.length - 1] === newHash) return // if the card is already on the path stop the function
-    this.path.push(newHash)
-    window.history.pushState({}, "", "/" + this.path.join("/"))
-    this.load(newHash, curser)
-    historyTable.push({
+    historyTable[this.path.length] = {
       cards: this.currentlyDisplayCards.map(card => card.hash), 
       curser: this.currentlyDisplayCards.reduce((curser, card, index) => {
         if (newHash === card.hash) {
@@ -948,7 +962,11 @@ const store = reactive({ //updates the html immediately
         }
         return curser
       }, i)
-    })
+    }
+    this.path.push(newHash)
+    window.history.pushState({}, "", "/" + this.path.join("/"))
+    this.load(newHash, curser)
+
     this.big = false
     console.log("historyTable", historyTable)
   },
@@ -1528,7 +1546,20 @@ const store = reactive({ //updates the html immediately
   loadMemPath(cb = () => {}) {
     this.setPath()
     let path = ["root", ...this.path] // add root to the path
+    path.forEach((hash, pathIndex) => {
+      setTimeout(() => {
+        this.load(hash)
+      }, pathIndex * 1000)
+    })
+    setTimeout(() => {
+      cb()
+    }, path.length * 1000)
+  },
+  loadMemPathOld(cb = () => {}) {
+    this.setPath()
+    let path = ["root", ...this.path] // add root to the path
     let fetchList = []
+    let fetchFun = []
     if (path.length > 1) {
       const getCard = (pathIndex) => { // load the cards in the path one by one
         if (path[pathIndex]) {
@@ -1541,22 +1572,26 @@ const store = reactive({ //updates the html immediately
             if (card.source) {
               fetchList.push(card.source)
               console.log(fetchList)
-              fetchCards(card.source, path[pathIndex], (newCard) => {
-                console.log("fetched", newCard, memCards)
-                fetchList = fetchList.filter(url => url !== card.source)
-                getCard(pathIndex)
+              fetchFun.push(() => {
+                fetchCards(card.source, path[pathIndex], (newCard) => {
+                  console.log("fetched", newCard, memCards)
+                  fetchList = fetchList.filter(url => url !== card.source)
+                  getCard(pathIndex)
+                })
               })
             }
-            card.subCards.forEach(subCardHash => this.loadCard(subCardHash, (subCard) => {
+            /* card.subCards.forEach(subCardHash => this.loadCard(subCardHash, (subCard) => {
               if (subCard?.source) {
                 fetchList.push(subCard.source)
-                fetchCards(subCard.source, subCardHash, (newCard) => {
-                  console.log("fetched", newCard, memCards)
-                  fetchList = fetchList.filter(url => url !== subCard.source)
-                  if (fetchList.length === 0) getCard(pathIndex + 1)
+                fetchFun.push(() => {
+                  fetchCards(subCard.source, subCardHash, (newCard) => {
+                    console.log("fetched", newCard, memCards)
+                    fetchList = fetchList.filter(url => url !== subCard.source)
+                    if (fetchList.length === 0) getCard(pathIndex + 1)
+                  })
                 })
               }
-            }))
+            })) */
 
             
             if (pathIndex === 0 && !card) {
@@ -1567,7 +1602,15 @@ const store = reactive({ //updates the html immediately
               return getCard(0) // now that the root card is saved, try again
             }
             if (!card) console.log("No card found", path[pathIndex])
-            if (fetchList.length === 0) return getCard(pathIndex + 1)
+            if (fetchList.length === 0) {
+              setTimeout(() => {
+                getCard(pathIndex + 1)
+              }, 2000)
+            } else {
+              fetchFun[0]()
+              console.log("fetching", fetchList[0])
+              fetchFun.shift()
+            }
           })
         } else {
           console.log("asked for", path, "got", memCards)
@@ -1575,7 +1618,9 @@ const store = reactive({ //updates the html immediately
             console.log(memCards, fetchList)
             cb()
           } else {
-            getCard(pathIndex + 1)
+            setTimeout(() => {
+              getCard(pathIndex + 1)
+            }, 2000)
           }
         }
       }
@@ -1613,7 +1658,11 @@ function arrowKeysOn(e) {
   }
   if (e.key == "ArrowDown" || e.key == "s" || e.key == "j") {
     if (store.curser == -1) {
-      store.curser = currentIndex[0]
+      if (currentIndex.length == historyTable[store.path.length]?.cards.length) {
+        store.curser = currentIndex[historyTable[store.path.length]?.curser || 0]
+      } else {
+        store.curser = currentIndex[0]
+      }
     } else {
       store.deeper(-1, currentCard)
     }
@@ -1634,17 +1683,21 @@ function arrowKeysOn(e) {
       store.swapCards(currentIndex[currentCard], currentIndex[currentCard - 1])
     } else {
       if (store.curser === -1) {
-        let table = historyTable[historyTable.length - 1]
+        let table = historyTable[store.path.length - 1]
+
         if (table && table.cards[table.curser - 1]) {
           store.load(table.cards[table.curser - 1], -1)
           store.path.pop()
           store.path.push(table.cards[table.curser - 1])
           window.history.pushState({}, "", "/" + store.path.join("/"))
-          historyTable[historyTable.length - 1].curser--
+          historyTable[store.path.length - 1].curser--
         }
       } else if (currentIndex[currentCard - 1] === undefined) {
       } else {
         store.curser = Math.max(currentIndex[currentCard - 1], -1)
+        if (historyTable[store.path.length]) {
+          historyTable[store.path.length].curser = Math.max(historyTable[store.path.length].curser - 1, 0)
+        }
       }
     }
   }
@@ -1653,17 +1706,22 @@ function arrowKeysOn(e) {
       store.swapCards(currentIndex[currentCard], currentIndex[currentCard + 1])
     } else {
       if (store.curser === -1) {
-        let table = historyTable[historyTable.length - 1]
+        let table = historyTable[store.path.length - 1]
         if (table && table.cards[table.curser + 1]) {
           store.load(table.cards[table.curser + 1], -1)
           store.path.pop()
           store.path.push(table.cards[table.curser + 1])
           window.history.pushState({}, "", "/" + store.path.join("/"))
-          historyTable[historyTable.length - 1].curser++
+          historyTable[store.path.length - 1].curser++
         }
       } else if (currentIndex[currentCard + 1] === undefined) {
       } else {
         store.curser = Math.min(currentIndex[currentCard + 1], currentIndex[currentIndex.length - 1])
+        if (historyTable[store.path.length]) {
+          historyTable[store.path.length].curser = Math.min(historyTable[store.path.length].curser + 1, currentIndex[currentIndex.length - 1])
+        } else {
+          historyTable[store.path.length] = {cards: [ ...store.root.subCards], curser: currentCard + 1}
+        }
       }
     }
   }
@@ -1678,13 +1736,13 @@ createApp({
   store,
   UpdateDialog,
 }).mount()
+store.loading = true
 store.loadMemPath(() => {
-
   console.log(store.path)
-  console.log(memCards)
+  console.log({memCards})
+  console.log({combinedCards})
   console.log("loaded", store.root, store.cards)
 
-  store.loading = false
   store.load("", -1, () => {
     store.setHistoryTable()
     store.loading = false
@@ -1695,10 +1753,6 @@ setTimeout(() => {
   document.body.style.display = "block"
   store.loading = false
 }, 200)
-window.onhashchange = function(e) {
-  console.log("hash change", e)
-  store.load()
-}
 window.onpopstate = function(e) {
   console.log("pop state", e)
   store.load()
