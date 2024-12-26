@@ -59,10 +59,7 @@ ui.disableAutoSignIn();
  * @return {string} The URL of the FirebaseUI standalone widget.
  */
 function getWidgetUrl() {
-  return '/widget#recaptcha=' + getRecaptchaMode() + '&emailSignInMethod=' +
-      getEmailSignInMethod() + '&disableEmailSignUpStatus=' +
-      getDisableSignUpStatus() + '&adminRestrictedOperationStatus=' +
-      getAdminRestrictedOperationStatus();
+  return '/widget#recaptcha=' + getRecaptchaMode() + '&emailSignInMethod=' + getEmailSignInMethod() + '&disableEmailSignUpStatus=' + getDisableSignUpStatus() + '&adminRestrictedOperationStatus=' + getAdminRestrictedOperationStatus()
 }
 
 
@@ -71,14 +68,6 @@ function getWidgetUrl() {
  */
 var signInWithRedirect = function() {
   window.location.assign(getWidgetUrl());
-};
-
-
-/**
- * Open a popup with the FirebaseUI widget.
- */
-var signInWithPopup = function() {
-  window.open(getWidgetUrl(), 'Sign In', 'width=985,height=735');
 };
 
 function captureAThumbnail(src, cb, name){
@@ -169,7 +158,7 @@ var handleSignedInUser = function(user) {
               console.error('Uploading image failed:', error);
             });
           })
-        }, 50+index*200) // delay resizing & upload
+        }, 50 + index * 200) // delay resizing & upload
       } else if (file.type.indexOf('video') !== -1) {
         const msg = {file, index, number: event.target.files.length} 
         captureAThumbnail(URL.createObjectURL(file), (canvas, color) => {
@@ -274,48 +263,13 @@ function handleConfigChange() {
   ui.start('#firebaseui-container', getUiConfig());
 }
 
-
-/**
- * Initializes the app.
- */
-var initApp = function() {
-  /*document.getElementById('sign-in-with-redirect').addEventListener(
-      'click', signInWithRedirect);
-  document.getElementById('sign-in-with-popup').addEventListener(
-      'click', signInWithPopup);*/
+let initApp = function() {
   document.getElementById('sign-out').addEventListener('click', function() {
     firebase.auth().signOut();
   });
-  document.getElementById('delete-account').addEventListener(
-      'click', function() {
-        deleteAccount();
-      });
-/*
-  document.getElementById('recaptcha-normal').addEventListener(
-      'change', handleConfigChange);
-  document.getElementById('recaptcha-invisible').addEventListener(
-      'change', handleConfigChange);
-  // Check the selected reCAPTCHA mode.
-  document.querySelector(
-      'input[name="recaptcha"][value="' + getRecaptchaMode() + '"]')
-      .checked = true;
-
-  document.getElementById('email-signInMethod-password').addEventListener(
-      'change', handleConfigChange);
-  document.getElementById('email-signInMethod-emailLink').addEventListener(
-      'change', handleConfigChange);
-  // Check the selected email signInMethod mode.
-  document.querySelector(
-      'input[name="emailSignInMethod"][value="' + getEmailSignInMethod() + '"]')
-      .checked = true;
-  document.getElementById('email-disableSignUp-status').addEventListener(
-      'change', handleConfigChange);
-  document.getElementById("email-disableSignUp-status").checked =
-      getDisableSignUpStatus();  
-  document.getElementById('admin-restricted-operation-status').addEventListener(
-      'change', handleConfigChange);
-  document.getElementById("admin-restricted-operation-status").checked =
-      getAdminRestrictedOperationStatus();  */
+  document.getElementById('delete-account').addEventListener( 'click', function() {
+    deleteAccount();
+  });
 };
 
 window.addEventListener('load', initApp());

@@ -149,11 +149,11 @@ function makeHash(card) {
 }
 let memCards = {} // memory cards save fetchable cards (immutable)
 let memLoading = {} 
-let combinedCards = {} // combined cards save the combined cards (immutable)
+let loadedCardsFromJsonl = {} // loaded cards
+let combinedCards = {} // combined cards (immutable)
 
 function fetchCards(url, hashGetting, cb = () => {}) {
-  if (!memCards[hashGetting]) { // if the card is nxt in memory
-    // memCards[hash] = {} // prevent multiple fetches
+  if (!memCards[hashGetting] && !loadedCardsFromJsonl[hashGetting]) { // if the card is in memory
     if (memLoading[hashGetting]) return console.log("Already loading", hashGetting)
     memLoading[hashGetting] = true
     // if jsonl fetch the cards
@@ -173,18 +173,18 @@ function fetchCards(url, hashGetting, cb = () => {}) {
         if (forwards.length) {
           forwards.forEach(forward => {
             if (forward.indexOf("root") === -1) {
-              memCards[forward.slice(0, 8)] = forward.slice(8)
+              loadedCardsFromJsonl[forward.slice(0, 8)] = forward.slice(8)
             } else {
-              memCards[forward.slice(0, 4)] = forward.slice(4)
+              loadedCardsFromJsonl[forward.slice(0, 4)] = forward.slice(4)
               firstCard = forward.slice(4)
             }
           })
         }
         console.log("cards", cards)
-        memCards[hashGetting] = firstCard
-        console.log("memCards adding ", hashGetting, firstCard)
+        loadedCardsFromJsonl[hashGetting] = firstCard
+        console.log("loadedCardsFromJsonl adding ", hashGetting, firstCard)
         cards.forEach((card, i) => {
-          memCards[card.hash] = card
+          loadedCardsFromJsonl[card.hash] = card
         })
         cb(firstCard)
       }).catch(error => {
@@ -204,27 +204,34 @@ function fetchCards(url, hashGetting, cb = () => {}) {
           const title = doc.querySelectorAll("rss > channel > title")[0].textContent
           const body = doc.querySelectorAll("rss > channel > description")[0].textContent
           const items = doc.querySelectorAll("rss > channel > item")
-          let subHashes = []
-          const subCards = Array.from(items).map(item => {
-            const title = item.querySelectorAll("title")[0].textContent
-            const media = item.querySelectorAll("enclosure")[0].getAttribute("url")
-            const body = item.querySelectorAll("description")[0].textContent
-            const card = {...template(), title, media, body}
+          Promise.all(Array.from(items).map(item => {
+            const sTitle = item.querySelectorAll("title")[0].textContent
+            const sMedia = item.querySelectorAll("enclosure")[0].getAttribute("url")
+            const sBody = item.querySelectorAll("description")[0].textContent
+            const smBody = title + " - " + sTitle
+            const madeOn = item.querySelectorAll("pubDate")[0].textContent
+            // const thumbnail = item.querySelectorAll("thumbnail")[0].getAttribute("url")
+                  
+            const card = {...template(), title: sTitle, media: sMedia, body: sBody, smBody}
+
+            console.log("rss sub card - ", card)
             const subHash = makeHash(card)
-            subHashes.push(subHash)
             memCards[subHash] = { ...card, fromMemory: true, hash: subHash }
-            return card
+            console.log( "subHash for card - ", subHash, memCards[subHash] )
+            return subHash
+          })).then(subHashs => {
+            console.log("subHashs", subHashs)
+            const loadedCard = { ...template(), title, body,
+              media, subCards: subHashs,//  source: url, TODO do we need this?
+              onlyShowNotDone: true, slice: -5,
+              lockPosition: true,
+              fromMemory: true,
+              hash: hashGetting,
+            }
+            memCards[hashGetting] = loadedCard // Do be combined with card of hash
+            memCards[makeHash(loadedCard)] = loadedCard // Just in case TODO 
+            cb(loadedCard)
           })
-          const loadedCard = { ...template(), title, body,
-            media, subCards: subHashes,//  source: url, TODO do we need this?
-            onlyShowNotDone: true, slice: -5,
-            lockPosition: true,
-            fromMemory: true,
-            hash: hashGetting,
-          }
-          memCards[hashGetting] = loadedCard // Do be combined with card of hash
-          memCards[makeHash(loadedCard)] = loadedCard // Just in case TODO 
-          cb(loadedCard)
         } else {
           // put the cards in page
           console.log("doc", doc)
@@ -241,7 +248,7 @@ function fetchCards(url, hashGetting, cb = () => {}) {
     }
   } else {
     console.log("loading ", url)
-    cb(memCards[hashGetting])
+    cb(loadedCard[hashGetting] || memCards[hashGetting])
   }
 }
 
@@ -653,7 +660,7 @@ const store = reactive({ //updates the html immediately
           }
         })
       }
-    }  
+    }
     input.click()
     this.dialogSave()
   },
@@ -671,7 +678,7 @@ const store = reactive({ //updates the html immediately
     if (!hash || hash === "" || hash.length > 8) {
       return cb()
     }
-    if (!localStorage.getItem(hash) && !memCards[hash]) {
+    if (!localStorage.getItem(hash) && !memCards[hash] && !loadedCardsFromJsonl[hash]) {
       if (combinedCards[hash]) {
         return cb(combinedCards[hash])
       }
@@ -688,7 +695,7 @@ const store = reactive({ //updates the html immediately
       return cb()
     }
 
-    let tempCard = localStorage.getItem(hash) // get the card from local storage
+    let tempCard = loadedCardsFromJsonl[hash] || localStorage.getItem(hash)
 
     if (tempCard === null) tempCard = memCards[hash]
     if (!tempCard) return alert("No card found")
@@ -701,7 +708,7 @@ const store = reactive({ //updates the html immediately
             if (segment == hash) return tempCard
             return segment
           })
-          window.history.replaceState({},"","/"+this.path.join('/'))
+          window.history.replaceState({}, "", "/" + this.path.join('/'))
         }
         console.log(this.root)
         if (this.root.subCards.length) {
@@ -750,7 +757,7 @@ const store = reactive({ //updates the html immediately
       card = { ...template(), ...(memCards[hash] || {}), ...JSON.parse(tempCard), fromMemory: true}
       // maybe combine the cards
     } else {
-      card = { ...template(), ...tempCard, fromMemory: true}
+      card = { ...template(), ...tempCard, ...(loadedCardsFromJsonl[hash] || {}), fromMemory: true}
     }
     if (card.source) {
       // overwrite the card with the memory card but not display options
@@ -771,7 +778,7 @@ const store = reactive({ //updates the html immediately
       const {mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout} = card // display options load from local storage
 
       card = {...template() ,...card, ...overWriteCard}
-      if (!memCards[hash]) {
+      if (!memCards[hash] && !loadedCardsFromJsonl[hash]) {
         return fetchCards(card.source, hash, (loaded) => {
           if (typeof loaded === 'string') {
             loaded = this.loadCard(loaded)
@@ -783,9 +790,13 @@ const store = reactive({ //updates the html immediately
 
           cb(newCard)
         })
-      } else if (Object.keys(memCards[hash]).length) { // conbine the cards
+      } else if (memCards[hash] && Object.keys(memCards[hash]).length) { // conbine the cards
         // const subCards = memCards[hash].subCards
         const newCard = {...card, ...memCards[hash], hash, mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout}
+        combinedCards[hash] = newCard
+        return cb(newCard)
+      } else if (loadedCardsFromJsonl[hash] && Object.keys(loadedCardsFromJsonl[hash]).length) { 
+        const newCard = {...card, ...loadedCardsFromJsonl[hash], hash, mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout}
         combinedCards[hash] = newCard
         return cb(newCard)
       } else {
@@ -799,9 +810,7 @@ const store = reactive({ //updates the html immediately
       }
       return subHash
     }).filter(card => !!card)
-    const returns = cb(card)
-    if (returns) return returns
-    return card
+    return cb(card)
   },
   path:[],
   setHistoryTable() {
@@ -1549,11 +1558,11 @@ const store = reactive({ //updates the html immediately
     path.forEach((hash, pathIndex) => {
       setTimeout(() => {
         this.load(hash)
-      }, pathIndex * 1000)
+      }, pathIndex * 500)
     })
     setTimeout(() => {
       cb()
-    }, path.length * 1000)
+    }, path.length * 500)
   },
   loadMemPathOld(cb = () => {}) {
     this.setPath()
@@ -1580,19 +1589,6 @@ const store = reactive({ //updates the html immediately
                 })
               })
             }
-            /* card.subCards.forEach(subCardHash => this.loadCard(subCardHash, (subCard) => {
-              if (subCard?.source) {
-                fetchList.push(subCard.source)
-                fetchFun.push(() => {
-                  fetchCards(subCard.source, subCardHash, (newCard) => {
-                    console.log("fetched", newCard, memCards)
-                    fetchList = fetchList.filter(url => url !== subCard.source)
-                    if (fetchList.length === 0) getCard(pathIndex + 1)
-                  })
-                })
-              }
-            })) */
-
             
             if (pathIndex === 0 && !card) {
               const bace = { ...template(), title: "Sky Cards", body: "A place to keep your cards", source: "/Welcome.jsonl"}
@@ -1603,9 +1599,7 @@ const store = reactive({ //updates the html immediately
             }
             if (!card) console.log("No card found", path[pathIndex])
             if (fetchList.length === 0) {
-              setTimeout(() => {
-                getCard(pathIndex + 1)
-              }, 2000)
+              getCard(pathIndex + 1)
             } else {
               fetchFun[0]()
               console.log("fetching", fetchList[0])
@@ -1618,9 +1612,7 @@ const store = reactive({ //updates the html immediately
             console.log(memCards, fetchList)
             cb()
           } else {
-            setTimeout(() => {
-              getCard(pathIndex + 1)
-            }, 2000)
+            getCard(pathIndex + 1)
           }
         }
       }

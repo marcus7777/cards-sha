@@ -512,7 +512,8 @@ audio {
   overflow: auto;
   margin-bottom: -5px;
   border-radius: 0 0 10px 10px;
-  height: 100%;
+  height: calc(100% - 5px);
+  cursor: pointer;
 }
 
 img {
@@ -709,6 +710,7 @@ input[type="date"] {
   width: 120px;
   height: 120px;
   animation: pulse 6s infinite;
+  box-shadow: inset 0 0 10% #fff, inset 20px 0 50% #f0f, inset -20px 0 50% #0ff, inset 20px 0 100% #f0f, inset -20px 0 100% #0ff, 0 0 10% #fff, -2% 0 50% #f0f, 2% 0 50% #0ff;
 }
 
 @keyframes pulse {
@@ -734,7 +736,8 @@ input[type="date"] {
   position: fixed;
   cursor: pointer;
   transition: all 2s;
-  clip-path: polygon(0% 100%, 0% 0%, 100% 0%);
+  clip-path: polygon(0% 100%, -3px -3px, 100% 0%);
+  box-shadow: 0px 0px 9px 4px white;
 }
 .arrow-right:hover,
 .arrow-left:hover {
