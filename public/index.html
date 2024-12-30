@@ -47,7 +47,7 @@
                 class="inner" 
                 @dblclick="store.shallower()"
               >
-                <div class="content" @click="if (!store.isSelecting) {store.curser = -1;store.toggleBig()}">
+                <div class="content" @click="if (!store.isSelecting) {store.setCurser(-1);store.toggleBig()}">
                   <h2> {{ card.title }} </h2>
                   <img v-if="store.getDataType(card.media)=='image'" :src="card.media" />
                   <img v-if="store.getDataType(card.media)=='qrCode'" :src="store.makeQrCode(card.media)"/>

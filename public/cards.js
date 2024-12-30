@@ -59,7 +59,7 @@ function diff(obj1, obj2) {
   return ret; 
 }; 
 
-let historyTable = [] // history of cards layer by layer just the hash of the cards
+let historyTable = [] // history of cards layer by layer cards
 function saveCardToLocal(hash, card) {
   // save the diffrance between the card and generated card or template card
 
@@ -162,9 +162,14 @@ function fetchCards(url, hashGetting, cb = () => {}) {
         const lines = text.split("\n")
         const cards = lines.filter(card => card.indexOf("}") !== -1).map(card => {
           let hash = card.slice(0, card.indexOf("{"))
+          const madeHash = makeHash(JSON.parse(card.slice(card.indexOf("{"))))
+          if (hash !== madeHash) {
+            console.log("hash", hash, madeHash)
+          }
           if (hash.length !== 8) {
             hash = makeHash(JSON.parse(card.slice(card.indexOf("{"))))
           }
+          console.log("hash", hash, )
           return { ...JSON.parse(card.slice(card.indexOf("{"))), hash, fromMemory: true }
         })
         let firstCard = cards[0]
@@ -307,7 +312,7 @@ const store = reactive({ //updates the html immediately
     let cards = store.displayedSubCards({...store.root, subCards: store.cards})
     store.currentlyDisplayCards = cards
           // set Table history
-    historyTable[store.path.length] = {cards: cards.map(card => card.hash), curser: store.curser}
+    historyTable[store.path.length] = {cards, curser: store.curser}
     return cards
   },
   displayedSubCards: (ofCard) => {
@@ -383,7 +388,7 @@ const store = reactive({ //updates the html immediately
       this.tableRight = () => {
         store.load(table.cards[table.curser + 1], -1)
         store.path.pop()
-        store.path.push(table.cards[table.curser + 1])
+        store.path.push(table.cards[table.curser + 1].hash)
         window.history.pushState({}, "", "/" + store.path.join("/"))
         historyTable[store.path.length - 1].curser++
       }
@@ -394,7 +399,7 @@ const store = reactive({ //updates the html immediately
       this.tableLeft = () => {
         store.load(table.cards[table.curser - 1], -1)
         store.path.pop()
-        store.path.push(table.cards[table.curser - 1])
+        store.path.push(table.cards[table.curser - 1].hash)
         window.history.pushState({}, "", "/" + store.path.join("/"))
         historyTable[store.path.length - 1].curser--
       }
@@ -405,6 +410,14 @@ const store = reactive({ //updates the html immediately
   newCard: {...template()},
   editCard: {...template()},
   currentlyDisplayCards: [],
+  setCurser: (index) => {
+    store.curser = index
+    historyTable[store.path.length].curser = index
+    console.log("historyTable", historyTable)
+    if (store.currentlyDisplayCards[index]) {
+      store.setFocus(store.currentlyDisplayCards[index], index)
+    }
+  },
   saveRoot(rootHash = "root") {
     console.log("Saving root")
     let rootCard = { ...this.root}
@@ -468,26 +481,23 @@ const store = reactive({ //updates the html immediately
   removeCardLocal(hash) {
     localStorage.removeItem(hash)
   },
-
   localCards() {
     if (this.cacheCards.length) {
       return this.cacheCards
     }
-    this.cacheCards = this.setLocalCards()
+    this.cacheCards = this.getLocalCards()
     return this.cacheCards
   },
   cacheCards: [],
-  setLocalCards() {
-    return Object.keys(localStorage)
-      .filter(key => localStorage[key].indexOf("}") !== -1)
-      .map(key => {
-         return { ...this.loadCard(key), 
-           key,
-           listedByCards: this.listedByCards(key), 
-           allHashesNeededFrom: this.getAllHashesNeededFrom(key).length - 1
-         }
-      })
-      .sort((a, b) => {
+  getLocalCards() {
+    return Object.keys(localStorage).filter(key => localStorage[key].indexOf("}") !== -1).map(key => {
+      return { 
+        ...this.loadCard(key), 
+        key,
+        listedByCards: this.listedByCards(key), 
+        allHashesNeededFrom: this.getAllHashesNeededFrom(key).length - 1
+      }
+    }).sort((a, b) => {
       if (a.allHashesNeededFrom === b.allHashesNeededFrom) {
         return a.listedByCards - b.listedByCards
       }
@@ -669,6 +679,23 @@ const store = reactive({ //updates the html immediately
       this.deeper(-1, i)
     } else {
       this.curser = card.index
+      historyTable[store.path.length].curser = card.index
+      console.log("historyTable", historyTable)
+      this.setFocus(card, i)
+    }
+  },
+  setFocus(card, i) {
+    if ("audio" === this.getDataType(card.media)) {
+      const audioEle = document.getElementsByClassName("outerMainCard")[i].querySelector("audio")
+      if (audioEle) {
+        audioEle.focus()
+      }
+    }
+    if ("video" === this.getDataType(card.media)) {
+      const videoEle = document.getElementsByClassName("outerMainCard")[i].querySelector("video")
+      if (videoEle) {
+        videoEle.focus()
+      }
     }
   },
   loadCard(hash, cb = c => c) { // returns the card with subcards as hashes
@@ -822,7 +849,7 @@ const store = reactive({ //updates the html immediately
           return console.log("No card found", hash)
         }
         const loadedRoot = {...rootCard, subCards: rootCard.subCards.map(subCard => this.loadCard(subCard))}
-        const cards = this.displayedSubCards(loadedRoot).map(card => card.hash)
+        const cards = this.displayedSubCards(loadedRoot)
         const curser = cards.indexOf(this.path[pathIndex])
         if (curser === -1) {
           console.log("Curser not found", this.path[pathIndex], cards)
@@ -852,6 +879,7 @@ const store = reactive({ //updates the html immediately
     } 
 
     this.loadCard(cardHash, (card) => {
+      console.log(cardHash, card)
       if (!card) {
         if (cardHash === "root") {
           // alert("No root card found")
@@ -888,21 +916,7 @@ const store = reactive({ //updates the html immediately
         if (i >= card.subCards.length) {
           this.cards = loadedCards
           if (cardsOnTable.cards) {
-            this.currentlyDisplayCards = cardsOnTable.cards.map((card, placed) => {
-              console.log("card on table", card)
-              return { 
-                ...this.loadCard(card, c => c),
-                hash: card, 
-                index: loadedCards.reduce((index, loadedCard, i) => {
-                  if (makeHash(loadedCard) === card) {
-                    return i
-                  }
-                  return index
-                }, -1),
-                cardOnTheLeft: cardsOnTable.cards[placed - 1],
-                cardOnTheRight: cardsOnTable.cards[placed + 1],
-              }
-            })
+            this.currentlyDisplayCards = [...cardsOnTable.cards]
           } else {
             this.displayedCards()
           }
@@ -941,7 +955,7 @@ const store = reactive({ //updates the html immediately
 
     const tableCards = historyTable[this.path.length]
     if (tableCards && tableCards.cards && tableCards.cards.length) {
-      this.load(this.path[this.path.length - 1], this.curser, () => {}, tableCards)
+      this.load(this.path[this.path.length - 1], tableCards.curser, () => {}, tableCards)
     } else {
       this.load(this.path[this.path.length - 1], this.curser)
     }
@@ -964,7 +978,7 @@ const store = reactive({ //updates the html immediately
     const newHash = makeHash(currentCard)
     if (this.path[this.path.length - 1] === newHash) return // if the card is already on the path stop the function
     historyTable[this.path.length] = {
-      cards: this.currentlyDisplayCards.map(card => card.hash), 
+      cards: [...this.currentlyDisplayCards], 
       curser: this.currentlyDisplayCards.reduce((curser, card, index) => {
         if (newHash === card.hash) {
           return index
@@ -1552,7 +1566,7 @@ const store = reactive({ //updates the html immediately
     }, div)
     return div.children[0].toDataURL()
   },
-  loadMemPath(cb = () => {}) {
+  loadMemPathEazy(cb = r => r) {
     this.setPath()
     let path = ["root", ...this.path] // add root to the path
     path.forEach((hash, pathIndex) => {
@@ -1564,7 +1578,7 @@ const store = reactive({ //updates the html immediately
       cb()
     }, path.length * 500)
   },
-  loadMemPathOld(cb = () => {}) {
+  loadMemPath(cb = r => r) {
     this.setPath()
     let path = ["root", ...this.path] // add root to the path
     let fetchList = []
@@ -1651,7 +1665,10 @@ function arrowKeysOn(e) {
   if (e.key == "ArrowDown" || e.key == "s" || e.key == "j") {
     if (store.curser == -1) {
       if (currentIndex.length == historyTable[store.path.length]?.cards.length) {
-        store.curser = currentIndex[historyTable[store.path.length]?.curser || 0]
+        const table = historyTable[store.path.length]
+        const maxIndex = table.cards.length - 1
+        const curser = Math.min(table.curser, maxIndex)
+        store.curser = Math.max(currentIndex[curser], currentIndex[0])
       } else {
         store.curser = currentIndex[0]
       }
@@ -1680,20 +1697,21 @@ function arrowKeysOn(e) {
         if (table && table.cards[table.curser - 1]) {
           store.load(table.cards[table.curser - 1], -1)
           store.path.pop()
-          store.path.push(table.cards[table.curser - 1])
+          store.path.push(table.cards[table.curser - 1].hash)
           window.history.pushState({}, "", "/" + store.path.join("/"))
           historyTable[store.path.length - 1].curser--
         }
       } else if (currentIndex[currentCard - 1] === undefined) {
       } else {
-        store.curser = Math.max(currentIndex[currentCard - 1], -1)
+        store.setCurser(Math.max(currentIndex[currentCard - 1], -1))
+        
         if (historyTable[store.path.length]) {
           historyTable[store.path.length].curser = Math.max(historyTable[store.path.length].curser - 1, 0)
         }
       }
     }
   }
-  if (e.keyCode == 39 || e.key == "d" || e.key == "l" || e.key == "D" || e.key == "L") { // right
+  if (e.key == "ArrowRight" || e.key == "d" || e.key == "l" || e.key == "D" || e.key == "L") {
     if (e.shiftKey) {
       store.swapCards(currentIndex[currentCard], currentIndex[currentCard + 1])
     } else {
@@ -1702,13 +1720,13 @@ function arrowKeysOn(e) {
         if (table && table.cards[table.curser + 1]) {
           store.load(table.cards[table.curser + 1], -1)
           store.path.pop()
-          store.path.push(table.cards[table.curser + 1])
+          store.path.push(table.cards[table.curser + 1].hash)
           window.history.pushState({}, "", "/" + store.path.join("/"))
           historyTable[store.path.length - 1].curser++
         }
       } else if (currentIndex[currentCard + 1] === undefined) {
       } else {
-        store.curser = Math.min(currentIndex[currentCard + 1], currentIndex[currentIndex.length - 1])
+        store.setCurser(Math.min(currentIndex[currentCard + 1], currentIndex[currentIndex.length - 1]))
         if (historyTable[store.path.length]) {
           historyTable[store.path.length].curser = Math.min(historyTable[store.path.length].curser + 1, currentIndex[currentIndex.length - 1])
         } else {

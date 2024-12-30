@@ -758,3 +758,7 @@ input[type="date"] {
   transform: rotate(45deg);
   top: 0;
 }
+audio:focus,
+video:focus {
+  outline: none;
+}
