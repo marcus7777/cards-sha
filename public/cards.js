@@ -28,6 +28,7 @@ function template() {
     madeOn: "", // date
     fav: false, // favorite
     search: false,
+    startAt: 0, // start at time for audio and video
   }
 }
 function UpdateDialog(props) {
@@ -124,6 +125,7 @@ function makeHash(card) {
   delete obj.hash;
   delete obj.key;
   delete obj.fromMemory;
+  delete obj.startAt;
 
   obj.toDoFirst = [] // delete in next version
 
@@ -147,17 +149,17 @@ function makeHash(card) {
   // return the hash as a string at 8 characters long
   return hashAsStr.slice(0, 8);
 }
-let memCards = {} // memory cards save fetchable cards (immutable)
-let memLoading = {} 
+let memCards = {} // Memory cards save fetchable cards (immutable) just rss at the moment.
+let memLoading = {}
 let loadedCardsFromJsonl = {} // loaded cards
 let combinedCards = {} // combined cards (immutable)
 
 function fetchCards(url, hashGetting, cb = () => {}) {
-  if (!memCards[hashGetting] && !loadedCardsFromJsonl[hashGetting]) { // if the card is in memory
-    if (memLoading[hashGetting]) return console.log("Already loading", hashGetting)
-    memLoading[hashGetting] = true
+  if (!loadedCardsFromJsonl[hashGetting]) { // if the card is in memory
     // if jsonl fetch the cards
     if (url.indexOf(".jsonl") !== -1) {
+      if (memLoading[hashGetting]) return console.log("Already loading jsonl", hashGetting)
+      memLoading[hashGetting] = true
       fetch(url).then(response => response.text()).then(text => {
         const lines = text.split("\n")
         const cards = lines.filter(card => card.indexOf("}") !== -1).map(card => {
@@ -200,60 +202,65 @@ function fetchCards(url, hashGetting, cb = () => {}) {
           smBody: url,
         })
       })  
-    } else {
-      fetch(url).then(response => response.text()).then(text => { // if xml/rss fetch the cards
-        const doc = new window.DOMParser().parseFromString(text, "text/xml")
-        // make card and subcards
-        if (doc.querySelectorAll("rss > channel > image > url")[0]) { // if the rss has an image
-          const media = doc.querySelectorAll("rss > channel > image > url")[0].textContent
-          const title = doc.querySelectorAll("rss > channel > title")[0].textContent
-          const body = doc.querySelectorAll("rss > channel > description")[0].textContent
-          const items = doc.querySelectorAll("rss > channel > item")
-          Promise.all(Array.from(items).map(item => {
-            const sTitle = item.querySelectorAll("title")[0].textContent
-            const sMedia = item.querySelectorAll("enclosure")[0].getAttribute("url")
-            const sBody = item.querySelectorAll("description")[0].textContent
-            const smBody = title + " - " + sTitle
-            const madeOn = item.querySelectorAll("pubDate")[0].textContent
-            // const thumbnail = item.querySelectorAll("thumbnail")[0].getAttribute("url")
-                  
-            const card = {...template(), title: sTitle, media: sMedia, body: sBody, smBody}
-
-            console.log("rss sub card - ", card)
-            const subHash = makeHash(card)
-            memCards[subHash] = { ...card, fromMemory: true, hash: subHash }
-            console.log( "subHash for card - ", subHash, memCards[subHash] )
-            return subHash
-          })).then(subHashs => {
-            console.log("subHashs", subHashs)
-            const loadedCard = { ...template(), title, body,
-              media, subCards: subHashs,//  source: url, TODO do we need this?
-              onlyShowNotDone: true, slice: -5,
-              lockPosition: true,
-              fromMemory: true,
-              hash: hashGetting,
-            }
-            memCards[hashGetting] = loadedCard // Do be combined with card of hash
-            memCards[makeHash(loadedCard)] = loadedCard // Just in case TODO 
-            cb(loadedCard)
-          })
-        } else {
-          // put the cards in page
-          console.log("doc", doc)
-        }
-      }).catch(error => {
-        memLoading[hashGetting] = false
-        console.error("error", error)
-        cb({
-          title : "Can not get this",
-          smBody: url,
-          body: error.message || "Can not get this, try again later"
-        })
-      })
     }
-  } else {
-    console.log("loading ", url)
-    cb(loadedCard[hashGetting] || memCards[hashGetting])
+  }
+  if (!memCards[hashGetting]) { // if the card is in memory
+    if (memLoading[hashGetting]) return console.log("Already loading", hashGetting)
+    fetch(url).then(response => response.text()).then(text => { // if xml/rss fetch the cards
+      const doc = new window.DOMParser().parseFromString(text, "text/xml")
+      // make card and subcards
+      if (doc.querySelectorAll("rss > channel > image > url")[0]) { // if the rss has an image
+        if (memLoading[hashGetting]) return console.log("Already loading rss", hashGetting)
+        memLoading[hashGetting] = true
+        const media = doc.querySelectorAll("rss > channel > image > url")[0].textContent
+        const title = doc.querySelectorAll("rss > channel > title")[0].textContent
+        const body = doc.querySelectorAll("rss > channel > description")[0].textContent
+        const items = doc.querySelectorAll("rss > channel > item")
+        Promise.all(Array.from(items).map(item => {
+          const sTitle = item.querySelectorAll("title")[0].textContent
+          const sMedia = item.querySelectorAll("enclosure")[0].getAttribute("url")
+          const sBody = item.querySelectorAll("description")[0].textContent
+          const smBody = title + " - " + sTitle
+          const madeOn = item.querySelectorAll("pubDate")[0].textContent
+          // const thumbnail = item.querySelectorAll("thumbnail")[0].getAttribute("url")
+                
+          const card = {...template(), title: sTitle, media: sMedia, body: sBody, smBody}
+
+          console.log("rss sub card - ", card)
+          const subHash = makeHash(card)
+          memCards[subHash] = { ...card, fromMemory: true, hash: subHash }
+          console.log( "subHash for card - ", subHash, memCards[subHash] )
+          return subHash
+        })).then(subHashs => {
+          console.log("subHashs", subHashs)
+          const loadedCard = { ...template(), title, body,
+            media, subCards: subHashs, source: url,
+            onlyShowNotDone: true, slice: -5,
+            lockPosition: true,
+            fromMemory: true,
+            hash: hashGetting,
+          }
+          memCards[hashGetting] = loadedCard // Do be combined with card of hash
+          memCards[makeHash(loadedCard)] = loadedCard // Just in case TODO 
+          cb(loadedCard)
+        })
+      } else {
+        // put the cards in page
+        console.log("doc", doc)
+      }
+    }).catch(error => {
+      memLoading[hashGetting] = false
+      console.error("error", error)
+      cb({
+        title : "Can not get this",
+        smBody: url,
+        body: error.message || "Can not get this, try again later"
+      })
+    }) 
+  }
+
+  if (loadedCardsFromJsonl[hashGetting] || memCards[hashGetting]) {
+    cb({ ...(loadedCardsFromJsonl[hashGetting] || {}), ...(memCards[hashGetting] || {})})
   }
 }
 
@@ -306,6 +313,11 @@ const store = reactive({ //updates the html immediately
     localStorage.setItem("root", localStorage.getItem(hash))
     //reload page
     window.location.reload()
+  },
+  mediaSaveTime(){
+    const media = e.target
+    store.root.startAt = Math.floor(media.currentTime)
+    store.saveRoot()
   },
   displayedCards: () => {
     console.log("displayedCards")
@@ -412,7 +424,9 @@ const store = reactive({ //updates the html immediately
   currentlyDisplayCards: [],
   setCurser: (index) => {
     store.curser = index
-    historyTable[store.path.length].curser = index
+    if (historyTable[store.path.length]) {
+      historyTable[store.path.length].curser = index
+    }
     console.log("historyTable", historyTable)
     if (store.currentlyDisplayCards[index]) {
       store.setFocus(store.currentlyDisplayCards[index], index)
@@ -680,21 +694,54 @@ const store = reactive({ //updates the html immediately
     } else {
       this.curser = card.index
       historyTable[store.path.length].curser = card.index
-      console.log("historyTable", historyTable)
       this.setFocus(card, i)
     }
   },
+  pauseAllMedia() {
+    const media = document.querySelectorAll("audio, video")
+    media.forEach(m => {
+      m.pause()
+    })
+  },
   setFocus(card, i) {
     if ("audio" === this.getDataType(card.media)) {
-      const audioEle = document.getElementsByClassName("outerMainCard")[i].querySelector("audio")
+      let audioEle = {}
+      if (i > -1 && document.getElementsByClassName("outerMainCard")[i]) {
+        audioEle = document.getElementsByClassName("outerMainCard")[i].querySelector("audio")
+      } else if (i === -1 && document.getElementsByClassName("rootCard")[0]) {
+        audioEle = document.getElementsByClassName("rootCard")[0].querySelector("audio")
+      }
       if (audioEle) {
         audioEle.focus()
+        if (this.root.autoplay) {
+          if (card.pauseOthers || this.root.pauseOthe) {
+            this.pauseAllMedia()
+          }
+          audioEle.play()
+        }
+        if (audioEle.currentTime === 0) {
+          audioEle.currentTime = card.startAt || this.root.startAt || 0
+        }
       }
     }
     if ("video" === this.getDataType(card.media)) {
-      const videoEle = document.getElementsByClassName("outerMainCard")[i].querySelector("video")
+      let videoEle = {}
+      if (i > -1 && document.getElementsByClassName("outerMainCard")[i]) {
+        videoEle = document.getElementsByClassName("outerMainCard")[i].querySelector("video")
+      } else if (i === -1 && document.getElementsByClassName("rootCard")[0]) {
+        videoEle = document.getElementsByClassName("rootCard")[0].querySelector("video")
+      }
       if (videoEle) {
         videoEle.focus()
+        if (this.root.autoplay) {
+          if (card.pauseOthers || this.root.pauseOthers) {
+            this.pauseAllMedia()
+          }
+          videoEle.play()
+        }
+        if (videoEle.currentTime === 0) {
+          videoEle.currentTime = card.startAt || this.root.startAt || 0
+        }
       }
     }
   },
@@ -781,7 +828,7 @@ const store = reactive({ //updates the html immediately
     }
     let card
     if (typeof tempCard === 'string') {
-      card = { ...template(), ...(memCards[hash] || {}), ...JSON.parse(tempCard), fromMemory: true}
+      card = { ...template(), ...(memCards[hash] || {}), ...(loadedCardsFromJsonl[hash] || {}), ...JSON.parse(tempCard), fromMemory: true}
       // maybe combine the cards
     } else {
       card = { ...template(), ...tempCard, ...(loadedCardsFromJsonl[hash] || {}), fromMemory: true}
@@ -802,16 +849,16 @@ const store = reactive({ //updates the html immediately
       delete overWriteCard.done
       delete overWriteCard.fav
 
-      const {mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout} = card // display options load from local storage
+      const {mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout, startAt} = card // display options load from local storage
 
       card = {...template() ,...card, ...overWriteCard}
-      if (!memCards[hash] && !loadedCardsFromJsonl[hash]) {
+      if (!memLoading[hash]) {
         return fetchCards(card.source, hash, (loaded) => {
           if (typeof loaded === 'string') {
             loaded = this.loadCard(loaded)
           }
           // combine the cards alouding the display options
-          const newCard = {...card, ...loaded, hash, mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout}
+          const newCard = {...card, ...loaded, hash, mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout, startAt}
           combinedCards[hash] = newCard
           combinedCards[makeHash(newCard)] = newCard
 
@@ -927,7 +974,9 @@ const store = reactive({ //updates the html immediately
           cb()
         } else {
           this.loadCard(card.subCards[i], subCard => { // load main cards
-            if (!subCard) console.log("No card found on load()", card.subCards[i])
+            if (!subCard) {
+              console.log("No card found on load()", card.subCards[i])
+            }
             loadedCards[i] = subCard || {...template(), title: "No card found on load()", smBody: card.subCards[i], fromMemory: true}
             getCard(i + 1)
           })
@@ -936,7 +985,7 @@ const store = reactive({ //updates the html immediately
       getCard(0)
     })
   },
-  save(cb = () => {}) {
+  save(cb = c => c) {
     // save the root card to local storage
     //this.trail = window.location.hash.slice(1).split("/") //this is causing the problem!!
     this.saveRoot(this.getPathTop())
@@ -946,7 +995,7 @@ const store = reactive({ //updates the html immediately
       const cardHash = makeHash(card)
       saveCard(cardHash, {...card, subCards: subHashes})
     })
-    cb()
+    return cb()
   },
   shallower() {
     this.big = true
@@ -954,7 +1003,7 @@ const store = reactive({ //updates the html immediately
     window.history.pushState({curser: this.curser}, "", "/" + this.path.join("/"))
 
     const tableCards = historyTable[this.path.length]
-    if (tableCards && tableCards.cards && tableCards.cards.length) {
+    if (tableCards && tableCards.cards && tableCards.cards.length && tableCards.cards[0].hash) {
       this.load(this.path[this.path.length - 1], tableCards.curser, () => {}, tableCards)
     } else {
       this.load(this.path[this.path.length - 1], this.curser)
@@ -1490,6 +1539,7 @@ const store = reactive({ //updates the html immediately
       this.currentlyDisplayCards = this.currentlyDisplayCards.concat([{...this.editCard}])
     }
     this.save()
+    this.displayedCards()
     this.layout(this.root.layout)
     if (close) {
       this.closeDialog("addDialog")
@@ -1599,7 +1649,7 @@ const store = reactive({ //updates the html immediately
                 fetchCards(card.source, path[pathIndex], (newCard) => {
                   console.log("fetched", newCard, memCards)
                   fetchList = fetchList.filter(url => url !== card.source)
-                  getCard(pathIndex)
+                  getCard(pathIndex + 1)
                 })
               })
             }
@@ -1666,9 +1716,9 @@ function arrowKeysOn(e) {
     if (store.curser == -1) {
       if (currentIndex.length == historyTable[store.path.length]?.cards.length) {
         const table = historyTable[store.path.length]
-        const maxIndex = table.cards.length - 1
+        const maxIndex = table.cards.length
         const curser = Math.min(table.curser, maxIndex)
-        store.curser = Math.max(currentIndex[curser], currentIndex[0])
+        store.curser = currentIndex[Math.max(curser, 0)]
       } else {
         store.curser = currentIndex[0]
       }

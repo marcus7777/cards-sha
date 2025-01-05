@@ -52,12 +52,12 @@
                   <img v-if="store.getDataType(card.media)=='image'" :src="card.media" />
                   <img v-if="store.getDataType(card.media)=='qrCode'" :src="store.makeQrCode(card.media)"/>
                   <img v-if="store.getDataType(card.media)=='audio' && card.thumbnail" :src="card.thumbnail" />
-                  <audio v-if="store.getDataType(card.media)=='audio'" :src="card.media" class="media"  @ended="store.endedAutoplay(card, -1)" controls></audio>
-                  <video v-if="store.getDataType(card.media)=='video'" controls class="media" @ended="store.endedAutoplay(card,-1)" :poster="card.thumbnail" >
+                  <audio v-if="store.getDataType(card.media)=='audio'" :src="card.media" class="media" @timeupdate="store.mediaSaveTime" @ended="store.endedAutoplay(card, -1)" controls></audio>
+                  <video v-if="store.getDataType(card.media)=='video'" controls class="media" @load="store.mediaSaveTime" @ended="store.endedAutoplay(card,-1)" :poster="card.thumbnail" >
                     <source :src="card.media" type="video/mp4">
                   </video>
                   <p v-if="!store.big" v-html="card.smBody || ''"></p>
-                  <p v-else v-html="card.body || ''"></p>
+                  <p style="text-align: justify" v-else> <span v-html="card.body || ''" /> </p>
                 </div>
                 <div class="add-fav top-left" v-if="store.curser == -1" @click="store.shallower()">
                   <div class="dot"></div>
@@ -315,6 +315,11 @@
               Slice 
               <input type="number" v-model="store.editCard.slice" >
             </label>
+            <h4>Media</h4>
+            <label>
+              Start at (seconds) 
+              <input type="number" v-model="store.editCard.startAt" >
+            </label>
           </span>
         </div>
         <div v-else>
@@ -350,6 +355,16 @@
           <label>
             Slice 
             <input type="number" v-model="store.editCard.slice" >
+          </label>
+          <h4>Media</h4>
+          <label for="pauseOthers">
+            <input type="checkbox" name="pauseOthers" v-model="store.editCard.pauseOthers" />
+            On play pause others
+          </label>
+          <br />
+          <label>
+            Start at (seconds) 
+            <input type="number" v-model="store.editCard.startAt" >
           </label>
         </div>
         

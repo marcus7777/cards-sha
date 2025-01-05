@@ -50,10 +50,11 @@ function getUiConfig() {
 }
 
 // Initialize the FirebaseUI Widget using Firebase.
-if (!navigator.online) return
-var ui = new firebaseui.auth.AuthUI(firebase.auth());
-// Disable auto-sign in.
-ui.disableAutoSignIn();
+if (navigator.online) {
+  var ui = new firebaseui.auth.AuthUI(firebase.auth());
+  // Disable auto-sign in.
+  ui.disableAutoSignIn()
+}
 
 
 /**
