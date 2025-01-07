@@ -83,25 +83,25 @@ function saveCard(hash, card) {
   if (!hash) return // window.alert("no hash")
   if (!card) return // window.alert("no card")
   if (card.fromMemory) console.log("fromMemory saving", card)
-  if (!memCards[hash] && !memLoading[hash]) { // if the card is not in memory or loading
+  if (!feedCards[hash] && !memLoading[hash]) { // if the card is not in memory or loading
     saveCardToLocal(hash, card)
   }
-  if (typeof memCards[hash] === 'object') {
-    let toSave = diff({...template(), ...memCards[hash]}, card)
+  if (typeof feedCards[hash] === 'object') {
+    let toSave = diff({...template(), ...feedCards[hash]}, card)
     delete toSave.table
     delete toSave.index
     delete toSave.hash
     delete toSave.key
-    delete card.fromMemory
+    delete toSave.fromMemory
     if (card.lockPosition || card.source) {
       delete toSave.subCards
     }
     if (Object.keys(toSave).length === 0) return localStorage.removeItem(hash)
-    console.log("toSave diff mem & card", toSave, memCards[hash], card)
+    console.log("toSave", toSave, localStorage.getItem(hash))
     return localStorage.setItem(hash, JSON.stringify(toSave))
   }
-  if (typeof memCards[hash] === 'string') {
-    console.log("memCards[hash] save", memCards[hash])
+  if (typeof feedCards[hash] === 'string') {
+    console.log("feedCards[hash] save", feedCards[hash])
   }
 }
 function getUrlExtension( url ) {
@@ -131,9 +131,6 @@ function makeHash(card) {
 
   const str = JSON.stringify(obj);
   let hash = 0;
-  if (str.length == 0) {
-    return "empty000";
-  }
   for (let i = 0; i < str.length; i++) {
     let char = str.charCodeAt(i);
     hash = ((hash << 5) - hash) + char; // << is a bit shift
@@ -149,7 +146,7 @@ function makeHash(card) {
   // return the hash as a string at 8 characters long
   return hashAsStr.slice(0, 8);
 }
-let memCards = {} // Memory cards save fetchable cards (immutable) just rss at the moment.
+let feedCards = {} // Memory cards save fetchable cards (immutable) just rss at the moment.
 let memLoading = {}
 let loadedCardsFromJsonl = {} // loaded cards
 let combinedCards = {} // combined cards (immutable)
@@ -204,7 +201,7 @@ function fetchCards(url, hashGetting, cb = () => {}) {
       })  
     }
   }
-  if (!memCards[hashGetting]) { // if the card is in memory
+  if (!feedCards[hashGetting]) { // if the card is in memory
     if (memLoading[hashGetting]) return console.log("Already loading", hashGetting)
     fetch(url).then(response => response.text()).then(text => { // if xml/rss fetch the cards
       const doc = new window.DOMParser().parseFromString(text, "text/xml")
@@ -228,8 +225,7 @@ function fetchCards(url, hashGetting, cb = () => {}) {
 
           console.log("rss sub card - ", card)
           const subHash = makeHash(card)
-          memCards[subHash] = { ...card, fromMemory: true, hash: subHash }
-          console.log( "subHash for card - ", subHash, memCards[subHash] )
+          feedCards[subHash] = { ...card, fromMemory: true, hash: subHash }
           return subHash
         })).then(subHashs => {
           console.log("subHashs", subHashs)
@@ -240,8 +236,8 @@ function fetchCards(url, hashGetting, cb = () => {}) {
             fromMemory: true,
             hash: hashGetting,
           }
-          memCards[hashGetting] = loadedCard // Do be combined with card of hash
-          memCards[makeHash(loadedCard)] = loadedCard // Just in case TODO 
+          feedCards[hashGetting] = loadedCard // Do be combined with card of hash
+          feedCards[makeHash(loadedCard)] = loadedCard // Just in case TODO 
           cb(loadedCard)
         })
       } else {
@@ -259,8 +255,8 @@ function fetchCards(url, hashGetting, cb = () => {}) {
     }) 
   }
 
-  if (loadedCardsFromJsonl[hashGetting] || memCards[hashGetting]) {
-    cb({ ...(loadedCardsFromJsonl[hashGetting] || {}), ...(memCards[hashGetting] || {})})
+  if (loadedCardsFromJsonl[hashGetting] || feedCards[hashGetting]) {
+    cb({ ...(loadedCardsFromJsonl[hashGetting] || {}), ...(feedCards[hashGetting] || {})})
   }
 }
 
@@ -314,10 +310,21 @@ const store = reactive({ //updates the html immediately
     //reload page
     window.location.reload()
   },
-  mediaSaveTime(){
+  mediaSaveTime(e){
     const media = e.target
-    store.root.startAt = Math.floor(media.currentTime)
-    store.saveRoot()
+    // find parent element data hash
+    const card = media.closest("[data-hash]")
+    const startAt = Math.floor(media.currentTime)
+    if (startAt) {
+      if (+card.dataset.index == -1) {
+        store.root.startAt = startAt
+        return saveCard(card.dataset.hash, store.root)
+      } 
+      if (store.cards[+card.dataset.index]) {
+        store.cards[+card.dataset.index].startAt = startAt
+        saveCard(card.dataset.hash, store.cards[+card.dataset.index])
+      }
+    }
   },
   displayedCards: () => {
     console.log("displayedCards")
@@ -745,6 +752,24 @@ const store = reactive({ //updates the html immediately
       }
     }
   },
+  makeCard: (hash, tempCard) => {
+    if (typeof hash === 'object') {
+      hash = makeHash(hash)
+    }
+    if (typeof tempCard === 'string') {
+      if (tempCard.indexOf("}") !== -1) tempCard = JSON.parse(tempCard)
+    }
+    const gotCard = {
+      ...template(),
+      ...(tempCard || {}),
+      ...(loadedCardsFromJsonl[hash] || {}),
+      ...(feedCards[hash] || {}),
+      ...(combinedCards[hash] || {}),
+      ...(JSON.parse(localStorage.getItem(hash)) || {}),
+    }
+    console.log("gotCard", gotCard)
+    return gotCard
+  },
   loadCard(hash, cb = c => c) { // returns the card with subcards as hashes
     if (typeof hash === 'object') {
       hash = makeHash(hash)
@@ -752,7 +777,7 @@ const store = reactive({ //updates the html immediately
     if (!hash || hash === "" || hash.length > 8) {
       return cb()
     }
-    if (!localStorage.getItem(hash) && !memCards[hash] && !loadedCardsFromJsonl[hash]) {
+    if (!localStorage.getItem(hash) && !feedCards[hash] && !loadedCardsFromJsonl[hash]) {
       if (combinedCards[hash]) {
         return cb(combinedCards[hash])
       }
@@ -764,14 +789,14 @@ const store = reactive({ //updates the html immediately
         console.log("No card found", hash)
         return cb()
       }
-      
-      console.log("No root card found", hash)
-      return cb()
     }
 
     let tempCard = loadedCardsFromJsonl[hash] || localStorage.getItem(hash)
+    if (hash === "root" && !localStorage.getItem("root")) {
+      tempCard = { ...template(), title: "Sky Cards", body: "A place for cards", source: "/Welcome.jsonl"}
+    }
 
-    if (tempCard === null) tempCard = memCards[hash]
+    if (tempCard === null) tempCard = feedCards[hash]
     if (!tempCard) return alert("No card found")
     if (typeof tempCard === "string" && tempCard.indexOf("}") === -1) { // not JSON
       if (tempCard.length === 8 && tempCard.indexOf(hash) === -1) {
@@ -802,10 +827,10 @@ const store = reactive({ //updates the html immediately
       return alert("Not a card " + tempCard)
     }
     
-    if (tempCard === null && memCards[hash]) {
+    if (tempCard === null && feedCards[hash]) {
       let cardFormMem = {}
-      if (typeof memCards[hash] === 'object') {
-        cardFormMem = { ...template(), ...memCards[hash], fromMemory: true}
+      if (typeof feedCards[hash] === 'object') {
+        cardFormMem = { ...template(), ...feedCards[hash], fromMemory: true}
         cardFormMem.subCards = cardFormMem.subCards.map(sub => {
           if (typeof sub === 'object') {
             return sub
@@ -826,16 +851,11 @@ const store = reactive({ //updates the html immediately
         return console.log("No card with source or title", hash)
       }
     }
-    let card
-    if (typeof tempCard === 'string') {
-      card = { ...template(), ...(memCards[hash] || {}), ...(loadedCardsFromJsonl[hash] || {}), ...JSON.parse(tempCard), fromMemory: true}
-      // maybe combine the cards
-    } else {
-      card = { ...template(), ...tempCard, ...(loadedCardsFromJsonl[hash] || {}), fromMemory: true}
-    }
+    let card = this.makeCard(hash, tempCard)
     if (card.source) {
       // overwrite the card with the memory card but not display options
-      let overWriteCard = {...(memCards[hash] || {})}
+      let overWriteCard = {...(feedCards[hash] || {})}
+
       delete overWriteCard.onlyShowDone
       delete overWriteCard.onlyShowNotDone
       delete overWriteCard.onlyShowDoable
@@ -849,24 +869,25 @@ const store = reactive({ //updates the html immediately
       delete overWriteCard.done
       delete overWriteCard.fav
 
-      const {mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout, startAt} = card // display options load from local storage
 
-      card = {...template() ,...card, ...overWriteCard}
+      const {mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout} = card // display options load from local storage
+
+      card = {...template() , ...card, ...overWriteCard}
       if (!memLoading[hash]) {
         return fetchCards(card.source, hash, (loaded) => {
           if (typeof loaded === 'string') {
             loaded = this.loadCard(loaded)
           }
           // combine the cards alouding the display options
-          const newCard = {...card, ...loaded, hash, mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout, startAt}
+          const newCard = {...card, ...loaded, hash, mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout}
           combinedCards[hash] = newCard
           combinedCards[makeHash(newCard)] = newCard
 
           cb(newCard)
         })
-      } else if (memCards[hash] && Object.keys(memCards[hash]).length) { // conbine the cards
-        // const subCards = memCards[hash].subCards
-        const newCard = {...card, ...memCards[hash], hash, mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout}
+      } else if (feedCards[hash] && Object.keys(feedCards[hash]).length) { // conbine the cards
+        // const subCards = feedCards[hash].subCards
+        const newCard = {...card, ...feedCards[hash], hash, mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout}
         combinedCards[hash] = newCard
         return cb(newCard)
       } else if (loadedCardsFromJsonl[hash] && Object.keys(loadedCardsFromJsonl[hash]).length) { 
@@ -1009,16 +1030,14 @@ const store = reactive({ //updates the html immediately
       this.load(this.path[this.path.length - 1], this.curser)
     }
     console.log("historyTable", historyTable)
-    window.requestAnimationFrame(() => {
-      this.big = false
-      this.curser = this.cards.reduce((curser, card, index) => {
-        if (fresh === makeHash(card)) {
-          return index
-        } 
-        return curser
-      }, -1) // imperfect solution (confuses if there is more than one card with the same hash)
-      this.layout(this.root.layout)
-    })
+    this.big = false
+    this.curser = this.cards.reduce((curser, card, index) => {
+      if (fresh === makeHash(card)) {
+        return index
+      } 
+      return curser
+    }, -1) // imperfect solution (confuses if there is more than one card with the same hash)
+    this.layout(this.root.layout)
   },
   deeper(curser, i = -1) {
     this.big = true
@@ -1312,14 +1331,16 @@ const store = reactive({ //updates the html immediately
         const card = document.getElementsByClassName("outerMainCard")[currentIndex.indexOf(store.curser)]
         if (card) {
           card.scrollIntoView({behavior: "smooth", block: "center", inline: "nearest"});
+          store.setFocus(store.cards[store.curser], currentIndex.indexOf(store.curser))
         }
       } else {
         const root = document.getElementById("root");
         if (root) {
           root.scrollIntoView({behavior: "smooth", block: "start", inline: "start"});
+          store.setFocus(store.root, -1)
         }
       }
-    }, 400)
+    }, 500)
   },
   sortByTitle() {
     this.cards.sort((a,b) => {
@@ -1508,12 +1529,10 @@ const store = reactive({ //updates the html immediately
       this.editCard = {...this.newCard}
       this.editingHash = ""
     }
-    window.requestAnimationFrame(() => {
-      this.big = false
-      const openDialog = document.getElementById(dialog)
-      console.log("addDialog", dialog, openDialog)
-      openDialog.showModal()
-    })
+    this.big = false
+    const openDialog = document.getElementById(dialog)
+    console.log("addDialog", dialog, openDialog)
+    openDialog.showModal()
   },
   dialogSave(close = true){
     console.log("dialog save")
@@ -1629,6 +1648,7 @@ const store = reactive({ //updates the html immediately
     }, path.length * 500)
   },
   loadMemPath(cb = r => r) {
+    console.log("loading path", this.path)
     this.setPath()
     let path = ["root", ...this.path] // add root to the path
     let fetchList = []
@@ -1647,7 +1667,7 @@ const store = reactive({ //updates the html immediately
               console.log(fetchList)
               fetchFun.push(() => {
                 fetchCards(card.source, path[pathIndex], (newCard) => {
-                  console.log("fetched", newCard, memCards)
+                  console.log("fetched", newCard, feedCards)
                   fetchList = fetchList.filter(url => url !== card.source)
                   getCard(pathIndex + 1)
                 })
@@ -1671,9 +1691,9 @@ const store = reactive({ //updates the html immediately
             }
           })
         } else {
-          console.log("asked for", path, "got", memCards)
+          console.log("asked for", path, "got", feedCards)
           if (!path[pathIndex+1]) {
-            console.log(memCards, fetchList)
+            console.log(feedCards, fetchList)
             cb()
           } else {
             getCard(pathIndex + 1)
@@ -1799,7 +1819,7 @@ createApp({
 store.loading = true
 store.loadMemPath(() => {
   console.log(store.path)
-  console.log({memCards})
+  console.log({feedCards})
   console.log({combinedCards})
   console.log("loaded", store.root, store.cards)
 

@@ -38,13 +38,13 @@
             :key="card.title"
             @dragover="store.dragOver"
             @drop="store.drop(-1)"
-            data-index="-1" data-color="card.color"
+            data-index="-1" :data-color="card.color" :data-hash="card.hash"
           > 
             <div class="card rootCard">
               <div 
                 :data-index="-1"
                 :data-color="card.color"
-                class="inner" 
+                class="inner"
                 @dblclick="store.shallower()"
               >
                 <div class="content" @click="if (!store.isSelecting) {store.setCurser(-1);store.toggleBig()}">
@@ -53,7 +53,7 @@
                   <img v-if="store.getDataType(card.media)=='qrCode'" :src="store.makeQrCode(card.media)"/>
                   <img v-if="store.getDataType(card.media)=='audio' && card.thumbnail" :src="card.thumbnail" />
                   <audio v-if="store.getDataType(card.media)=='audio'" :src="card.media" class="media" @timeupdate="store.mediaSaveTime" @ended="store.endedAutoplay(card, -1)" controls></audio>
-                  <video v-if="store.getDataType(card.media)=='video'" controls class="media" @load="store.mediaSaveTime" @ended="store.endedAutoplay(card,-1)" :poster="card.thumbnail" >
+                  <video v-if="store.getDataType(card.media)=='video'" controls class="media" @timeupdate="store.mediaSaveTime" @ended="store.endedAutoplay(card,-1)" :poster="card.thumbnail" >
                     <source :src="card.media" type="video/mp4">
                   </video>
                   <p v-if="!store.big" v-html="card.smBody || ''"></p>
@@ -66,12 +66,12 @@
                   <div class="icon-remove" title="Add Card" >+</div>
                 </div>
                 <div class="add-fav bottom-left" v-if="store.curser == -1" >
-                  <div class="icon-heart gold" v-if="card.fav" @click="store.favSave(card, false)"> ★ </div>
-                  <div class="icon-heart" v-if="!card.fav" @click="store.favSave(card, true)"> ★ </div>
+                  <div class="icon-heart gold" v-if="card.fav" @click="store.favSave(store.root, false)"> ★ </div>
+                  <div class="icon-heart" v-if="!card.fav" @click="store.favSave(store.root, true)"> ★ </div>
                 </div>
                 <div class="add-fav bottom-right" v-if="store.curser == -1" >
-                  <div class="icon-tick" v-if="card.done" @click="store.doneSave(card, false)"> ✓ </div>
-                  <div class="icon-tick" v-if="!card.done" @click="store.doneSave(card, true)"> ☐ </div>
+                  <div class="icon-tick" v-if="card.done" @click="store.doneSave(store.root, false)"> ✓ </div>
+                  <div class="icon-tick" v-if="!card.done" @click="store.doneSave(store.root, true)"> ☐ </div>
                 </div>
                 <div class="add-fav top" v-if="store.curser == -1 && !store.root.noEditing">
                   <div class="icon-edit" title="Edit" @click="store.openDialog(`editDialog`, store.root)">✎</div>
@@ -105,7 +105,7 @@
             @dragstart="store.draggingHash = card.hash"
             @drop="store.drop(card.index)"
             :title="card.title"
-            :data-index="card.index" :data-color="card.color" 
+            :data-index="card.index" :data-color="card.color" :data-hash="card.hash"
           >
             <div :key="i" class="card mainCard">
               <div :data-index="card.index" :data-color="card.color" class="inner small">
@@ -116,8 +116,8 @@
                   <img v-if="store.getDataType(card.media)=='image'" :src="card.media" />
                   <img v-if="store.getDataType(card.media)=='qrCode'" :src="store.makeQrCode(card.media)"/>
                   <img v-if="store.getDataType(card.media)=='audio' && card.thumbnail" :src="card.thumbnail" />
-                  <audio v-if="store.getDataType(card.media)=='audio'" :src="card.media" class="media"  @ended="store.endedAutoplay(card, card.index)" controls></audio>
-                  <video v-if="store.getDataType(card.media)=='video'" controls class="media" @ended="store.endedAutoplay(card,card.index)" :poster="card.thumbnail" >
+                  <audio v-if="store.getDataType(card.media)=='audio'" :src="card.media" class="media" @timeupdate="store.mediaSaveTime" @ended="store.endedAutoplay(card, card.index)" controls></audio>
+                  <video v-if="store.getDataType(card.media)=='video'" controls class="media" @timeupdate="store.mediaSaveTime" @ended="store.endedAutoplay(card,card.index)" :poster="card.thumbnail" >
                     <source :src="card.media" type="video/mp4">
                   </video>
                 </div>
@@ -140,6 +140,8 @@
                 </div>
                 <div class="add-fav top" v-if="store.curser == card.index && !store.root.mix && !card.fromMemory">
                   <button class="icon-edit" title="Edit" @click="store.openDialog(`editDialog`, card)">✎</button>
+                </div>
+                <div class="top" v-else @click="store.mainCardTap(card, i)">
                 </div>
               </div>
             </div>
