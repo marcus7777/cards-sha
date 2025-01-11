@@ -16,20 +16,6 @@
       </div>
       <button class="top-right" @click="store.openDialog('menuDialog')"> ⋮ </button> 
       <!--Display rootcard here-->
-      <div>
-        <input 
-          v-if="store.root.quickAdd"
-          v-model="store.newCard.title"
-          id="titleQuickAdd"
-          @keyup.enter="store.onEnterTitle()"
-          placeholder="title."
-          title="Title a card followed by a full stop to add it"
-          @focus="store.disableKeys = true"
-          @blur="store.disableKeys = false"
-          @keydown="store.disableKeys = true"
-        />
-
-      </div>
       <div id="root">
         <div class="rootContainer">
           <div v-for="card in [store.root]" 
@@ -56,7 +42,7 @@
                   <video v-if="store.getDataType(card.media)=='video'" controls class="media" @timeupdate="store.mediaSaveTime" @ended="store.endedAutoplay(card,-1)" :poster="card.thumbnail" >
                     <source :src="card.media" type="video/mp4">
                   </video>
-                  <p v-if="!store.big" v-html="card.smBody || ''"></p>
+                  <p v-if="!store.big && store.currentlyDisplayCards.length !== 0" v-html="card.smBody || ''"></p>
                   <p style="text-align: justify" v-else> <span v-html="card.body || ''" /> </p>
                 </div>
                 <div class="add-fav top-left" v-if="store.curser == -1" @click="store.shallower()">
@@ -84,19 +70,19 @@
           <div class="arrow-right" v-if="store.tableRight" @click="store.tableRight()" ></div>
         </div>
       </div>
-      <div v-if="store.root.search">
-        <input 
-          v-model="store.search"
-          id="titleQuickAdd"
-          @keyup.enter="store.onEnterTitle()"
-          placeholder="Search title"
-          @focus="store.disableKeys = true"
-          @blur="store.disableKeys = false"
-          type="search"
-        />
-      </div>
       <!--  Display main cards -->
       <div v-if="!store.big && store.currentlyDisplayCards.length">
+        <div v-if="store.root.search">
+          <input 
+            v-model="store.search"
+            id="titleQuickAdd"
+            @keyup.enter="store.onEnterTitle()"
+            placeholder="Search title"
+            @focus="store.disableKeys = true"
+            @blur="store.disableKeys = false"
+            type="search"
+          />
+        </div>
         <div class="container">
           <div v-for="(card, i) in store.currentlyDisplayCards.filter((card) => (Object.values(card).join()).toLowerCase().includes(store.search.toLowerCase()))"
             class="outerMainCard outerCard"
@@ -111,8 +97,7 @@
               <div :data-index="card.index" :data-color="card.color" class="inner small">
                 <div class="content" @click="store.mainCardTap(card, i)">
                   <h2> {{ card.title }} </h2>
-                  <p v-if="!store.big" v-html="card.smBody"></p>
-                  <p v-else v-html="card.body"></p>
+                  <p v-html="card.smBody"></p>
                   <img v-if="store.getDataType(card.media)=='image'" :src="card.media" />
                   <img v-if="store.getDataType(card.media)=='qrCode'" :src="store.makeQrCode(card.media)"/>
                   <img v-if="store.getDataType(card.media)=='audio' && card.thumbnail" :src="card.thumbnail" />
@@ -157,9 +142,12 @@
           <button @click="store.closeDialog('menuDialog')" class="top-right">x</button>
           <div>
             <p>click here to report an issue with this site: <a href="https://github.com/marcus7777/cards-sha/issues"> Help us improve</a> </p>
+            <p>This is Version 1.0.1</p>
             <pre>Powerfull tools:</pre> 
             <button @click="store.clearLocalStore" >Remove all</button>
             <button @click="store.export" >Export</button>
+	    <button @click="store.loadedToFile">Loaded To file</button>
+	    
             <button @click="store.import" >Import</button>
             <button @click="store.all = true;store.openDialog('all')" >Show all</button>
             <button @click="store.unlock"> unlock </button>
@@ -243,10 +231,6 @@
             </label>
             <br />
             <label>
-              <input type="checkbox" v-model="store.editCard.quickAdd" />
-              Quick Add
-            </label>
-            <label>
               <input type="checkbox" v-model="store.editCard.search" />
               Search
             </label>
@@ -321,6 +305,10 @@
             <label>
               Start at (seconds) 
               <input type="number" v-model="store.editCard.startAt" >
+	    </label> <br />
+            <label>
+              Playback Rate 
+              <input type="number" v-model="store.editCard.playbackRate" >
             </label>
           </span>
         </div>
@@ -367,6 +355,10 @@
           <label>
             Start at (seconds) 
             <input type="number" v-model="store.editCard.startAt" >
+	  </label> <br />
+          <label>
+            Playback Rate 
+            <input type="number" v-model="store.editCard.playbackRate" >
           </label>
         </div>
         

@@ -10,13 +10,12 @@ function template() {
     subCards: [],     // array of cards
     toDoFirst: [],    // array of cards that need to be before this card
     done: false,
-    color: '', // dot color and background color of the page
+    color: '',        // dot color and background color of the page
     hideDone: false,
     media: "",
     autoplay: false,  
-    quickAdd: false,
-    thumbnail: "", // thumbnail for the media just video for now
-    layout: "line", // line, circle, grid
+    thumbnail: "",    // thumbnail for the media just video for now
+    layout: "line",   // line, circle, grid
     slice: 0,
     onlyShowDone: false,
     onlyShowNotDone: false,
@@ -29,6 +28,7 @@ function template() {
     fav: false, // favorite
     search: false,
     startAt: 0, // start at time for audio and video
+    playbackRate: 1, // playback rate for audio and video
   }
 }
 function UpdateDialog(props) {
@@ -126,8 +126,17 @@ function makeHash(card) {
   delete obj.key;
   delete obj.fromMemory;
   delete obj.startAt;
-
-  obj.toDoFirst = [] // delete in next version
+  delete obj.playbackRate;
+  delete obj.lockPosition;
+  delete obj.onlyShowDone;
+  delete obj.onlyShowNotDone;
+  delete obj.onlyShowDoable;
+  delete obj.mix;
+  delete obj.slice;
+  delete obj.autoplay;
+  delete obj.noEditing;
+  delete obj.puaseOthers;
+  delete obj.toDoFirst;
 
   const str = JSON.stringify(obj);
   let hash = 0;
@@ -151,7 +160,8 @@ let memLoading = {}
 let loadedCardsFromJsonl = {} // loaded cards
 let combinedCards = {} // combined cards (immutable)
 
-function fetchCards(url, hashGetting, cb = () => {}) {
+function fetchCards(card, hashGetting, cb = () => {}) {
+  const url = card.source
   if (!loadedCardsFromJsonl[hashGetting]) { // if the card is in memory
     // if jsonl fetch the cards
     if (url.indexOf(".jsonl") !== -1) {
@@ -159,16 +169,18 @@ function fetchCards(url, hashGetting, cb = () => {}) {
       memLoading[hashGetting] = true
       fetch(url).then(response => response.text()).then(text => {
         const lines = text.split("\n")
+        const hashSwap = [] // [[old, new] ... ] swap subCards
         const cards = lines.filter(card => card.indexOf("}") !== -1).map(card => {
           let hash = card.slice(0, card.indexOf("{"))
           const madeHash = makeHash(JSON.parse(card.slice(card.indexOf("{"))))
-          if (hash !== madeHash) {
-            console.log("hash", hash, madeHash)
-          }
           if (hash.length !== 8) {
             hash = makeHash(JSON.parse(card.slice(card.indexOf("{"))))
           }
-          console.log("hash", hash, )
+          if (hash !== madeHash) {
+            console.log("hashs not matching", hash, madeHash)
+            hashSwap.push([hash, madeHash])
+          }
+          console.log("hash", hash)
           return { ...JSON.parse(card.slice(card.indexOf("{"))), hash, fromMemory: true }
         })
         let firstCard = cards[0]
@@ -178,6 +190,7 @@ function fetchCards(url, hashGetting, cb = () => {}) {
           forwards.forEach(forward => {
             if (forward.indexOf("root") === -1) {
               loadedCardsFromJsonl[forward.slice(0, 8)] = forward.slice(8)
+              hashSwap.push([forward.slice(0, 8), forward.slice(8)])
             } else {
               loadedCardsFromJsonl[forward.slice(0, 4)] = forward.slice(4)
               firstCard = forward.slice(4)
@@ -187,8 +200,26 @@ function fetchCards(url, hashGetting, cb = () => {}) {
         console.log("cards", cards)
         loadedCardsFromJsonl[hashGetting] = firstCard
         console.log("loadedCardsFromJsonl adding ", hashGetting, firstCard)
+        if (typeof firstCard === 'string') {
+          firstCard = hashSwap.find(swap => swap[0] === firstCard)[1] || firstCard
+          firstCard = loadedCardsFromJsonl[firstCard]
+        }
         cards.forEach((card, i) => {
+          if (hashSwap.length) {
+            console.log("card.subCards", card.subCards)
+            card.subCards = (card.subCards || []).map(subCard => {
+              const found = hashSwap.find(swap => swap[0] === subCard)
+              if (found) {
+                return found[1]
+              }
+            })
+            console.log("card.subCards", card.subCards)
+          }
           loadedCardsFromJsonl[card.hash] = card
+          const found = hashSwap.find(swap => swap[0] === card.hash)
+          if (found) {
+            loadedCardsFromJsonl[found[1]] = card
+          }
         })
         cb(firstCard)
       }).catch(error => {
@@ -218,14 +249,28 @@ function fetchCards(url, hashGetting, cb = () => {}) {
           const sMedia = item.querySelectorAll("enclosure")[0].getAttribute("url")
           const sBody = item.querySelectorAll("description")[0].textContent
           const smBody = title + " - " + sTitle
-          const madeOn = item.querySelectorAll("pubDate")[0].textContent
+          // const madeOn = item.querySelectorAll("pubDate")[0].textContent
           // const thumbnail = item.querySelectorAll("thumbnail")[0].getAttribute("url")
-                
-          const card = {...template(), title: sTitle, media: sMedia, body: sBody, smBody}
+          const startAt = card.startAt || 0
+          const layout = card.layout || "line"
+          const autoPlay = card.autoPlay || false
+          const playbackRate = card.playbackRate || 1
+          const sCard = {
+            ...template(),
+            title: sTitle,
+            media: sMedia,
+            body: sBody,
+            smBody,
+            // madeOn,
+            startAt,
+            layout,
+            autoPlay,
+            playbackRate,
+          }
 
-          console.log("rss sub card - ", card)
-          const subHash = makeHash(card)
-          feedCards[subHash] = { ...card, fromMemory: true, hash: subHash }
+          console.log("rss sub card - ", sCard)
+          const subHash = makeHash(sCard)
+          feedCards[subHash] = { ...sCard, fromMemory: true, hash: subHash }
           return subHash
         })).then(subHashs => {
           console.log("subHashs", subHashs)
@@ -639,6 +684,21 @@ const store = reactive({ //updates the html immediately
     const name = this.root.title || this.pageTitle || this.title || "Sky Cards"
     saveFile(cards.filter(card => typeof card === "string" ).join("\n"), name + " " + cards.length + " cards + key")
   },
+  loadedToFile(){
+    let cards = []
+    const locals = Object.keys(loadedCardsFromJsonl)
+    locals.forEach(key => {
+      if (typeof loadedCardsFromJsonl[key] === 'object') {
+        const line = key + JSON.stringify(loadedCardsFromJsonl[key])
+        cards.push(line)
+      } else {
+        const line = key + loadedCardsFromJsonl[key]
+        cards.push(line)
+      }
+    })
+    const name = this.root.title || this.pageTitle || this.title || "Sky Cards"
+    saveFile(cards.join("\n"), name + " all " + cards.length + " lines")
+  },
   import() {
     const input = document.createElement('input')
     input.type = 'file'
@@ -700,7 +760,9 @@ const store = reactive({ //updates the html immediately
       this.deeper(-1, i)
     } else {
       this.curser = card.index
-      historyTable[store.path.length].curser = card.index
+      if (historyTable[store.path.length]) {
+        historyTable[store.path.length].curser = card.index
+      }
       this.setFocus(card, i)
     }
   },
@@ -721,13 +783,14 @@ const store = reactive({ //updates the html immediately
       if (audioEle) {
         audioEle.focus()
         if (this.root.autoplay) {
-          if (card.pauseOthers || this.root.pauseOthe) {
+          if (card.pauseOthers || this.root.pauseOthers) {
             this.pauseAllMedia()
           }
           audioEle.play()
         }
         if (audioEle.currentTime === 0) {
-          audioEle.currentTime = card.startAt || this.root.startAt || 0
+          audioEle.currentTime = Math.max(0, +card.startAt, +this.root.startAt)
+          audioEle.playbackRate = card.playbackRate || this.root.playbackRate || 1
         }
       }
     }
@@ -748,6 +811,7 @@ const store = reactive({ //updates the html immediately
         }
         if (videoEle.currentTime === 0) {
           videoEle.currentTime = card.startAt || this.root.startAt || 0
+          videoEle.playbackRate = card.playbackRate || this.root.playbackRate || 1
         }
       }
     }
@@ -759,13 +823,28 @@ const store = reactive({ //updates the html immediately
     if (typeof tempCard === 'string') {
       if (tempCard.indexOf("}") !== -1) tempCard = JSON.parse(tempCard)
     }
+    const getLocal = (h, i = 0) => {
+      if (i > 100) return console.log("To many forwords")
+      let localCard = localStorage.getItem(h)
+      let output = {}
+      if (localCard) {
+        if (localCard.indexOf("}") !== -1) {
+          output = JSON.parse(localCard)
+        } else {
+          output = getLocal(h, i + 1)
+        }
+      }
+      if (typeof output === 'object') return output
+      return {}
+    }
     const gotCard = {
       ...template(),
       ...(tempCard || {}),
       ...(loadedCardsFromJsonl[hash] || {}),
       ...(feedCards[hash] || {}),
       ...(combinedCards[hash] || {}),
-      ...(JSON.parse(localStorage.getItem(hash)) || {}),
+      ...(getLocal(hash) || {}),
+      hash,
     }
     console.log("gotCard", gotCard)
     return gotCard
@@ -874,7 +953,7 @@ const store = reactive({ //updates the html immediately
 
       card = {...template() , ...card, ...overWriteCard}
       if (!memLoading[hash]) {
-        return fetchCards(card.source, hash, (loaded) => {
+        return fetchCards(card, hash, (loaded) => {
           if (typeof loaded === 'string') {
             loaded = this.loadCard(loaded)
           }
@@ -1389,26 +1468,6 @@ const store = reactive({ //updates the html immediately
     if (!this.root.color) return
     document.body.style.backgroundColor = this.root.color
   },
-  autoAdd() {
-    // If the new card title end with add, then add it as a new card.
-    // And select all within the text box, so you can start typing the new card title
-    const triggerArray = ['.', '. ' , 'full stop', 'full stop ']
-    triggerArray.forEach(trigger => {
-      if (this.newCard.title.includes(trigger) && this.newCard.title.indexOf(trigger) === this.newCard.title.length - trigger.length){
-        this.editCard.title = this.newCard.title.slice(0, -trigger.length)
-        this.inc() 
-      }
-    })
-    if (this.newCard.title.length !== 8) return
-    const triggerArrayHash = Object.keys(localStorage).filter(key => key.length === 8).filter(key => {
-      return key !== makeHash(this.root) && key !== makeHash(this.newCard)
-    }).forEach(cardHash => {
-      if (this.newCard.title === cardHash) {
-        this.editCard = {...this.loadCard(cardHash)}
-        this.inc()
-      }
-    })
-  },
   swapCards(index1, index2, withFocus = true) {
     if (this.curser === index1) {
       this.curser = index2
@@ -1666,7 +1725,7 @@ const store = reactive({ //updates the html immediately
               fetchList.push(card.source)
               console.log(fetchList)
               fetchFun.push(() => {
-                fetchCards(card.source, path[pathIndex], (newCard) => {
+                fetchCards(card, path[pathIndex], (newCard) => {
                   console.log("fetched", newCard, feedCards)
                   fetchList = fetchList.filter(url => url !== card.source)
                   getCard(pathIndex + 1)
@@ -1909,10 +1968,6 @@ window.addEventListener("message", (e) => {
   }
 })
 
-
-setInterval(() => {
-  store.autoAdd()
-}, 1000) 
 // check if user is selecting text
 store.isSelecting = false
 document.addEventListener('selectionchange', () => {
