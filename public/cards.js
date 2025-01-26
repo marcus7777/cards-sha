@@ -197,13 +197,14 @@ function fetchCards(card, hashGetting, cb = () => {}) {
             }
           })
         }
-        console.log("cards", cards)
-        loadedCardsFromJsonl[hashGetting] = firstCard
-        console.log("loadedCardsFromJsonl adding ", hashGetting, firstCard)
         if (typeof firstCard === 'string') {
-          firstCard = hashSwap.find(swap => swap[0] === firstCard)[1] || firstCard
-          firstCard = loadedCardsFromJsonl[firstCard]
+          const neededSwap = hashSwap.find(swap => swap[0] === firstCard)
+          if (neededSwap) {
+            firstCard = neededSwap[1]
+          }
+          firstCard = loadedCardsFromJsonl[firstCard] || firstCard
         }
+        loadedCardsFromJsonl[hashGetting] = firstCard
         cards.forEach((card, i) => {
           if (hashSwap.length) {
             console.log("card.subCards", card.subCards)
@@ -212,6 +213,7 @@ function fetchCards(card, hashGetting, cb = () => {}) {
               if (found) {
                 return found[1]
               }
+              return subCard
             })
             console.log("card.subCards", card.subCards)
           }
@@ -376,7 +378,7 @@ const store = reactive({ //updates the html immediately
     let cards = store.displayedSubCards({...store.root, subCards: store.cards})
     store.currentlyDisplayCards = cards
           // set Table history
-    historyTable[store.path.length] = {cards, curser: store.curser}
+    historyTable[store.path.length] = {cards, curser: Math.max(store.curser, 0)}
     return cards
   },
   displayedSubCards: (ofCard) => {
@@ -475,9 +477,10 @@ const store = reactive({ //updates the html immediately
   editCard: {...template()},
   currentlyDisplayCards: [],
   setCurser: (index) => {
+    console.log("setCurser", index)
     store.curser = index
     if (historyTable[store.path.length]) {
-      historyTable[store.path.length].curser = index
+      historyTable[store.path.length].curser = Math.max(index, 0)
     }
     console.log("historyTable", historyTable)
     if (store.currentlyDisplayCards[index]) {
@@ -839,11 +842,11 @@ const store = reactive({ //updates the html immediately
     }
     const gotCard = {
       ...template(),
-      ...(tempCard || {}),
-      ...(loadedCardsFromJsonl[hash] || {}),
-      ...(feedCards[hash] || {}),
-      ...(combinedCards[hash] || {}),
-      ...(getLocal(hash) || {}),
+      ...(typeof tempCard === "object" ? tempCard : {}),
+      ...(typeof loadedCardsFromJsonl[hash] === "object" ? loadedCardsFromJsonl[hash] : {}),
+      ...(typeof feedCards[hash] === "object" ? feedCards[hash] : {}),
+      ...(typeof combinedCards[hash] === "object" ? combinedCards[hash] : {}),
+      ...getLocal(hash),
       hash,
     }
     console.log("gotCard", gotCard)
@@ -1068,6 +1071,7 @@ const store = reactive({ //updates the html immediately
             this.displayedCards()
           }
           this.curser = newCurser || 0
+          console.log("setCurser", this.curser)
           this.layout(this.root.layout)
           console.log("loaded", cardHash, this.root, this.cards)
           this.setColor()
@@ -1795,12 +1799,13 @@ function arrowKeysOn(e) {
     if (store.curser == -1) {
       if (currentIndex.length == historyTable[store.path.length]?.cards.length) {
         const table = historyTable[store.path.length]
-        const maxIndex = table.cards.length
-        const curser = Math.min(table.curser, maxIndex)
+        const maxIndex = table.cards.length - 1
+        const curser = Math.min(+table.curser, maxIndex)
         store.curser = currentIndex[Math.max(curser, 0)]
       } else {
         store.curser = currentIndex[0]
       }
+      console.log("curser", store.curser)
     } else {
       store.deeper(-1, currentCard)
     }
@@ -1828,15 +1833,12 @@ function arrowKeysOn(e) {
           store.path.pop()
           store.path.push(table.cards[table.curser - 1].hash)
           window.history.pushState({}, "", "/" + store.path.join("/"))
-          historyTable[store.path.length - 1].curser--
+          if (+historyTable[store.path.length - 1] > 0 ) historyTable[store.path.length - 1].curser--
         }
       } else if (currentIndex[currentCard - 1] === undefined) {
+        // do nothing
       } else {
         store.setCurser(Math.max(currentIndex[currentCard - 1], -1))
-        
-        if (historyTable[store.path.length]) {
-          historyTable[store.path.length].curser = Math.max(historyTable[store.path.length].curser - 1, 0)
-        }
       }
     }
   }
@@ -1856,11 +1858,6 @@ function arrowKeysOn(e) {
       } else if (currentIndex[currentCard + 1] === undefined) {
       } else {
         store.setCurser(Math.min(currentIndex[currentCard + 1], currentIndex[currentIndex.length - 1]))
-        if (historyTable[store.path.length]) {
-          historyTable[store.path.length].curser = Math.min(historyTable[store.path.length].curser + 1, currentIndex[currentIndex.length - 1])
-        } else {
-          historyTable[store.path.length] = {cards: [ ...store.root.subCards], curser: currentCard + 1}
-        }
       }
     }
   }
