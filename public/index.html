@@ -14,7 +14,7 @@
       <div id="loading" v-if="store.loading">
         <div class="loader"></div>
       </div>
-      <button class="top-right" @click="store.openDialog('menuDialog')"> {{store.curser}} ⋮ </button> 
+      <button class="top-right" @click="store.openDialog('menuDialog')">⋮</button> 
       <!--Display rootcard here-->
       <div id="root">
         <div class="rootContainer">
@@ -142,7 +142,7 @@
           <button @click="store.closeDialog('menuDialog')" class="top-right">x</button>
           <div>
             <p>click here to report an issue with this site: <a href="https://github.com/marcus7777/cards-sha/issues"> Help us improve</a> </p>
-            <p>This is Version 1.0.1</p>
+            <p>This is Version 1.0.2</p>
             <pre>Powerfull tools:</pre> 
             <button @click="store.clearLocalStore" >Remove all</button>
             <button @click="store.export" >Export</button>
