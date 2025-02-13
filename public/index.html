@@ -43,6 +43,7 @@
                     <source :src="card.media" type="video/mp4">
                   </video>
                   <p v-if="!store.big && store.currentlyDisplayCards.length !== 0" v-html="card.smBody || ''"></p>
+                  <p v-if="!store.big && store.currentlyDisplayCards.length !== 0" v-html="card.body ? '<span class=read-more >...</span>' : ''"></p>
                   <p style="text-align: justify" v-else> <span v-html="card.body || ''" /> </p>
                 </div>
                 <div class="add-fav top-left" v-if="store.curser == -1" @click="store.shallower()">

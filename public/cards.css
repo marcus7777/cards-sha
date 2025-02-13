@@ -762,3 +762,13 @@ audio:focus,
 video:focus {
   outline: none;
 }
+.read-more {
+  /* down arrow */
+  display: block;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 10px solid #000;
+  margin: 0 auto;
+}
