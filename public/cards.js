@@ -189,10 +189,12 @@ function fetchCards(card, hashGetting, cb = () => {}) {
         if (forwards.length) {
           forwards.forEach(forward => {
             if (forward.indexOf("root") === -1) {
-              loadedCardsFromJsonl[forward.slice(0, 8)] = forward.slice(8)
-              hashSwap.push([forward.slice(0, 8), forward.slice(8)])
+              const from = forward.slice(0, 8)
+              const to = forward.slice(8).replaceAll('"','')
+              loadedCardsFromJsonl[from] = to
+              hashSwap.push([from, to])
             } else {
-              loadedCardsFromJsonl[forward.slice(0, 4)] = forward.slice(4)
+              loadedCardsFromJsonl[forward.slice(0, 4)] = forward.slice(4).replaceAll('"','')
               firstCard = forward.slice(4)
             }
           })
@@ -559,6 +561,7 @@ const store = reactive({ //updates the html immediately
   },
   cacheCards: [],
   getLocalCards() {
+    debugger;
     return Object.keys(localStorage).filter(key => localStorage[key].indexOf("}") !== -1).map(key => {
       return { 
         ...this.loadCard(key), 
@@ -875,7 +878,7 @@ const store = reactive({ //updates the html immediately
 
     let tempCard = loadedCardsFromJsonl[hash] || localStorage.getItem(hash)
     if (hash === "root" && !localStorage.getItem("root")) {
-      tempCard = { ...template(), title: "Sky Cards", body: "A place for cards", source: "/Welcome.jsonl"}
+      tempCard = { ...template(), title: "Sky Cards", body: "A place for cards", source: "/home.jsonl"}
     }
 
     if (tempCard === null) tempCard = feedCards[hash]
@@ -1034,7 +1037,7 @@ const store = reactive({ //updates the html immediately
         if (cardHash === "root") {
           // alert("No root card found")
           // load default root card 
-          this.root = { ...template(), title: "Sky Cards", body: "A place to keep your cards", source: "/Welcome.jsonl"}
+          this.root = { ...template(), title: "Sky Cards", body: "A place to keep your cards", source: "/home.jsonl"}
           this.save()
           this.load("root", -1, cb)
         }
@@ -1091,7 +1094,6 @@ const store = reactive({ //updates the html immediately
   },
   save(cb = c => c) {
     // save the root card to local storage
-    //this.trail = window.location.hash.slice(1).split("/") //this is causing the problem!!
     this.saveRoot(this.getPathTop())
     // save this.cards to local storage hash all cards and save under the hash with a list of hashs for sub cards
     this.cards.forEach(card => {
@@ -1099,7 +1101,9 @@ const store = reactive({ //updates the html immediately
       const cardHash = makeHash(card)
       saveCard(cardHash, {...card, subCards: subHashes})
     })
-    return cb()
+    if (typeof cb === "function") {
+      return cb()
+    }
   },
   shallower() {
     this.big = true
@@ -1593,9 +1597,11 @@ const store = reactive({ //updates the html immediately
       this.editingHash = ""
     }
     this.big = false
-    const openDialog = document.getElementById(dialog)
-    console.log("addDialog", dialog, openDialog)
-    openDialog.showModal()
+    window.requestAnimationFrame(() => {
+      const openDialog = document.getElementById(dialog)
+      console.log("addDialog", dialog, openDialog)
+      openDialog.showModal()
+    })
   },
   dialogSave(close = true){
     console.log("dialog save")
@@ -1738,7 +1744,7 @@ const store = reactive({ //updates the html immediately
             }
             
             if (pathIndex === 0 && !card) {
-              const bace = { ...template(), title: "Sky Cards", body: "A place to keep your cards", source: "/Welcome.jsonl"}
+              const bace = { ...template(), title: "Sky Cards", body: "A place to keep your cards", source: "/home.jsonl"}
               const hash = makeHash(bace)
               saveCard(hash, bace)
               localStorage.setItem("root", hash)

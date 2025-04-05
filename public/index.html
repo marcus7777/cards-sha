@@ -143,7 +143,7 @@
           <button @click="store.closeDialog('menuDialog')" class="top-right">x</button>
           <div>
             <p>click here to report an issue with this site: <a href="https://github.com/marcus7777/cards-sha/issues"> Help us improve</a> </p>
-            <p>This is Version 1.0.2</p>
+            <p>This is Version 1.0.3</p>
             <pre>Powerfull tools:</pre> 
             <button @click="store.clearLocalStore" >Remove all</button>
             <button @click="store.export" >Export</button>
@@ -255,7 +255,7 @@
             <br />
             <input type="color" name="color" v-model="store.editCard.color" @change="store.setColor()"/>
           </div>
-          <iframe id="login" src="/login.html" style="border:0px #ffffff none;" name="upload" frameborder="1" marginheight="0px" marginwidth="0px" height="240px" width="300px" allowfullscreen></iframe>
+          <iframe loading="lazy" id="login" src="/login.html" style="border:0px #ffffff none;" name="upload" frameborder="1" marginheight="0px" marginwidth="0px" height="240px" width="300px" allowfullscreen></iframe>
         </div>
         <div v-if="!store.editCard.source">
           <h3>Sub Cards</h3>
