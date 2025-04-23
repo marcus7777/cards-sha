@@ -113,6 +113,32 @@ function captureAThumbnail(src, cb, name){
 var handleSignedInUser = function(user) {
   document.getElementById('user-signed-in').style.display = 'block'
   document.getElementById('user-signed-out').style.display = 'none'
+  const pubButton = document.getElementById('pub')
+  pubButton.onclick = function() {
+    let cards = []
+    const locals = Object.keys(localStorage)
+    locals.forEach(key => {
+      const line = key + localStorage.getItem(key)
+      cards.push(line)
+    })
+    cards = cards.sort((a, b) => {
+      if (a.startsWith("root")) {
+        return -1
+      }
+      return 0
+    })
+    if (confirm("update the site with " + cards.length + " cards")) {
+      const textFile = new Blob([cards.join("\n")], { type: 'text/plain' });
+      const storageRef = firebase.storage().ref()
+      const fileRef = storageRef.child('site/home.jsonl')
+      fileRef.put(textFile).then(() => {
+        alert("updated")
+        fileRef.getDownloadURL().then(url => {
+          console.log(url)
+	})
+      })
+    }
+  } 	
   const fileUploadElement = document.getElementById('file-upload')
   fileUploadElement.onchange = function(event) {
     [...event.target.files].forEach((file, index) => {
@@ -120,8 +146,8 @@ var handleSignedInUser = function(user) {
       const user = firebase.auth().currentUser
       // prepare metadata
       var metadata = {
-       userId: user.uid,
-       contentType: file.type
+        userId: user.uid,
+        contentType: file.type
       }
       // upload file
       const fileRef = storageRef.child('userUploads/' + file.name)
@@ -215,9 +241,6 @@ firebase.auth().onAuthStateChanged(function(user) {
   document.getElementById('loaded').style.display = 'block';
   user ? handleSignedInUser(user) : handleSignedOutUser();
   if (!user) return
-  
-  var storageRef = firebase.storage().ref();
-  var imagesRef = storageRef.child('images');
 });
 
 /**

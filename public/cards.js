@@ -878,7 +878,7 @@ const store = reactive({ //updates the html immediately
 
     let tempCard = loadedCardsFromJsonl[hash] || localStorage.getItem(hash)
     if (hash === "root" && !localStorage.getItem("root")) {
-      tempCard = { ...template(), title: "Sky Cards", body: "A place for cards", source: "/home.jsonl"}
+      tempCard = { ...template(), title: "Sky Cards", body: "A place for cards", source: "https://firebasestorage.googleapis.com/v0/b/sky-cards.appspot.com/o/site%2Fhome.jsonl?alt=media"}
     }
 
     if (tempCard === null) tempCard = feedCards[hash]
@@ -1037,7 +1037,7 @@ const store = reactive({ //updates the html immediately
         if (cardHash === "root") {
           // alert("No root card found")
           // load default root card 
-          this.root = { ...template(), title: "Sky Cards", body: "A place to keep your cards", source: "/home.jsonl"}
+          this.root = { ...template(), title: "Sky Cards", body: "A place to keep your cards", source: "https://firebasestorage.googleapis.com/v0/b/sky-cards.appspot.com/o/site%2Fhome.jsonl?alt=media"}
           this.save()
           this.load("root", -1, cb)
         }
@@ -1744,7 +1744,7 @@ const store = reactive({ //updates the html immediately
             }
             
             if (pathIndex === 0 && !card) {
-              const bace = { ...template(), title: "Sky Cards", body: "A place to keep your cards", source: "/home.jsonl"}
+              const bace = { ...template(), title: "Sky Cards", body: "A place to keep your cards", source: "https://firebasestorage.googleapis.com/v0/b/sky-cards.appspot.com/o/site%2Fhome.jsonl?alt=media"}
               const hash = makeHash(bace)
               saveCard(hash, bace)
               localStorage.setItem("root", hash)
