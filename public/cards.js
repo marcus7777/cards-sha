@@ -298,8 +298,9 @@ function fetchCards(card, hashGetting, cb = () => {}) {
       console.error("error", error)
       cb({
         title : "Can not get this",
-        smBody: url,
-        body: error.message || "Can not get this, try again later"
+        smBody : url,
+        body : error.message || "Can not get this, try again later",
+        noEditing : true,
       })
     }) 
   }
@@ -320,6 +321,10 @@ function saveToLocalStorage(file, cb) { //cb is a callback function that is call
       .map(card => card.slice(0, card.indexOf("{")))
 
     cards.forEach((card, i) => {
+      delete card.noEditing
+      if (card.source && card.subCards) {
+        console.log("both source & subCards", card)
+      }
       saveCardToLocal(hashs[i] || makeHash(card), card)
     })
 
@@ -561,7 +566,6 @@ const store = reactive({ //updates the html immediately
   },
   cacheCards: [],
   getLocalCards() {
-    debugger;
     return Object.keys(localStorage).filter(key => localStorage[key].indexOf("}") !== -1).map(key => {
       return { 
         ...this.loadCard(key), 
@@ -692,18 +696,32 @@ const store = reactive({ //updates the html immediately
   },
   loadedToFile(){
     let cards = []
-    const locals = Object.keys(loadedCardsFromJsonl)
-    locals.forEach(key => {
-      if (typeof loadedCardsFromJsonl[key] === 'object') {
+    const fromFile = Object.keys(loadedCardsFromJsonl)
+    fromFile.forEach(key => {
+      if (typeof loadedCardsFromJsonl[key] === 'object' && (key.length === 8 || key.length === 4)) {
         const line = key + JSON.stringify(loadedCardsFromJsonl[key])
         cards.push(line)
-      } else {
+      } else if (typeof loadedCardsFromJsonl[key] === 'string' && (key.length === 8 || key.length === 4)) {
         const line = key + loadedCardsFromJsonl[key]
         cards.push(line)
       }
     })
-    const name = this.root.title || this.pageTitle || this.title || "Sky Cards"
-    saveFile(cards.join("\n"), name + " all " + cards.length + " lines")
+
+    const locals = Object.keys(localStorage)
+    locals.forEach(key => {
+      if (typeof localStorage[key] === 'string' && (key.length === 8 || key.length === 4)) {
+        const line = key + localStorage[key]
+        cards.push(line)
+      }
+    })
+    
+    if (cards.length) {	  
+      const name = this.root.title || this.pageTitle || this.title || "Sky Cards"
+      saveFile(cards.join("\n"), name + " all " + cards.length + " lines")
+    } else {
+      alert("no cards")
+    }
+
   },
   import() {
     const input = document.createElement('input')
@@ -846,8 +864,8 @@ const store = reactive({ //updates the html immediately
     const gotCard = {
       ...template(),
       ...(typeof tempCard === "object" ? tempCard : {}),
-      ...(typeof loadedCardsFromJsonl[hash] === "object" ? loadedCardsFromJsonl[hash] : {}),
-      ...(typeof feedCards[hash] === "object" ? feedCards[hash] : {}),
+      ...(typeof loadedCardsFromJsonl[hash] === "object" ? { ...loadedCardsFromJsonl[hash], noEditing: true} : {}),
+      ...(typeof feedCards[hash] === "object" ? { ...feedCards[hash], noEditing: true} : {}),
       ...(typeof combinedCards[hash] === "object" ? combinedCards[hash] : {}),
       ...getLocal(hash),
       hash,
@@ -875,8 +893,12 @@ const store = reactive({ //updates the html immediately
         return cb()
       }
     }
-
     let tempCard = loadedCardsFromJsonl[hash] || localStorage.getItem(hash)
+
+    if (loadedCardsFromJsonl[hash]) {
+      tempCard = { ...tempCard, noEditing: true }
+    }
+
     if (hash === "root" && !localStorage.getItem("root")) {
       tempCard = { ...template(), title: "Sky Cards", body: "A place for cards", source: "https://firebasestorage.googleapis.com/v0/b/sky-cards.appspot.com/o/site%2Fhome.jsonl?alt=media"}
     }
@@ -976,7 +998,7 @@ const store = reactive({ //updates the html immediately
         combinedCards[hash] = newCard
         return cb(newCard)
       } else if (loadedCardsFromJsonl[hash] && Object.keys(loadedCardsFromJsonl[hash]).length) { 
-        const newCard = {...card, ...loadedCardsFromJsonl[hash], hash, mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing, lockPosition, search, layout}
+        const newCard = {...card, ...loadedCardsFromJsonl[hash], hash, mix, done, doneOn, fav, slice, onlyShowDone, onlyShowNotDone, onlyShowDoable, noEditing: true, lockPosition, search, layout}
         combinedCards[hash] = newCard
         return cb(newCard)
       } else {
