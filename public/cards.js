@@ -104,6 +104,9 @@ function saveCard(hash, card) {
     console.log("feedCards[hash] save", feedCards[hash])
   }
 }
+function removeNullValues(array) {
+  return array.filter(value => value !== null)
+}
 function getUrlExtension( url ) {
   if (!url) return ""
   return url.split(/[#?]/)[0].split('.').pop().trim(); //may not always work?
@@ -210,13 +213,13 @@ function fetchCards(card, hashGetting, cb = () => {}) {
         cards.forEach((card, i) => {
           if (hashSwap.length) {
             console.log("card.subCards", card.subCards)
-            card.subCards = (card.subCards || []).map(subCard => {
+            card.subCards = removeNullValues((card.subCards || []).map(subCard => {
               const found = hashSwap.find(swap => swap[0] === subCard)
               if (found) {
                 return found[1]
               }
               return subCard
-            })
+            }))
             console.log("card.subCards", card.subCards)
           }
           loadedCardsFromJsonl[card.hash] = card
@@ -283,6 +286,7 @@ function fetchCards(card, hashGetting, cb = () => {}) {
             onlyShowNotDone: true, slice: -5,
             lockPosition: true,
             fromMemory: true,
+            noEditing: true,
             hash: hashGetting,
           }
           feedCards[hashGetting] = loadedCard // Do be combined with card of hash
@@ -322,6 +326,7 @@ function saveToLocalStorage(file, cb) { //cb is a callback function that is call
 
     cards.forEach((card, i) => {
       delete card.noEditing
+      delete card.fromMemory
       if (card.source && card.subCards) {
         console.log("both source & subCards", card)
       }
@@ -391,7 +396,7 @@ const store = reactive({ //updates the html immediately
   displayedSubCards: (ofCard) => {
     // Nedded? ofCard = {...template(), ...ofCard}
     const parentCard = makeHash(ofCard)
-    let cards = ofCard.subCards.map((card, index) => ({...card, index, hash: makeHash(card)}))
+    let cards = removeNullValues(ofCard.subCards.map((card, index) => ({...card, index, hash: makeHash(card)})))
     if (ofCard.mix) {
       for (let i = cards.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -737,14 +742,28 @@ const store = reactive({ //updates the html immediately
           if (e.target === null || e.target.result === null || typeof e.target.result != "string" || !e.target.result) return alert("No file or file is empty")
           const lines = e.target.result.split("\n")
           lines.forEach(line => {
-            if (line.indexOf("root") === -1) {
+            if (line.indexOf("root") !== 0) {
               const hash = line.slice(0, 8)
-              const card = line.slice(8)
-              localStorage.setItem(hash, card)
+              const cardAsStr = line.slice(8)
+              if (cardAsStr.indexOf("(") !== -1) {
+	        let card = JSON.parse(cardAsStr)
+	        delete card.fromMemory
+                delete card.noEditing
+                localStorage.setItem(hash, JSON.stringify(card))
+	      } else {
+                localStorage.setItem(hash, cardAsStr)
+              }
             } else {
-              const hash = line.slice(0, 4)
-              const card = line.slice(4)
-              localStorage.setItem(hash, card)
+              const hash = "root"
+              const cardAsStr = line.slice(4)
+              if (cardAsStr.indexOf("(") !== -1) {
+	        let card = JSON.parse(cardAsStr)
+	        delete card.fromMemory
+                delete card.noEditing
+                localStorage.setItem(hash, JSON.stringify(card))
+	      } else {
+                localStorage.setItem(hash, cardAsStr)
+              }
             }
           })
           alert(" Got " + lines.length + " cards")

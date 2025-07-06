@@ -60,7 +60,7 @@
                   <div class="icon-tick" v-if="card.done" @click="store.doneSave(store.root, false)"> ✓ </div>
                   <div class="icon-tick" v-if="!card.done" @click="store.doneSave(store.root, true)"> ☐ </div>
                 </div>
-                <div class="add-fav top" v-if="store.curser == -1 && !store.root.noEditing">
+                <div class="add-fav top" v-if="store.curser == -1 && !card.noEditing">
                   <div class="icon-edit" title="Edit" @click="store.openDialog(`editDialog`, store.root)">✎</div>
                 </div>
               </div>
