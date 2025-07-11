@@ -1630,9 +1630,9 @@ const store = reactive({ //updates the html immediately
     this.cards = this.cards.concat([{...temp}])
     this.save()
   },
-  removeCard(index, loop = false) {
-    this.cards.splice(index, 1)
-    localStorage.removeItem(index)
+  removeCard(hash, loop = false) {
+    this.cards = this.cards.filter(card => makeHash(card) !== hash)
+    localStorage.removeItem(hash)
     this.cacheCards = this.cacheCards.filter(card => card.hash !== index)
     this.currentlyDisplayCards = this.currentlyDisplayCards.filter(card => card.index !== index)
     if (loop) return 
