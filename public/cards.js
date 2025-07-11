@@ -105,7 +105,8 @@ function saveCard(hash, card) {
   }
 }
 function removeNullValues(array) {
-  return array.filter(value => value !== null)
+  if (!Array.isArray(array)) return [] // if not an array return empty array
+  return array.filter(value => value !== null) || [] // removes null values from the array
 }
 function getUrlExtension( url ) {
   if (!url) return ""
@@ -213,13 +214,13 @@ function fetchCards(card, hashGetting, cb = () => {}) {
         cards.forEach((card, i) => {
           if (hashSwap.length) {
             console.log("card.subCards", card.subCards)
-            card.subCards = removeNullValues((card.subCards || []).map(subCard => {
+            card.subCards = removeNullValues(card.subCards).map(subCard => {
               const found = hashSwap.find(swap => swap[0] === subCard)
               if (found) {
                 return found[1]
               }
               return subCard
-            }))
+            })
             console.log("card.subCards", card.subCards)
           }
           loadedCardsFromJsonl[card.hash] = card
@@ -671,7 +672,12 @@ const store = reactive({ //updates the html immediately
     let cards = []
     const locals = Object.keys(localStorage)
     locals.forEach(key => {
-      const line = key + localStorage.getItem(key)
+      if (typeof localStorage[key] !== 'string' || (key.length !== 8 && key.length !== 4)) return // only save cards with 8 or 4 char hash
+      // if null value in localStorage[key] then remove them.
+      let line = key + localStorage.getItem(key)
+      if (localStorage[key].indexOf("null") !== -1) {
+        line = key + JSON.stringify(this.loadCard(key))
+      }
       cards.push(line)
     })
     const name = this.root.title || this.pageTitle || this.title || "Sky Cards"
@@ -728,6 +734,20 @@ const store = reactive({ //updates the html immediately
     }
 
   },
+  loadedToEdit() {
+    const fromFile = Object.keys(loadedCardsFromJsonl)
+    let count = 0
+    fromFile.forEach(key => {
+      if (localStorage[key]) return console.log("Already loaded", key)
+      if (typeof loadedCardsFromJsonl[key] === 'object' && (key.length === 8 || key.length === 4)) {
+        localStorage.setItem(key, JSON.stringify(loadedCardsFromJsonl[key]))
+      } else if (typeof loadedCardsFromJsonl[key] === 'string' && (key.length === 8 || key.length === 4)) {
+        localStorage.setItem(key, loadedCardsFromJsonl[key])
+      }
+      count++
+    })
+    alert("Loaded " + count + " cards from file to local storage so editable.")
+  },
   import() {
     const input = document.createElement('input')
     input.type = 'file'
@@ -745,8 +765,9 @@ const store = reactive({ //updates the html immediately
             if (line.indexOf("root") !== 0) {
               const hash = line.slice(0, 8)
               const cardAsStr = line.slice(8)
-              if (cardAsStr.indexOf("(") !== -1) {
+              if (cardAsStr.indexOf("{") !== -1) {
 	        let card = JSON.parse(cardAsStr)
+		card.subCards = removeNullValues(card.subCards)
 	        delete card.fromMemory
                 delete card.noEditing
                 localStorage.setItem(hash, JSON.stringify(card))
@@ -889,7 +910,7 @@ const store = reactive({ //updates the html immediately
       ...getLocal(hash),
       hash,
     }
-    console.log("gotCard", gotCard)
+    gotCard.subCards = removeNullValues(gotCard.subCards)
     return gotCard
   },
   loadCard(hash, cb = c => c) { // returns the card with subcards as hashes
@@ -957,7 +978,7 @@ const store = reactive({ //updates the html immediately
       let cardFormMem = {}
       if (typeof feedCards[hash] === 'object') {
         cardFormMem = { ...template(), ...feedCards[hash], fromMemory: true}
-        cardFormMem.subCards = cardFormMem.subCards.map(sub => {
+        cardFormMem.subCards = removeNullValues(cardFormMem.subCards.map(sub => {
           if (typeof sub === 'object') {
             return sub
           }
@@ -967,7 +988,7 @@ const store = reactive({ //updates the html immediately
           }
           console.log("Not a card", sub)
           return false
-        }).filter(card => !!card)
+        }).filter(card => !!card))
       }
       if (cardFormMem.source || cardFormMem.title) {
         const returns = cb(cardFormMem)
@@ -1598,7 +1619,6 @@ const store = reactive({ //updates the html immediately
     } else {
       this.lastSwap = Date.now()
       this.makeSubCard(from, to)
-      
     }
   },
   makeMainCard(index) {
@@ -1610,8 +1630,12 @@ const store = reactive({ //updates the html immediately
     this.cards = this.cards.concat([{...temp}])
     this.save()
   },
-  removeCard(index) {
+  removeCard(index, loop = false) {
     this.cards.splice(index, 1)
+    localStorage.removeItem(index)
+    this.cacheCards = this.cacheCards.filter(card => card.hash !== index)
+    this.currentlyDisplayCards = this.currentlyDisplayCards.filter(card => card.index !== index)
+    if (loop) return 
     this.save()
     this.load()
     this.layout(this.root.layout)
@@ -1640,9 +1664,20 @@ const store = reactive({ //updates the html immediately
     this.big = false
     window.requestAnimationFrame(() => {
       const openDialog = document.getElementById(dialog)
-      console.log("addDialog", dialog, openDialog)
+      if (!openDialog) return console.log("No dialog found", dialog)
       openDialog.showModal()
     })
+  },
+  deleteOrphanedCards() {
+    const orphanedCards = this.localCards().filter(card => card.listedByCards === 0 && card.hash !== "root")
+    console.log("orphanedCards", orphanedCards)
+    if (orphanedCards.length === 0) return alert("No orphaned cards found")
+    if (!confirm(`Are you sure you want to delete ${orphanedCards.length} orphaned cards?`)) return
+    orphanedCards.forEach(card => {
+      store.removeCard(card.hash, true)
+    })
+    this.save()
+    this.displayedCards()
   },
   dialogSave(close = true){
     console.log("dialog save")
@@ -1870,18 +1905,14 @@ function arrowKeysOn(e) {
   }
   if (e.key == "ArrowLeft" || e.key == "a" || e.key == "h" || e.key == "A" || e.key == "H") {
     if (e.shiftKey) {
-      store.swapCards(currentIndex[currentCard], currentIndex[currentCard - 1])
+      if (store.curser !== -1) {
+        store.swapCards(currentIndex[currentCard], currentIndex[currentCard - 1])
+      }
     } else {
-      if (store.curser === -1) {
-        let table = historyTable[store.path.length - 1]
-
-        if (table && table.cards[table.curser - 1]) {
-          store.load(table.cards[table.curser - 1], -1)
-          store.path.pop()
-          store.path.push(table.cards[table.curser - 1].hash)
-          window.history.pushState({}, "", "/" + store.path.join("/"))
-          if (+historyTable[store.path.length - 1] > 0 ) historyTable[store.path.length - 1].curser--
-        }
+      if (store.curser === -1 && store) {
+        if (store.tableLeft) {
+	  store.tableLeft()
+	}
       } else if (currentIndex[currentCard - 1] === undefined) {
         // do nothing
       } else {
@@ -1891,17 +1922,14 @@ function arrowKeysOn(e) {
   }
   if (e.key == "ArrowRight" || e.key == "d" || e.key == "l" || e.key == "D" || e.key == "L") {
     if (e.shiftKey) {
-      store.swapCards(currentIndex[currentCard], currentIndex[currentCard + 1])
+      if (store.curser !== -1) {
+        store.swapCards(currentIndex[currentCard], currentIndex[currentCard + 1])
+      }
     } else {
       if (store.curser === -1) {
-        let table = historyTable[store.path.length - 1]
-        if (table && table.cards[table.curser + 1]) {
-          store.load(table.cards[table.curser + 1], -1)
-          store.path.pop()
-          store.path.push(table.cards[table.curser + 1].hash)
-          window.history.pushState({}, "", "/" + store.path.join("/"))
-          historyTable[store.path.length - 1].curser++
-        }
+        if (store.tableRight) {
+          store.tableRight()
+	}
       } else if (currentIndex[currentCard + 1] === undefined) {
       } else {
         store.setCurser(Math.min(currentIndex[currentCard + 1], currentIndex[currentIndex.length - 1]))

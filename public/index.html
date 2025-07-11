@@ -143,11 +143,12 @@
           <button @click="store.closeDialog('menuDialog')" class="top-right">x</button>
           <div>
             <p>click here to report an issue with this site: <a href="https://github.com/marcus7777/cards-sha/issues"> Help us improve</a> </p>
-            <p>This is Version 1.0.3</p>
+            <p>This is Version 1.0.4</p>
             <pre>Powerfull tools:</pre> 
             <button @click="store.clearLocalStore" >Remove all</button>
             <button @click="store.export" >Export</button>
-	    <button @click="store.loadedToFile">Loaded To file</button>
+	    <button @click="store.loadedToFile">Loaded To File</button>
+	    <button @click="store.loadedToEdit">Make Editable</button>
 	    
             <button @click="store.import" >Import</button>
             <button @click="store.all = true;store.openDialog('all')" >Show all</button>
@@ -158,6 +159,9 @@
           <button @click="store.closeDialog('all')">x</button>
           <input v-model="store.allSearch" placeholder="search">
           <div>
+            <div>
+              <button @click="store.deleteOrphanedCards">Delete Orphaned Cards</button>
+            </div>
             <div v-for="(card, i) in store.localCards().filter((card) => (Object.values(card).join()).toLowerCase().includes(store.allSearch.toLowerCase()))">
               <h2> {{ card.title  }} </h2>
               <h4> {{ card.source }} </h4>
