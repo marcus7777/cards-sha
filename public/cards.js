@@ -490,12 +490,10 @@ const store = reactive({ //updates the html immediately
   editCard: {...template()},
   currentlyDisplayCards: [],
   setCurser: (index) => {
-    console.log("setCurser", index)
     store.curser = index
     if (historyTable[store.path.length]) {
       historyTable[store.path.length].curser = Math.max(index, 0)
     }
-    console.log("historyTable", historyTable)
     if (store.currentlyDisplayCards[index]) {
       store.setFocus(store.currentlyDisplayCards[index], index)
     }
@@ -888,7 +886,7 @@ const store = reactive({ //updates the html immediately
       if (tempCard.indexOf("}") !== -1) tempCard = JSON.parse(tempCard)
     }
     const getLocal = (h, i = 0) => {
-      if (i > 100) return console.log("To many forwords")
+      if (i > 20) return console.log("To many forwords")
       let localCard = localStorage.getItem(h)
       let output = {}
       if (localCard) {
@@ -1431,7 +1429,7 @@ const store = reactive({ //updates the html immediately
     let cardElements = [ ...document.getElementsByClassName("outerMainCard"), ...document.getElementsByClassName("subCard")]
     cardElements.forEach(card => {
       const color = card.dataset.color
-      if (!color) return console.log("No color")
+      if (!color) return // console.log("No color")
       const dot = card.getElementsByClassName("dot")[0] 
       if (!dot || dot === null) return
       dot.style.backgroundColor = color
@@ -1632,9 +1630,10 @@ const store = reactive({ //updates the html immediately
   },
   removeCard(hash, loop = false) {
     this.cards = this.cards.filter(card => makeHash(card) !== hash)
+    this.currentlyDisplayCards = this.currentlyDisplayCards.filter(card => card.hash !== hash)
     localStorage.removeItem(hash)
-    this.cacheCards = this.cacheCards.filter(card => card.hash !== index)
-    this.currentlyDisplayCards = this.currentlyDisplayCards.filter(card => card.index !== index)
+    this.cacheCards = this.cacheCards.filter(card => card.hash !== hash)
+    this.currentlyDisplayCards = this.currentlyDisplayCards.filter(card => card.index !== hash)
     if (loop) return 
     this.save()
     this.load()
@@ -1669,18 +1668,21 @@ const store = reactive({ //updates the html immediately
     })
   },
   deleteOrphanedCards() {
-    const orphanedCards = this.localCards().filter(card => card.listedByCards === 0 && card.hash !== "root")
-    console.log("orphanedCards", orphanedCards)
+    const root = this.loadCard("root")
+    const orphanedCards = this.localCards().filter(card => card.listedByCards === 0)
     if (orphanedCards.length === 0) return alert("No orphaned cards found")
     if (!confirm(`Are you sure you want to delete ${orphanedCards.length} orphaned cards?`)) return
     orphanedCards.forEach(card => {
       store.removeCard(card.hash, true)
     })
+    saveCard("root", root) // save the root as we just deleted it.
     this.save()
+    alert("Orphaned cards deleted")
     this.displayedCards()
   },
   dialogSave(close = true){
     console.log("dialog save")
+
     if (this.editingHash) {
       this.currentlyDisplayCards = this.currentlyDisplayCards.map(card => {
         if (card.hash === this.editingHash) {
@@ -1689,15 +1691,17 @@ const store = reactive({ //updates the html immediately
         }
         return card
       })
-      if (this.editingHash !== makeHash(this.root)) { 
-        localStorage.setItem(this.editingHash, makeHash(this.editCard))
-      }
-      saveCard(this.editingHash, this.editCard)
-      const rootHash = makeHash(this.root)
-      if (this.editingHash === rootHash) {
-        this.root = {...this.root, ...this.editCard}
+      if (this.editingHash === makeHash(this.root)) { // if the editing hash is the root card, update the root card
+	
+	this.root = {...this.root, ...this.editCard}
+	const editingHash = makeHash(this.root)
+	if (this.editingHash !== editingHash) { // save forward
+          localStorage.setItem(this.editingHash, makeHash(this.editCard))
+        }
+	const rootHash = makeHash(this.root)
         this.saveRoot(rootHash)
       }
+      saveCard(this.editingHash, this.editCard)
     } else {
       this.cards = [...this.cards, {...this.editCard}]
       this.currentlyDisplayCards = this.currentlyDisplayCards.concat([{...this.editCard}])
