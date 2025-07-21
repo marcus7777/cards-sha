@@ -89,14 +89,14 @@
             class="outerMainCard outerCard"
             @dragover="store.dragOver"
             :draggable="!store.root.lockPosition && !store.root.mix"
-            @dragstart="store.draggingHash = card.hash"
+            @dragstart="store.draggingId = card.hash + card.index"
             @drop="store.drop(card.index)"
             :title="card.title"
             :data-index="card.index" :data-color="card.color" :data-hash="card.hash"
           >
             <div :key="i" class="card mainCard">
               <div :data-index="card.index" :data-color="card.color" class="inner small">
-                <div class="content" @click="store.mainCardTap(card, i)">
+                <div class="content" @click="store.mainCardTap(card, i)" :data-index="card.index">
                   <h2> {{ card.title }} </h2>
                   <p v-html="card.smBody"></p>
                   <img v-if="store.getDataType(card.media)=='image'" :src="card.media" />

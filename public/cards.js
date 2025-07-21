@@ -1215,19 +1215,26 @@ const store = reactive({ //updates the html immediately
     store.disableKeys = true
   },
   lastSwap: 0,
-  draggingHash: "",
+  draggingId: "",
   dragOver(e) {
     e.preventDefault()
     if (this.lastSwap >= (Date.now() - 500)) return;
     //find the card that is being dragged over and the card that is being dragged
-    const to = e.target.getAttribute("data-index")
+    let to = e.target.getAttribute("data-index")
+    if (to === null) {
+      to = e.target.parentElement.getAttribute("data-index")
+    }
+    if (to === null) {
+      to = e.target.parentElement.parentElement.getAttribute("data-index")
+    }
     if (to === null) return
-    const from = this.cards.reduce((index, card, cardsIndex) => {
-      if (makeHash(card) == this.draggingHash) {
+    const from = this.currentlyDisplayCards.reduce((index, card, cardsIndex) => {
+      if (card.hash + card.index == this.draggingId) {
         return cardsIndex
       }
       return index
     }, -1)
+
     if (from === -1) return
     // TODO make sure that the swap is intened.
     if (to == from) return
@@ -1246,7 +1253,7 @@ const store = reactive({ //updates the html immediately
       console.log(this.curser)
       // find sub card
       const from = this.cards[this.curser].subCards.reduce((index, card, currentIndex) => {
-        if (makeHash(card) == this.draggingHash) {
+        if (makeHash(card) + index == this.draggingId) {
           return currentIndex
         }
         return index
@@ -1628,12 +1635,21 @@ const store = reactive({ //updates the html immediately
     this.cards = this.cards.concat([{...temp}])
     this.save()
   },
-  removeCard(hash, loop = false) {
-    this.cards = this.cards.filter(card => makeHash(card) !== hash)
-    this.currentlyDisplayCards = this.currentlyDisplayCards.filter(card => card.hash !== hash)
-    localStorage.removeItem(hash)
+  removeCard(index, loop = false) {
+    // hash is a number or a string
+    if (typeof hash === 'number') {
+      hash = makeHash(this.cards[index])
+    }
+    this.cards = this.cards.slice(0, index).concat(this.cards.slice(index + 1))
+    // localStorage.removeItem(hash) // need to check if the card is in other cards before removing it
+
     this.cacheCards = this.cacheCards.filter(card => card.hash !== hash)
-    this.currentlyDisplayCards = this.currentlyDisplayCards.filter(card => card.index !== hash)
+    this.currentlyDisplayCards = this.currentlyDisplayCards.filter(card => card.index !== index)
+    // update the tableCards
+	  //
+    historyTable[this.path.length].cards = historyTable[this.path.length].cards.slice(0, index).concat(historyTable[this.path.length].cards.slice(index + 1))
+    historyTable[this.path.length].curser = historyTable[this.path.length].curser > index ? historyTable[this.path.length].curser - 1 : historyTable[this.path.length].curser
+
     if (loop) return 
     this.save()
     this.load()
@@ -1699,6 +1715,16 @@ const store = reactive({ //updates the html immediately
           localStorage.setItem(this.editingHash, makeHash(this.editCard))
         }
 	const rootHash = makeHash(this.root)
+	historyTable = historyTable.map((table, index) => {
+          const cards = table.cards.map(card => {
+	    if (card.hash === this.editingHash) {
+	      return {...this.editCard, hash: rootHash, index: card.index}
+	    }
+	    return card
+	  })
+          return {...table, cards}
+	})
+	
         this.saveRoot(rootHash)
       }
       saveCard(this.editingHash, this.editCard)
