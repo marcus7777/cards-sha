@@ -1228,14 +1228,23 @@ const store = reactive({ //updates the html immediately
       to = e.target.parentElement.parentElement.getAttribute("data-index")
     }
     if (to === null) return
-    const from = this.currentlyDisplayCards.reduce((index, card, cardsIndex) => {
+    let from = this.currentlyDisplayCards.reduce((index, card, cardsIndex) => {
       if (card.hash + card.index == this.draggingId) {
         return cardsIndex
       }
       return index
     }, -1)
 
-    if (from === -1) return
+    if (from === -1) {
+      from = this.currentlyDisplayCards.reduce((index, card, cardsIndex) => {
+        if (this.draggingId.startsWith(card.hash)) {
+          return cardsIndex
+        }
+        return index
+      }, -1)
+      console.log("No card found being dragged", this.draggingId)
+      if (from === -1) return
+    }
     // TODO make sure that the swap is intened.
     if (to == from) return
     if (to == -1) {
@@ -1243,6 +1252,7 @@ const store = reactive({ //updates the html immediately
     } else {
       this.lastSwap = Date.now();
       this.swapCards(from, to, false)
+      // this.draggingId = this.currentlyDisplayCards[to].hash + to
     }
   },
   drop(to) {
