@@ -514,6 +514,7 @@ audio {
   border-radius: 0 0 10px 10px;
   height: calc(100% - 5px);
   cursor: pointer;
+  overflow: visible;
 }
 
 img {
@@ -689,6 +690,8 @@ input[type="date"] {
 }
 .line:first-child {
   margin-left: 0;
+  overflow: visible;
+  margin:0 -10%;
 }
 #loading {
   position: absolute;
