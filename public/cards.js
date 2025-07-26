@@ -5,30 +5,30 @@ function template() {
   return {
     title: "", 
     body: "",
-    smBody: "",
+    smBody: "",       // short body for the card
     source: "",       // url if from the web only save updates under the hash of the generated card 
     subCards: [],     // array of cards
     toDoFirst: [],    // array of cards that need to be before this card
     done: false,
     color: '',        // dot color and background color of the page
     hideDone: false,
-    media: "",
+    media: "",        // url of the media, can be audio, video or image
     autoplay: false,  
     thumbnail: "",    // thumbnail for the media just video for now
     layout: "line",   // line, circle, grid
-    slice: 0,
+    slice: 0,         // slice the subCards array
     onlyShowDone: false,
     onlyShowNotDone: false,
     onlyShowDoable: false,
     noEditing: false,
     lockPosition: false,
-    mix: false,
-    doneOn: [], // list of dates
-    madeOn: "", // date
-    fav: false, // favorite
-    search: false,
-    startAt: 0, // start at time for audio and video
-    playbackRate: 1, // playback rate for audio and video
+    mix: false,     // mix the subCards
+    doneOn: [],     // list of dates
+    madeOn: "",     // date
+    fav: false,     // favorite
+    search: false,  // search subCards
+    startAt: 0,     // start at time for audio and video
+    playbackRate: 1,// playback rate for audio and video
   }
 }
 function UpdateDialog(props) {
@@ -165,11 +165,19 @@ let loadedCardsFromJsonl = {} // loaded cards
 let combinedCards = {} // combined cards (immutable)
 
 function fetchCards(card, hashGetting, cb = () => {}) {
+  console.log("fetchCards", card, hashGetting)
   const url = card.source
   if (!loadedCardsFromJsonl[hashGetting]) { // if the card is in memory
     // if jsonl fetch the cards
     if (url.indexOf(".jsonl") !== -1) {
-      if (memLoading[hashGetting]) return console.log("Already loading jsonl", hashGetting)
+      if (memLoading[hashGetting]) {
+        console.log("Already loading jsonl", hashGetting)
+        setTimeout(() => {
+          console.log("After 3 sec loading jsonl", hashGetting)
+          cb(loadedCardsFromJsonl[hashGetting] || feedCards[hashGetting] || {})
+	}, 3000)
+	return
+      }
       memLoading[hashGetting] = true
       fetch(url).then(response => response.text()).then(text => {
         const lines = text.split("\n")
@@ -229,11 +237,11 @@ function fetchCards(card, hashGetting, cb = () => {}) {
             loadedCardsFromJsonl[found[1]] = card
           }
         })
-        cb(firstCard)
+        return cb(firstCard)
       }).catch(error => {
         memLoading[hashGetting] = false
         console.error("error", error)
-        cb({
+        return cb({
           title : error.message || "Can not get this, try again later",
           smBody: url,
         })
@@ -1064,6 +1072,7 @@ const store = reactive({ //updates the html immediately
         const loadedRoot = {...rootCard, subCards: rootCard.subCards.map(subCard => this.loadCard(subCard))}
         const cards = this.displayedSubCards(loadedRoot)
         const curser = cards.indexOf(this.path[pathIndex])
+        
         if (curser === -1) {
           console.log("Curser not found", this.path[pathIndex], cards)
           return {cards, curser: 0}
@@ -1071,6 +1080,14 @@ const store = reactive({ //updates the html immediately
         return {cards, curser}
       })
     })
+    if (historyTable[this.path.length - 1]) {
+      historyTable[this.path.length - 1].curser = historyTable[this.path.length - 1].cards.reduce((curser, card, index) => {
+	if (this.root.hash === card.hash) {
+	  return index
+	}
+	return curser
+      }, historyTable[this.path.length - 1].curser)
+    }
   },  
   setPath() {
     const path = window.location.pathname
@@ -1834,6 +1851,7 @@ const store = reactive({ //updates the html immediately
   },
   loadMemPath(cb = r => r) {
     console.log("loading path", this.path)
+    // if the path is empty, load the root card
     this.setPath()
     let path = ["root", ...this.path] // add root to the path
     let fetchList = []
@@ -2003,7 +2021,14 @@ setTimeout(() => {
   document.title = store.root.title
   document.body.style.display = "block"
   store.loading = false
-}, 200)
+  store.load(store.getPathTop(), -1, () => {
+    console.log("loaded", store.root, store.cards)
+    store.setHistoryTable()
+    store.layout(store.root.layout)
+    store.setColor()
+    store.displayedCards()
+  })
+}, 1000)
 window.onpopstate = function(e) {
   console.log("pop state", e)
   store.load()
