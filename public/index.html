@@ -102,7 +102,6 @@
                   <img v-if="store.getDataType(card.media)=='image'" :src="card.media" />
                   <img v-if="store.getDataType(card.media)=='qrCode'" :src="store.makeQrCode(card.media)"/>
                   <img v-if="store.getDataType(card.media)=='audio' && card.thumbnail" :src="card.thumbnail" />
-		  <div class="media">
                   <audio v-if="store.getDataType(card.media)=='audio'" :src="card.media" class="media" @timeupdate="store.mediaSaveTime" @ended="store.endedAutoplay(card, card.index)" controls></audio>
                   <video v-if="store.getDataType(card.media)=='video'" controls class="media" @timeupdate="store.mediaSaveTime" @ended="store.endedAutoplay(card,card.index)" :poster="card.thumbnail" >
                     <source :src="card.media" type="video/mp4">

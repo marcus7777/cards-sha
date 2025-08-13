@@ -424,10 +424,11 @@ const store = reactive({ //updates the html immediately
         // load the array of cards that need to be done first and see if they are all done
         if (card.toDoFirst && card.toDoFirst.length) {
           if (!card.toDoFirst.every(hash => {
-            const needed = store.loadCard(hash)
+            const needed = store.loadCard(hash) // no call back needed as done is local
             if (!needed) return true // ignore card the do not load
+            console.log("card", card.title, "needed", needed.title)
             return needed.done
-          })) { // no call back needed as done is local
+          })) { 
             return false
           }
         }
@@ -741,6 +742,7 @@ const store = reactive({ //updates the html immediately
 
   },
   loadedToEdit() {
+    localStorage.clear()
     const fromFile = Object.keys(loadedCardsFromJsonl)
     let count = 0
     fromFile.forEach(key => {
@@ -753,6 +755,7 @@ const store = reactive({ //updates the html immediately
       count++
     })
     alert("Loaded " + count + " cards from file to local storage so editable.")
+    window.location.reload()
   },
   import() {
     const input = document.createElement('input')
