@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Sky cards login</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://www.gstatic.com/firebasejs/9.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.13.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.13.0/firebase-storage-compat.js"></script>
+    <script src="/config.js"></script>
+    <script src="/assets/common.js"></script>
+    <script src="/imageResize.umd.js"></script>
+    <script src="/color.js"></script>
+    <link href="/login.css" rel="stylesheet" type="text/css" media="screen" />
+    <script src="/assets/firebaseui.js"></script>
+    <link type="text/css" rel="stylesheet" href="/assets/firebaseui.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      video {
+	max-width: 100%;
+      }
+      img {
+	max-width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container">
+      <div id="loading">Loading...</div>
+      <div id="loaded" class="hidden">
+        <div id="main">
+          <div id="user-signed-in">
+            <div id="user-info">
+              <div id="is-new-user"></div>
+              <div class="clearfix"></div>
+            </div>
+	    <button id="pub">Upload Cards</button>
+	  </div>
+          <div id="user-signed-out" class="hidden">
+            <h4>Sign in to upload</h4>
+            <div id="firebaseui-spa">
+              <div id="firebaseui-container"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="/login.js"></script>
+  </body>
+</html>

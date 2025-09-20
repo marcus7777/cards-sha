@@ -14,6 +14,12 @@
       <div id="loading" v-if="store.loading">
         <div class="loader"></div>
       </div>
+      <div class="admin-mode" v-if="store.areCardsLocal()" >
+        <h1>Admin Mode</h1>
+	<p>You are in admin mode because you have local cards. You can edit all cards. To exit admin mode, please clear your local storage.</p>
+	<button @click="store.clearLocalStore" >Clear Local Storage</button>
+	<a href="upload.html">Upload Cards</a>
+      </div>
       <button class="top-right" @click="store.openDialog('menuDialog')">⋮</button> 
       <!--Display rootcard here-->
       <div id="root">
@@ -71,9 +77,10 @@
           <div class="arrow-right" v-if="store.tableRight" @click="store.tableRight()" ></div>
         </div>
       </div>
-      <!--  Display main cards -->
-      <div v-if="!store.big && store.currentlyDisplayCards.length">
-        <div v-if="store.root.search">
+
+      <div v-if="!store.big">
+        <!-- Display search cards -->
+        <div v-if="store.root.search && store.currentlyDisplayCards.length > 1">
           <input 
             v-model="store.search"
             id="titleQuickAdd"
@@ -83,7 +90,16 @@
             @blur="store.disableKeys = false"
             type="search"
           />
+	  <div class="search-icon" @click="store.onEnterTitle()">🔍</div>
         </div>
+	<div v-if="!store.currentlyDisplayCards.length && !store.root.onlyShowDoable && store.cards.length">
+          <h2> All done </h2>
+	  <label>
+	    <input v-model="store.root.onlyShowDoable" type="checkbox" />
+	    Only show doable cards
+	  </label>
+	</div>
+        <!-- Display main cards -->
         <div class="container">
           <div v-for="(card, i) in store.currentlyDisplayCards.filter((card) => (Object.values(card).join()).toLowerCase().includes(store.search.toLowerCase()))"
             class="outerMainCard outerCard"
@@ -148,7 +164,7 @@
             <button @click="store.clearLocalStore" >Remove all</button>
             <button @click="store.export" >Export</button>
 	    <button @click="store.loadedToFile">Loaded To File</button>
-	    <button @click="store.loadedToEdit">Make Editable</button>
+	    <button @click="store.loadedToEdit()">Make Editable</button>
 	    
             <button @click="store.import" >Import</button>
             <button @click="store.all = true;store.openDialog('all')" >Show all</button>
@@ -370,7 +386,7 @@
         <div v-if="store.curser !== -1">
           <h3>Need to do before {{store.editCard.title}}</h3>
           <div v-for="(needed, i) in store.cards">
-            <button v-if="i !== store.curser && !store.editCard.toDoFirst.includes(store.hash(needed))" @click="store.editCard = store.addToDoFirst(store.editCard, needed)">
+            <button v-if="i !== store.curser && store.editCard.hash !== store.hash(needed) && !store.editCard.toDoFirst.includes(store.hash(needed))" @click="store.editCard = store.addToDoFirst(store.editCard, needed)">
               {{needed.title}} is needed
             </button>
           </div>

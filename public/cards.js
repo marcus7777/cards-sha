@@ -394,6 +394,12 @@ const store = reactive({ //updates the html immediately
       }
     }
   },
+  areCardsLocal: () => {
+    const rootCard = store.loadCard("root")
+    console.log("areCardsLocal", rootCard)
+    if (!rootCard) return false
+    return !rootCard.source
+  },
   displayedCards: () => {
     console.log("displayedCards")
     let cards = store.displayedSubCards({...store.root, subCards: store.cards})
@@ -742,6 +748,7 @@ const store = reactive({ //updates the html immediately
 
   },
   loadedToEdit() {
+    console.log("error")
     localStorage.clear()
     const fromFile = Object.keys(loadedCardsFromJsonl)
     let count = 0

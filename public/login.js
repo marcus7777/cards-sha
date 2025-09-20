@@ -135,6 +135,7 @@ var handleSignedInUser = function(user) {
         alert("updated")
         fileRef.getDownloadURL().then(url => {
           console.log(url)
+          window.navigation.reload("/")
 	})
       })
     }
